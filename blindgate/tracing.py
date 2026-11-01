@@ -8,7 +8,9 @@ root are reported relative to it. A path written inside the root
 that resolves outside it is named as an outside read, and a path
 that was already outside in its written form is dropped unnamed. A
 trace file that is not empty and holds no recognizable strace line
-is refused as not strace output.
+is refused as not strace output. Directory changes recorded by
+chdir are tracked per process, so a relative path is resolved
+against the directory in force for its process when it was opened.
 """
 
 from __future__ import annotations
@@ -26,6 +28,19 @@ _OPENAT_RE = re.compile(
     r'openat\(\s*[^,]+,\s*"((?:[^"\\]|\\.)*)"\s*,\s*([A-Za-z0-9_|]+)'
 )
 _RETURN_RE = re.compile(r"\)\s*=\s*(-?\d+)")
+_CHDIR_RE = re.compile(
+    r'^\s*(?:\d+\s+)?chdir\(\s*"((?:[^"\\]|\\.)*)"\s*\)'
+)
+_ASSIGN_RETURN_RE = re.compile(r"=\s*(-?(?:0x[0-9a-fA-F]+|\d+))")
+_FORK_RES = (
+    re.compile(
+        r"^\s*(?:\d+\s+)?(?:clone3?|v?fork)\(.*\)\s*=\s*(\d+)\s*$"
+    ),
+    re.compile(
+        r"<\.\.\.\s+(?:clone3?|v?fork)\s+resumed>.*\)\s*=\s*(\d+)"
+    ),
+)
+_PID_RE = re.compile(r"^\s*(\d+)\s+")
 _READ_FLAGS = ("O_RDONLY", "O_RDWR")
 
 
@@ -54,7 +69,18 @@ def _is_read(flags):
     return any(flag in parts for flag in _READ_FLAGS)
 
 
-def _canonical_scoped(raw_path, root):
+def _pid_key(line):
+    """Return the process id prefix of a trace line, else None.
+
+    Lines with no process id prefix share one bucket of their own,
+    keyed by None, exactly as one unnumbered stream was treated by
+    the earlier slices.
+    """
+    match = _PID_RE.match(line)
+    return int(match.group(1)) if match is not None else None
+
+
+def _canonical_scoped(raw_path, root, base=None):
     """Resolve a traced path canonically and scope it to the root.
 
     Returns a pair. The first item is the resolved path relative to
@@ -64,8 +90,9 @@ def _canonical_scoped(raw_path, root):
     components on disk and settles dot segments, so a path is judged
     by where it actually lands. A path that resolves to the root
     itself names no file inside it and lands in neither item.
-    Relative traced paths are taken against the root, which is the
-    working directory a traced run is scoped to.
+    Relative traced paths are taken against base, the directory in
+    force for the process that opened them, which the parse keeps
+    per process and defaults to the root.
 
     An outside read is a path whose written form lands inside the
     root once dot segments settle lexically, yet whose canonical
@@ -82,7 +109,7 @@ def _canonical_scoped(raw_path, root):
         return None, None
     candidate = Path(raw_path)
     if not candidate.is_absolute():
-        candidate = root / candidate
+        candidate = (root if base is None else base) / candidate
     written = Path(os.path.normpath(candidate))
     try:
         written.relative_to(root)
@@ -91,6 +118,8 @@ def _canonical_scoped(raw_path, root):
         written_inside = False
     resolved = Path(os.path.realpath(candidate))
     if resolved == root:
+        return None, None
+    if base is not None and resolved == Path(os.path.realpath(base)):
         return None, None
     try:
         return resolved.relative_to(root).as_posix(), None
@@ -161,13 +190,46 @@ def parse_trace(text, root, check_shape=True):
     paths are scoped to. When check_shape holds, a non empty text
     with no recognizable strace line is refused before any read set
     is built.
+
+    Directory state is tracked while the lines are read. Every
+    process id starts at the root, a chdir line with a recorded
+    success moves the directory of its own process from that line
+    onward, and the state is stored as the canonical resolution of
+    the directory the process moved to. A fork the trace records
+    seeds the child process with the directory its parent held at
+    that line. A relative open resolves against the directory in
+    force for its process at that line. Directory changes made
+    through a file descriptor are not tracked.
     """
     root_path = Path(root).resolve()
     if check_shape:
         refuse_unshaped_trace(text, "log")
     reads = set()
     outside = set()
+    cwd_by_pid = {}
     for line in text.splitlines():
+        pid_key = _pid_key(line)
+        fork_child = None
+        for fork_re in _FORK_RES:
+            fork_match = fork_re.search(line)
+            if fork_match is not None:
+                fork_child = int(fork_match.group(1))
+                break
+        if fork_child:
+            cwd_by_pid[fork_child] = cwd_by_pid.get(pid_key, root_path)
+            continue
+        chdir_match = _CHDIR_RE.search(line)
+        if chdir_match is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[chdir_match.end():])
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                target = _unescape(chdir_match.group(1))
+                if target:
+                    base = cwd_by_pid.get(pid_key, root_path)
+                    candidate = Path(target)
+                    if not candidate.is_absolute():
+                        candidate = base / candidate
+                    cwd_by_pid[pid_key] = Path(os.path.realpath(candidate))
+            continue
         match = _OPENAT_RE.search(line)
         if match is None:
             continue
@@ -178,7 +240,8 @@ def parse_trace(text, root, check_shape=True):
         returned = _RETURN_RE.search(line[match.end():])
         if returned is None or int(returned.group(1)) < 0:
             continue
-        relative, outside_path = _canonical_scoped(raw_path, root_path)
+        base = cwd_by_pid.get(pid_key, root_path)
+        relative, outside_path = _canonical_scoped(raw_path, root_path, base)
         if relative is not None:
             reads.add(relative)
         elif outside_path is not None:
@@ -229,7 +292,7 @@ def run_traced(command, root):
     os.close(handle)
     try:
         subprocess.run(
-            ["strace", "-f", "-e", "trace=openat", "-o", trace_name, "--", *command],
+            ["strace", "-f", "-e", "trace=openat,chdir,clone,fork,vfork,clone3", "-o", trace_name, "--", *command],
             check=False,
         )
         text = Path(trace_name).read_text(encoding="utf-8", errors="replace")
