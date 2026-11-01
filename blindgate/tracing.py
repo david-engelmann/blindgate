@@ -14,7 +14,10 @@ against the directory in force for its process when it was opened.
 Directory descriptors are tracked beside that state, so a relative
 path opened against a recorded descriptor is resolved against the
 directory that descriptor was opened on, and an fchdir against a
-recorded descriptor moves the directory in force to it.
+recorded descriptor moves the directory in force to it. A call
+strace split into an unfinished line and a resumed line is
+reassembled and judged as the whole line it reads as, for the
+state changing calls and for reads alike.
 """
 
 from __future__ import annotations
@@ -51,6 +54,28 @@ _FORK_RES = (
     ),
 )
 _PID_RE = re.compile(r"^\s*(\d+)\s+")
+_UNFINISHED_MARKER = "<unfinished ...>"
+_RESUMED_RE = re.compile(
+    r"^\s*(?:\d+\s+)?<\.\.\.\s+([A-Za-z_][A-Za-z0-9_]*)\s+resumed>"
+)
+_EXIT_RE = re.compile(r"^\s*(?:\d+\s+)?\+\+\+\s+(?:exited|killed)\b")
+_CALL_NAME_RE = re.compile(r"^\s*(?:\d+\s+)?([A-Za-z_][A-Za-z0-9_]*)\(")
+_SPLIT_CALLS = frozenset(
+    ("chdir", "fchdir", "open", "openat", "close", "dup", "dup2", "dup3")
+)
+_SPLIT_PREFIX_RES = {
+    "chdir": re.compile(
+        r'^\s*(?:\d+\s+)?chdir\(\s*"(?:[^"\\]|\\.)*"\s*$'
+    ),
+    "fchdir": re.compile(r"^\s*(?:\d+\s+)?fchdir\(\s*\d+\s*$"),
+    "close": re.compile(r"^\s*(?:\d+\s+)?close\(\s*\d+\s*$"),
+    "dup": re.compile(r"^\s*(?:\d+\s+)?dup\(\s*\d+\s*$"),
+    "dup2": re.compile(r"^\s*(?:\d+\s+)?dup2\(\s*\d+\s*,\s*\d+\s*$"),
+    "dup3": re.compile(
+        r"^\s*(?:\d+\s+)?dup3\(\s*\d+\s*,\s*\d+"
+        r"(?:\s*,\s*[A-Za-z0-9_|]+)?\s*$"
+    ),
+}
 _READ_FLAGS = ("O_RDONLY", "O_RDWR")
 
 
@@ -88,6 +113,64 @@ def _pid_key(line):
     """
     match = _PID_RE.match(line)
     return int(match.group(1)) if match is not None else None
+
+
+def _kept_unfinished(line):
+    """Return the call name and text of a kept unfinished line.
+
+    An unfinished line is kept when it ends with the unfinished
+    marker, names one of the split calls the parse reassembles,
+    and the shape rules of that call can read the call and its
+    arguments from the half that is present, exactly as they read
+    them on a whole line. The kept text is the line with the
+    marker cut away, ready to be joined to its resumed partner.
+    Anything else returns None, and such a line then records
+    nothing, exactly as an unfinished line always has.
+    """
+    marker_at = line.find(_UNFINISHED_MARKER)
+    if marker_at < 0:
+        return None
+    if line[marker_at + len(_UNFINISHED_MARKER):].strip():
+        return None
+    prefix = line[:marker_at]
+    call = _CALL_NAME_RE.match(prefix)
+    if call is None:
+        return None
+    name = call.group(1)
+    if name == "openat":
+        readable = _OPENAT_RE.search(prefix) is not None
+    elif name == "open":
+        readable = _OPEN_RE.match(prefix) is not None
+    elif name in _SPLIT_PREFIX_RES:
+        readable = _SPLIT_PREFIX_RES[name].match(prefix) is not None
+    else:
+        return None
+    if not readable:
+        return None
+    return name, prefix
+
+
+def _spend_resumed(line, pending):
+    """Return the reassembled line for a resumed line, else the line.
+
+    A resumed line for one of the split calls spends the unfinished
+    line kept under its own process and its own call name, whether
+    or not the pair judges to anything, and the reassembled line
+    is the kept text joined to the part of the resumed line that
+    follows the resumed marker, which carries the return. A
+    resumed line with nothing kept for it, and any other line,
+    comes back unchanged and is read by the usual branches.
+    """
+    resumed = _RESUMED_RE.match(line)
+    if resumed is None:
+        return line
+    name = resumed.group(1)
+    if name not in _SPLIT_CALLS:
+        return line
+    prefix = pending.pop((_pid_key(line), name), None)
+    if prefix is None:
+        return line
+    return prefix + line[resumed.end():]
 
 
 def _record_opened_descriptor(fds, raw_path, base, root, fd):
@@ -260,6 +343,16 @@ def parse_trace(text, root, check_shape=True):
     force, and an fchdir line against a recorded descriptor moves
     the directory in force to it. A fork seeds the child with a
     copy of the descriptor map its parent held at that line.
+
+    Split lines are reassembled while the lines are read. An
+    unfinished line of one of the split calls whose arguments the
+    shape rules can read whole is kept per process, and a resumed
+    line for the same process and call spends the kept line and is
+    judged as the whole line the two halves read as, its return
+    taken from the resumed half. An unfinished line that never
+    resumes, a resumed line with nothing kept for it, and an
+    unfinished line the shape rules cannot read whole all record
+    nothing, exactly as split lines always have.
     """
     root_path = Path(root).resolve()
     if check_shape:
@@ -268,8 +361,19 @@ def parse_trace(text, root, check_shape=True):
     outside = set()
     cwd_by_pid = {}
     fds_by_pid = {}
-    for line in text.splitlines():
+    pending = {}
+    for raw_line in text.splitlines():
+        kept = _kept_unfinished(raw_line)
+        if kept is not None:
+            name, prefix = kept
+            pending[(_pid_key(raw_line), name)] = prefix
+            continue
+        line = _spend_resumed(raw_line, pending)
         pid_key = _pid_key(line)
+        if _EXIT_RE.match(line) is not None:
+            for key in [key for key in pending if key[0] == pid_key]:
+                del pending[key]
+            continue
         fork_child = None
         for fork_re in _FORK_RES:
             fork_match = fork_re.search(line)
@@ -279,6 +383,8 @@ def parse_trace(text, root, check_shape=True):
         if fork_child:
             cwd_by_pid[fork_child] = cwd_by_pid.get(pid_key, root_path)
             fds_by_pid[fork_child] = dict(fds_by_pid.get(pid_key, {}))
+            for key in [key for key in pending if key[0] == fork_child]:
+                del pending[key]
             continue
         chdir_match = _CHDIR_RE.search(line)
         if chdir_match is not None:
