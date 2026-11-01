@@ -1,0 +1,1 @@
+{"checks":[{"job":"unit-tests","name":"unit tests","surface":["src/**","tests/**"]},{"job":"docs-check","name":"docs check","surface":["docs/*.md"]}]}

@@ -8,7 +8,13 @@ Gates can pass while never reading the thing they certify, and audit programs ha
 
 ## Status
 
-Seeded in October 2026. The build has not started. Part of the impatient programming portfolio, in the Gate Truth arc.
+Local seed is done and the seed commit sits on the local main branch. The remote seed is still pending because remote writes return 403 and that was verified again on 2026-10-31. A token access fix has to land before the seed and the branches built on it can be pushed.
+
+Setup is in progress locally. The contract in CONTRACT.md holds the obligations for this repo and the slice 1 obligations in it are met by the test suite. Slice 1 is built. It covers GitHub Actions workflows, one tracing method built on strace openat capture, and one report that pairs each check with its read set and its claimed surface.
+
+AGENTS.md is pending. The canonical template has not been supplied by the main chat and no local substitute has been invented in its place.
+
+Closed rounds stand at 0 of 100. Pinned formats stand at none.
 
 ## Licence
 

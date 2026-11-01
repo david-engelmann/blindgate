@@ -1,0 +1,32 @@
+blindgate report
+================
+
+check            unit tests
+job              unit-tests
+verdict          proven
+claimed surface
+    src/**
+    tests/**
+read set
+    notes.txt
+    src/app.py
+    src/util.py
+    tests/test_app.py
+reads in surface
+    src/app.py
+    src/util.py
+    tests/test_app.py
+
+check            docs check
+job              docs-check
+verdict          unproven
+claimed surface
+    docs/*.md
+read set
+    notes.txt
+    src/app.py
+    src/util.py
+    tests/test_app.py
+reads in surface
+    none
+
