@@ -44,5 +44,7 @@ def test_ci_runs_the_local_gate_command():
     assert any("python -m pytest" in command for command in commands)
 
 
-def test_no_agents_md_until_canonical_template_arrives():
-    assert not (ROOT / "AGENTS.md").exists()
+def test_agents_md_stands_from_the_canonical_template():
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "<!-- repo annex below this line -->" in agents
+    assert "## Repo annex" in agents
