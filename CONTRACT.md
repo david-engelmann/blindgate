@@ -18,7 +18,7 @@ SETUP-3. The CI workflow runs the same command as the local gate, which is pytho
 Tests. tests/test_contract.py test_ci_runs_the_local_gate_command.
 
 SETUP-4. No AGENTS.md exists in this repo until the canonical template is supplied by the main chat, and no local substitute is invented in its place.
-Tests. tests/test_contract.py test_no_agents_md_until_canonical_template_arrives.
+Tests. tests/test_contract.py test_no_agents_md_until_canonical_template_arrives. Amended by the setup completion record of 2026-11-01, which states the condition met and renames the proving test test_agents_md_stands_from_the_canonical_template. The canonical template was authored once for the whole program by the Gate Truth Line owner chat, under David's direction on 2026-11-01 after the main chat never supplied one, and lives at the canonical path in the program's files, so the file that stands here is that template verbatim above its marked line with this repo's annex below it, and no local substitute was invented in its place at any point.
 
 ## Slice 1 obligations
 
