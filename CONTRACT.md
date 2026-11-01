@@ -45,3 +45,47 @@ Tests. tests/test_cli.py test_run_mode_captures_reads_from_a_live_command, guard
 
 SLICE-8. Exit codes. The CLI exits zero when the analysis completes, whatever the verdicts are, because the verdicts are the report and not a crash. The CLI exits nonzero with a written error for a bad workflow, a bad config, an unknown job, or a missing trace source.
 Tests. tests/test_cli.py test_unproven_verdict_still_exits_zero, test_unknown_job_is_a_reported_error, and test_missing_trace_and_run_is_an_error.
+
+## Slice 2 obligations
+
+Slice 2 removes the named slice 1 limit that one trace judged every check in a run. Each check can now carry its own trace, and a check with a trace of its own is judged on that trace alone. The shared trace and the shared run from slice 1 remain as the fallback for checks that carry no trace of their own.
+
+S2-1. A per check trace field. A config entry may carry an optional trace field naming one strace log file for that check. The path is resolved relative to the folder holding the config file. A trace field that is not a non empty piece of text is a reported error. A check with a trace of its own is judged on the read set from that trace alone, even when a shared trace in the same run read different files.
+Tests. tests/test_config.py test_loads_a_per_check_trace_field and test_trace_field_must_be_text, and tests/test_slice2.py test_per_check_trace_is_judged_alone.
+
+S2-2. The shared fallback stands. A check with no trace of its own is judged on the shared trace given with the trace option or on the shared run capture, exactly as slice 1 behaved. Giving both the trace option and the run option in one invocation remains an error.
+Tests. tests/test_slice2.py test_check_without_own_trace_falls_back_to_shared_trace and test_check_without_own_trace_falls_back_to_shared_run, and tests/test_cli.py test_missing_trace_and_run_is_an_error.
+
+S2-3. The command line override. The CLI accepts a repeatable trace-for option written as a job id, an equals sign, and a path. The override replaces the config trace for every check that runs that job. A trace-for value without an equals sign or with an empty side is a reported error. A trace-for that names a job no configured check runs is a reported error naming the job, never a silent pass.
+Tests. tests/test_slice2.py test_trace_for_overrides_the_config_trace, test_trace_for_with_an_unknown_job_is_a_reported_error, and test_trace_for_without_an_equals_sign_is_a_reported_error.
+
+S2-4. Missing traces are named errors. When a per check trace file cannot be read, the CLI exits nonzero with an error naming the check that owns the trace. When the trace-for file for a job cannot be read, the error names the job. When a check carries no trace of its own and no shared trace or shared run was given, the error names that check. When every check carries a trace of its own, neither the trace option nor the run option is required.
+Tests. tests/test_slice2.py test_missing_per_check_trace_is_a_named_error, test_missing_trace_for_file_is_a_named_error, test_uncovered_check_without_a_shared_source_is_a_named_error, and test_all_checks_with_own_traces_need_no_shared_source.
+
+S2-5. The report states the trace source. In a run where at least one check is judged on a trace of its own, the report states for every check which source judged it, as its own trace file, the shared trace, or the shared run, in the text rendering and in the JSON rendering alike. The word fraud appears in no verdict and no report, as slice 1 already required.
+Tests. tests/test_slice2.py test_report_states_each_trace_source and test_mixed_report_still_never_says_fraud.
+
+S2-6. Slice 1 keeps working unchanged. Every slice 1 invocation form, config shape, and example keeps working. A run judged on one shared trace alone renders exactly the report slice 1 rendered, and the committed slice 1 example reports regenerate byte identical under the shared trace invocation.
+Tests. tests/test_slice2.py test_slice_one_example_reports_regenerate_byte_identical and test_slice_one_example_json_regenerates_byte_identical, and the whole slice 1 suite passing unaltered.
+
+S2-7. The mixed verdict proof. One run over two checks that share one workflow can name the first check proven from its own trace and the second check an empty read set from its own trace, in the same report. A committed example under examples/per-job shows this proof with its own traces and its generated reports, and the slice 1 example is not altered to build it.
+Tests. tests/test_slice2.py test_mixed_verdicts_from_per_job_traces_in_one_run and test_per_job_example_reports_regenerate_byte_identical.
+
+## Round 1 review fixes
+
+These obligations amend SLICE-3, SLICE-4, S2-2, and S2-3 where they were written loosely, and they came out of the Round 1 red team and review. Where a fix obligation and an earlier obligation disagree, the fix obligation governs.
+
+FIX-1. Normalised read set paths, amending SLICE-4. Dot segments in a traced path are resolved lexically before the path is scoped to the root and matched against a claimed surface. A relative path whose normalised form climbs above the root is dropped from the read set. An absolute path is normalised first and then scoped, so a path that lands in a different folder than its written form suggests is judged by where it lands. Symlinks are not followed, and that is a stated limit of lexical tracing, not a silent one.
+Tests. tests/test_round1_fixes.py test_relative_dotdot_escape_is_dropped, test_absolute_dotdot_lands_where_it_points, and test_relative_dotdot_inside_root_normalises.
+
+FIX-2. Unfinished and non content opens are not reads, amending SLICE-3. An openat line with no recorded return value counts as no read, because success was never recorded for it. An open carrying O_PATH or O_DIRECTORY counts as no content read, whatever else it carries.
+Tests. tests/test_round1_fixes.py test_unfinished_open_counts_as_no_read, test_o_path_open_counts_as_no_read, and test_directory_open_counts_as_no_read.
+
+FIX-3. Trace-for paths resolve like config traces, amending S2-3. A relative trace-for path resolves against the folder holding the config file, the same basis as the config trace field. Naming the same job twice in trace-for options is a reported error naming the job. The report still prints the value as given.
+Tests. tests/test_round1_fixes.py test_trace_for_relative_path_resolves_against_the_config_folder and test_duplicate_trace_for_job_is_a_reported_error.
+
+FIX-4. A handed over shared trace is always read, amending S2-2. When the trace option names a file, that file is read even when every check carries a trace of its own, so a missing shared trace is a reported error and never silently ignored. The both given error for the trace option and the run option together is exercised by a named test, closing the S2-2 test mapping.
+Tests. tests/test_round1_fixes.py test_both_trace_and_run_is_a_reported_error and test_missing_shared_trace_errors_even_when_no_check_needs_it.
+
+FIX-5. Trace field error wording and coverage, amending S2-1. The reported error for a bad trace field says the field is not a non empty piece of text, and empty text and list values are covered by tests alongside the integer case from slice 2.
+Tests. tests/test_round1_fixes.py test_empty_trace_field_is_a_named_error_with_the_contract_wording and test_list_trace_field_is_a_named_error.

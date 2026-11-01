@@ -21,6 +21,8 @@ class Check:
     name: str
     job: str
     surface: tuple
+    trace: str = None
+    trace_path: Path | None = None
 
 
 def _load_data(config_path):
@@ -65,7 +67,20 @@ def load_config(path):
             raise BlindgateError(f"check {name} declares no claimed surface")
         if not all(isinstance(item, str) and item for item in surface):
             raise BlindgateError(f"check {name} has a claimed surface entry that is not text")
-        checks.append(Check(name=name, job=job, surface=tuple(surface)))
+        trace = entry.get("trace")
+        trace_path = None
+        if trace is not None:
+            if not isinstance(trace, str) or not trace:
+                raise BlindgateError(
+                    f"check {name} has a trace field that is not a non empty piece of text"
+                )
+            candidate = Path(trace)
+            if not candidate.is_absolute():
+                candidate = config_path.resolve().parent / candidate
+            trace_path = candidate
+        checks.append(
+            Check(name=name, job=job, surface=tuple(surface), trace=trace, trace_path=trace_path)
+        )
     if not checks:
         raise BlindgateError(f"config file {config_path} declares no checks")
     return checks
