@@ -26,7 +26,11 @@ for the flags its decoded struct argument prints, inside its
 braces, and shares or copies by the same rule. The keep test
 for a split line is derived from the whole line pattern of
 its call, built from one argument pattern per call, so the
-two readings of a call shape cannot drift apart.
+two readings of a call shape cannot drift apart. A descriptor
+entry also carries whether it holds the close on exec flag,
+decided by the line that created it, and a successful execve
+line closes the flagged entries of its process, in a shared
+descriptor table for both processes that hold it.
 """
 
 from __future__ import annotations
@@ -113,6 +117,12 @@ _RESUMED_RE = re.compile(
     r"^\s*(?:\d+\s+)?<\.\.\.\s+([A-Za-z_][A-Za-z0-9_]*)\s+resumed>"
 )
 _EXIT_RE = re.compile(r"^\s*(?:\d+\s+)?\+\+\+\s+(?:exited|killed)\b")
+_EXECVE_RE = re.compile(r"^\s*(?:\d+\s+)?execve\(.*\)")
+_TRACED_CALLS = (
+    "open,openat,chdir,fchdir,close,dup,dup2,dup3,"
+    "clone,fork,vfork,clone3,execve"
+)
+_ARGUMENT_FLAGS_TAIL_RE = re.compile(r",\s*([A-Za-z0-9_|]+)$")
 _CALL_NAME_RE = re.compile(r"^\s*(?:\d+\s+)?([A-Za-z_][A-Za-z0-9_]*)\(")
 _SPLIT_CALLS = frozenset(
     ("chdir", "fchdir", "open", "openat", "close", "dup", "dup2", "dup3")
@@ -370,13 +380,34 @@ def _kept_clone3_half(line):
     return _sharing_from_flag_text(match.group(1))
 
 
-def _record_opened_descriptor(fds, raw_path, base, root, fd):
+def _argument_flags_text(line, end):
+    """Return the flags text a matched call region ends with.
+
+    Some whole line patterns end where their flags argument ends
+    without capturing it, the plain open pattern and the dup3
+    pattern among them. The flags text of such a call is the
+    trailing comma segment of the region its pattern matched, so
+    it is read from that region and the patterns themselves stay
+    the only statements of the call shapes. A region carrying no
+    trailing flags segment yields empty text.
+    """
+    match = _ARGUMENT_FLAGS_TAIL_RE.search(line[:end])
+    return match.group(1) if match is not None else ""
+
+
+def _carries_cloexec(flags_text):
+    """Return True when a bar joined flags text names O_CLOEXEC."""
+    return "O_CLOEXEC" in flags_text.split("|")
+
+
+def _record_opened_descriptor(fds, raw_path, base, root, fd, cloexec=False):
     """Record what one successful open made of a descriptor number.
 
     When the opened path resolves to a directory standing on disk,
     the number names that directory in the map, stored as its
     canonical resolution beside whether the spelled path landed
-    inside the root once its dot segments settle. Any other
+    inside the root once its dot segments settle, and beside
+    whether the entry carries the close on exec flag. Any other
     successful opening hands the number to something the map does
     not track, so any earlier entry for the number is dropped.
     """
@@ -392,20 +423,24 @@ def _record_opened_descriptor(fds, raw_path, base, root, fd):
                 inside = True
             except ValueError:
                 inside = False
-            fds[fd] = (resolved, inside)
+            fds[fd] = (resolved, inside, cloexec)
             return
     fds.pop(fd, None)
 
 
-def _copy_descriptor(fds, source, target):
+def _copy_descriptor(fds, source, target, cloexec=False):
     """Give the target number whatever the source number names.
 
-    A recorded source hands its directory entry to the target. An
-    unrecorded source leaves the target naming the same untracked
-    thing, so any earlier entry for the target is dropped.
+    A recorded source hands its directory entry to the target,
+    with the close on exec flag the creating call gives its
+    product, which dup and dup2 always give as clear and dup3
+    gives from its own flags argument. An unrecorded source
+    leaves the target naming the same untracked thing, so any
+    earlier entry for the target is dropped.
     """
     if source in fds:
-        fds[target] = fds[source]
+        entry = fds[source]
+        fds[target] = (entry[0], entry[1], cloexec)
     else:
         fds.pop(target, None)
 
@@ -546,6 +581,19 @@ def parse_trace(text, root, check_shape=True):
     the flags field of a decoded clone3 struct, and copied
     otherwise.
 
+    Each descriptor entry also carries whether it holds the
+    close on exec flag, decided by the line that created it. An
+    open or openat entry carries the flag when its flags text
+    names O_CLOEXEC, a dup3 entry carries it when its flags
+    argument names it, and an entry made by dup or dup2 never
+    carries it. A whole execve line with a recorded success
+    closes the flagged entries of its process, in the shared map
+    itself when the map is held in common, and leaves the
+    directory in force and the unflagged entries standing. An
+    execve line with a failure return or no recorded return,
+    and an execve split across an unfinished line and a resumed
+    line, change nothing.
+
     Split lines are reassembled while the lines are read. An
     unfinished line of one of the split calls whose arguments the
     shape rules can read whole is kept per process, and a resumed
@@ -630,6 +678,24 @@ def parse_trace(text, root, check_shape=True):
             for name in ("clone", "clone3"):
                 clone_halves.pop((fork_child, name), None)
             continue
+        execve_match = _EXECVE_RE.match(line)
+        marker_at = line.find(_UNFINISHED_MARKER)
+        line_is_unfinished = marker_at != -1 and not line[
+            marker_at + len(_UNFINISHED_MARKER):
+        ].strip()
+        if execve_match is not None and not line_is_unfinished:
+            returned = _ASSIGN_RETURN_RE.search(
+                line[execve_match.end():]
+            )
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                fds = fds_by_pid.get(pid_key, {})
+                for number in [
+                    number
+                    for number, entry in fds.items()
+                    if entry[2]
+                ]:
+                    del fds[number]
+            continue
         chdir_match = _CHDIR_RE.search(line)
         if chdir_match is not None:
             returned = _ASSIGN_RETURN_RE.search(line[chdir_match.end():])
@@ -672,14 +738,24 @@ def parse_trace(text, root, check_shape=True):
                     int(returned.group(1), 0),
                 )
             continue
-        dup2_match = _DUP2_RE.match(line) or _DUP3_RE.match(line)
-        if dup2_match is not None:
-            returned = _ASSIGN_RETURN_RE.search(line[dup2_match.end():])
+        dup2_match = _DUP2_RE.match(line)
+        dup3_match = None
+        if dup2_match is None:
+            dup3_match = _DUP3_RE.match(line)
+        dup_pair = dup2_match or dup3_match
+        if dup_pair is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[dup_pair.end():])
             if returned is not None and int(returned.group(1), 0) >= 0:
+                cloexec = False
+                if dup3_match is not None:
+                    cloexec = _carries_cloexec(
+                        _argument_flags_text(line, dup3_match.end())
+                    )
                 _copy_descriptor(
                     fds_by_pid.setdefault(pid_key, {}),
-                    int(dup2_match.group(1)),
-                    int(dup2_match.group(2)),
+                    int(dup_pair.group(1)),
+                    int(dup_pair.group(2)),
+                    cloexec,
                 )
             continue
         open_match = _OPEN_RE.match(line)
@@ -692,6 +768,9 @@ def parse_trace(text, root, check_shape=True):
                     cwd_by_pid.setdefault(pid_key, [root_path])[0],
                     root_path,
                     int(returned.group(1), 0),
+                    _carries_cloexec(
+                        _argument_flags_text(line, open_match.end())
+                    ),
                 )
             continue
         match = _OPENAT_RE.search(line)
@@ -715,7 +794,12 @@ def parse_trace(text, root, check_shape=True):
         )
         if returned_value is not None and returned_value >= 0:
             _record_opened_descriptor(
-                fds, raw_path, base, root_path, returned_value
+                fds,
+                raw_path,
+                base,
+                root_path,
+                returned_value,
+                _carries_cloexec(flags),
             )
         if not _is_read(flags):
             continue
@@ -789,7 +873,7 @@ def run_traced(command, root):
     os.close(handle)
     try:
         subprocess.run(
-            ["strace", "-f", "-e", "trace=open,openat,chdir,fchdir,close,dup,dup2,dup3,clone,fork,vfork,clone3", "-o", trace_name, "--", *command],
+            ["strace", "-f", "-e", f"trace={_TRACED_CALLS}", "-o", trace_name, "--", *command],
             check=False,
         )
         text = Path(trace_name).read_text(encoding="utf-8", errors="replace")
