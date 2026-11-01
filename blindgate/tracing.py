@@ -23,7 +23,10 @@ shares its descriptor table with its parent in this reading,
 and a clone whose flags carry CLONE_FS shares its directory
 state, the way the kernel holds both. A clone3 line is read
 for the flags its decoded struct argument prints, inside its
-braces, and shares or copies by the same rule.
+braces, and shares or copies by the same rule. The keep test
+for a split line is derived from the whole line pattern of
+its call, built from one argument pattern per call, so the
+two readings of a call shape cannot drift apart.
 """
 
 from __future__ import annotations
@@ -43,13 +46,57 @@ _OPENAT_RE = re.compile(
 _OPEN_RE = re.compile(
     r'^\s*(?:\d+\s+)?open\(\s*"((?:[^"\\]|\\.)*)"\s*,\s*[A-Za-z0-9_|]+'
 )
-_FCHDIR_RE = re.compile(r"^\s*(?:\d+\s+)?fchdir\(\s*(\d+)\s*\)")
-_CLOSE_RE = re.compile(r"^\s*(?:\d+\s+)?close\(\s*(\d+)\s*\)")
-_DUP_RE = re.compile(r"^\s*(?:\d+\s+)?dup\(\s*(\d+)\s*\)")
-_DUP2_RE = re.compile(r"^\s*(?:\d+\s+)?dup[23]\(\s*(\d+)\s*,\s*(\d+)")
-_CHDIR_RE = re.compile(
-    r'^\s*(?:\d+\s+)?chdir\(\s*"((?:[^"\\]|\\.)*)"\s*\)'
-)
+# One argument pattern per state changing call, held once as
+# text beside the closing tail its whole line branch has always
+# required. The whole line pattern for a call is the line prefix,
+# the call name, the argument pattern, and that closing tail. The
+# keep pattern for a split line of the same call is the same
+# construction closed by the end of the half instead of the
+# closing tail. A change to an argument pattern therefore moves
+# both readings of its call together, and no second restatement
+# of an argument shape exists to drift. The dup3 argument
+# pattern carries the optional flags argument the call always
+# prints, the shape the Round 5 fix repaired in one twin only.
+# Open and openat hold no entry here, because their keep check
+# already reuses the branch pattern itself.
+_LINE_PREFIX = r"^\s*(?:\d+\s+)?"
+_CALL_ARGUMENTS = {
+    "chdir": (r'\s*"((?:[^"\\]|\\.)*)"', r"\s*\)"),
+    "fchdir": (r"\s*(\d+)", r"\s*\)"),
+    "close": (r"\s*(\d+)", r"\s*\)"),
+    "dup": (r"\s*(\d+)", r"\s*\)"),
+    "dup2": (r"\s*(\d+)\s*,\s*(\d+)", ""),
+    "dup3": (
+        r"\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[A-Za-z0-9_|]+)?",
+        "",
+    ),
+}
+
+
+def _whole_line_re(name):
+    """Build the whole line pattern for one call from its holding."""
+    arguments, tail = _CALL_ARGUMENTS[name]
+    return re.compile(_LINE_PREFIX + name + r"\(" + arguments + tail)
+
+
+def _keep_re(name):
+    """Build the keep pattern for one call from its holding.
+
+    The keep pattern accepts a half that carries the call and its
+    complete argument text and nothing beyond that text.
+    """
+    arguments, _tail = _CALL_ARGUMENTS[name]
+    return re.compile(
+        _LINE_PREFIX + name + r"\(" + arguments + r"\s*$"
+    )
+
+
+_FCHDIR_RE = _whole_line_re("fchdir")
+_CLOSE_RE = _whole_line_re("close")
+_DUP_RE = _whole_line_re("dup")
+_DUP2_RE = _whole_line_re("dup2")
+_DUP3_RE = _whole_line_re("dup3")
+_CHDIR_RE = _whole_line_re("chdir")
 _ASSIGN_RETURN_RE = re.compile(r"=\s*(-?(?:0x[0-9a-fA-F]+|\d+))")
 _FORK_RES = (
     re.compile(
@@ -70,18 +117,10 @@ _CALL_NAME_RE = re.compile(r"^\s*(?:\d+\s+)?([A-Za-z_][A-Za-z0-9_]*)\(")
 _SPLIT_CALLS = frozenset(
     ("chdir", "fchdir", "open", "openat", "close", "dup", "dup2", "dup3")
 )
+# The keep patterns are derived from the same holdings as the
+# whole line patterns, one per covered call, never restated.
 _SPLIT_PREFIX_RES = {
-    "chdir": re.compile(
-        r'^\s*(?:\d+\s+)?chdir\(\s*"(?:[^"\\]|\\.)*"\s*$'
-    ),
-    "fchdir": re.compile(r"^\s*(?:\d+\s+)?fchdir\(\s*\d+\s*$"),
-    "close": re.compile(r"^\s*(?:\d+\s+)?close\(\s*\d+\s*$"),
-    "dup": re.compile(r"^\s*(?:\d+\s+)?dup\(\s*\d+\s*$"),
-    "dup2": re.compile(r"^\s*(?:\d+\s+)?dup2\(\s*\d+\s*,\s*\d+\s*$"),
-    "dup3": re.compile(
-        r"^\s*(?:\d+\s+)?dup3\(\s*\d+\s*,\s*\d+"
-        r"(?:\s*,\s*[A-Za-z0-9_|]+)?\s*$"
-    ),
+    name: _keep_re(name) for name in _CALL_ARGUMENTS
 }
 _READ_FLAGS = ("O_RDONLY", "O_RDWR")
 
@@ -515,7 +554,9 @@ def parse_trace(text, root, check_shape=True):
     taken from the resumed half. An unfinished line that never
     resumes, a resumed line with nothing kept for it, and an
     unfinished line the shape rules cannot read whole all record
-    nothing, exactly as split lines always have.
+    nothing, exactly as split lines always have. The shape rules
+    for a covered call are built once from its argument pattern,
+    for the whole line reading and the keep reading alike.
     """
     root_path = Path(root).resolve()
     if check_shape:
@@ -631,7 +672,7 @@ def parse_trace(text, root, check_shape=True):
                     int(returned.group(1), 0),
                 )
             continue
-        dup2_match = _DUP2_RE.match(line)
+        dup2_match = _DUP2_RE.match(line) or _DUP3_RE.match(line)
         if dup2_match is not None:
             returned = _ASSIGN_RETURN_RE.search(line[dup2_match.end():])
             if returned is not None and int(returned.group(1), 0) >= 0:

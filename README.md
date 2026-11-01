@@ -26,9 +26,11 @@ Slice 7 is built on a local branch as the Round 6 work increment. The slice 7 ob
 
 Slice 8 is built on a local branch as the Round 7 work increment. The slice 8 obligations in CONTRACT.md are met by the test suite. A clone3 line whose struct strace decodes is now read for the flags that struct prints, so a thread created through clone3 shares its descriptor table and its directory state with its parent in the reading exactly the way a sharing clone already did, and the copy reading S7-4 stated for clone3 stands only where the trace prints no struct to read, as with the bare pointer form strace prints when it cannot decode the struct. A split clone3 is read from a kept flag half under the same read whole discipline as a split clone, each kept half spent only by its own resumed line. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a clone3. Round 7 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 7 review fixes.
 
+Slice 9 is built on a local branch as the Round 8 work increment. The slice 9 obligations in CONTRACT.md are met by the test suite. The keep patterns for split lines are now derived from the whole line patterns of their calls, built from one argument pattern per call held once in the trace parse, so the two readings of a call shape cannot drift apart the way the hand written twins did when the dup3 keep pattern narrowed and a split dup3 in its canonical shape never paired. The derivation covers the six calls that held twins, and open and openat keep the direct reuse of their branch patterns they already had, while the flag half readers for clone and clone3 stay hand written as one family, the clone3 reader on the position rule ground FIX7-1 set and the clone reader beside it by decision, since no branch pattern judges the argument shape of those calls the way it judges the six. Nothing the parse accepts or refuses has changed, and the slice 1 and slice 2 example reports still regenerate byte identical. Round 8 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 8 review fixes.
+
 AGENTS.md is pending. The canonical template has not been supplied by the main chat and no local substitute has been invented in its place.
 
-Closed rounds stand at 7 of 100. Pinned formats stand at none.
+Closed rounds stand at 8 of 100. Pinned formats stand at none.
 
 ## Licence
 
