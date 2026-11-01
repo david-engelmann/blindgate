@@ -14,9 +14,11 @@ Setup is in progress locally. The contract in CONTRACT.md holds the obligations 
 
 Slice 2 is built on a local branch as the Round 1 work increment. The slice 2 obligations in CONTRACT.md are met by the test suite. Each check can now carry its own trace in the config, a command line override can replace the trace for a whole job, and a check with no trace of its own falls back to the shared trace or the shared run exactly as slice 1 behaved. The report states which trace source judged each check whenever a check is judged on a trace of its own. A committed example under examples/per-job shows one check proven by its own trace and a second check named an empty read set by its own trace in the same report, and the slice 1 example reports still regenerate byte identical under the shared trace invocation. Round 1 closed on 2026-10-31 after its audit, its two axis review, its red team, and owner approval. The red team found three Major defects in the first slice 2 head, covering dot segment paths, trace-for resolution, and unfinished opens, and every one was fixed with regression tests before the round closed.
 
+Slice 3 is built on a local branch as the Round 2 work increment. The slice 3 obligations in CONTRACT.md are met by the test suite. Traced paths are now resolved canonically before they are scoped to the root, so the limit FIX-1 stated in Round 1, that symlinks are not followed, is retired. A symlink inside the project that points outside it resolves outside and never supports a proven verdict, and the reads that escape through a symlink are named in the report as outside reads, while an open that was already outside in its written form, the way a system library open is, stays dropped and unnamed as before. A trace file that is not strace output at all is now refused with a named error instead of reading as a genuine trace with no reads, and that retires the second limit Round 1 accepted in writing. The slice 1 and slice 2 example reports still regenerate byte identical. Round 2 closed on 2026-10-31 after slice 3 was audited and reviewed on two axes and attacked by a red team, with every material finding fixed under the contract fix obligations FIX2-1 to FIX2-5 before the owner of this line approved the round.
+
 AGENTS.md is pending. The canonical template has not been supplied by the main chat and no local substitute has been invented in its place.
 
-Closed rounds stand at 1 of 100. Pinned formats stand at none.
+Closed rounds stand at 2 of 100. Pinned formats stand at none.
 
 ## Licence
 

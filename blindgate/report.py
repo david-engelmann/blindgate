@@ -24,7 +24,11 @@ def _shows_sources(results):
     return any(result.trace_source is not None for result in results)
 
 
-def result_to_dict(result, show_source=False):
+def _shows_outside(results):
+    return any(result.outside_reads for result in results)
+
+
+def result_to_dict(result, show_source=False, show_outside=False):
     data = {
         "name": result.name,
         "job": result.job,
@@ -40,12 +44,18 @@ def result_to_dict(result, show_source=False):
             if source is None
             else {"kind": source.kind, "detail": source.detail, "text": source_text(source)}
         )
+    if show_outside:
+        data["outside_reads"] = list(result.outside_reads)
     return data
 
 
 def report_to_dict(results):
     show_source = _shows_sources(results)
-    checks = [result_to_dict(result, show_source=show_source) for result in results]
+    show_outside = _shows_outside(results)
+    checks = [
+        result_to_dict(result, show_source=show_source, show_outside=show_outside)
+        for result in results
+    ]
     summary = {}
     for result in results:
         summary[result.verdict] = summary.get(result.verdict, 0) + 1
@@ -60,6 +70,7 @@ def _listing(values):
 
 def render_text(results):
     show_source = _shows_sources(results)
+    show_outside = _shows_outside(results)
     lines = ["blindgate report", "================", ""]
     for result in results:
         lines.append(f"check            {result.name}")
@@ -76,6 +87,9 @@ def render_text(results):
         lines.extend(_listing(result.read_set))
         lines.append("reads in surface")
         lines.extend(_listing(result.matched))
+        if show_outside:
+            lines.append("outside reads")
+            lines.extend(_listing(result.outside_reads))
         lines.append("")
     return "\n".join(lines)
 

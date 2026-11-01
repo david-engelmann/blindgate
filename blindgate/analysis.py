@@ -30,6 +30,7 @@ class CheckResult:
     matched: tuple
     verdict: str
     trace_source: TraceSource | None = None
+    outside_reads: tuple = ()
 
 
 def path_matches_surface(path, pattern):
@@ -53,20 +54,37 @@ def verdict_for(read_set, matched):
 
 def analyse(checks, read_set):
     """Pair each check with one shared read set and its claimed surface."""
-    return analyse_judged(checks, [(read_set, None) for _check in checks])
+    return analyse_judged(
+        checks, [(read_set, None, ()) for _check in checks]
+    )
+
+
+def analyse_with_outside(checks, read_set, outside_reads):
+    """Pair each check with one shared read set and its outside reads."""
+    return analyse_judged(
+        checks, [(read_set, None, outside_reads) for _check in checks]
+    )
 
 
 def analyse_judged(checks, judgements):
     """Pair each check with the read set and trace source that judged it.
 
-    judgements runs parallel to checks and holds one pair per check, the
-    read set that judged the check and the TraceSource that produced it,
-    or None for the source in a plain shared read set run.
+    judgements runs parallel to checks and holds one entry per check.
+    An entry is a triple of the read set that judged the check, the
+    TraceSource that produced it, and the outside reads the trace
+    resolved outside the root. Outside reads are named beside the
+    verdict and never change it.
     """
     if len(judgements) != len(checks):
         raise ValueError("judgements must run parallel to checks")
     results = []
-    for check, (read_set, source) in zip(checks, judgements):
+    for check, judgement in zip(checks, judgements):
+        if len(judgement) != 3:
+            raise ValueError(
+                "each judgement is a triple of read set, source, "
+                "and outside reads"
+            )
+        read_set, source, outside_reads = judgement
         matched = tuple(
             path
             for path in read_set
@@ -81,6 +99,7 @@ def analyse_judged(checks, judgements):
                 matched=matched,
                 verdict=verdict_for(read_set, matched),
                 trace_source=source,
+                outside_reads=tuple(outside_reads),
             )
         )
     return results
