@@ -333,9 +333,9 @@ def test_live_threaded_capture_reads_through_an_exec(tmp_path):
     program = (
         "import os, sys, threading, time\n"
         "def spin():\n"
+        f"    held = os.open({app!r}, os.O_RDONLY)\n"
         "    while True:\n"
-        f"        held = os.open({app!r}, os.O_RDONLY)\n"
-        "        os.close(held)\n"
+        "        os.fstat(held)\n"
         "for _ in range(4):\n"
         "    threading.Thread(target=spin, daemon=True).start()\n"
         "time.sleep(0.3)\n"
