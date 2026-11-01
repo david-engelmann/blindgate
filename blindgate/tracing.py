@@ -21,7 +21,9 @@ state changing calls and for reads alike. What a clone shares
 is decided by its flags. A clone whose flags carry CLONE_FILES
 shares its descriptor table with its parent in this reading,
 and a clone whose flags carry CLONE_FS shares its directory
-state, the way the kernel holds both.
+state, the way the kernel holds both. A clone3 line is read
+for the flags its decoded struct argument prints, inside its
+braces, and shares or copies by the same rule.
 """
 
 from __future__ import annotations
@@ -233,6 +235,102 @@ def _kept_clone_half(line):
     return _sharing_from_flag_text(match.group(1))
 
 
+_CLONE3_FLAGS_CLOSED_RE = re.compile(r"\{flags=([A-Za-z0-9_|]+)[,}]")
+
+
+def _clone3_struct_span(line):
+    """Return the text inside the braces of a clone3 struct.
+
+    The struct argument is the first brace span the call opens
+    with. The output struct strace prints after the arrow is a
+    later span and is never the span returned, and a line whose
+    first argument is a bare pointer has no span at all.
+    """
+    call = _CALL_NAME_RE.match(line)
+    if call is None or call.group(1) != "clone3":
+        return None
+    rest = line[call.end():]
+    arrow = rest.find("=>")
+    opening = rest.find("{")
+    if opening < 0 or (0 <= arrow < opening):
+        return None
+    depth = 0
+    for index in range(opening, len(rest)):
+        if rest[index] == "{":
+            depth += 1
+        elif rest[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return rest[opening + 1:index]
+    return None
+
+
+def _clone3_line_sharing(line):
+    """Return the sharing a whole clone3 line's struct names.
+
+    Only the flags field inside the braces of the struct argument
+    is read, and nowhere else on the line. A clone3 line whose
+    struct is not decoded, or whose span holds no flags field,
+    names no sharing and returns the copy pair.
+    """
+    span = _clone3_struct_span(line)
+    if span is None:
+        return False, False
+    depth = 0
+    for index, char in enumerate(span):
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+        elif depth == 0:
+            match = _CLONE_FLAGS_RE.match(span, index)
+            if match is not None:
+                return _sharing_from_flag_text(match.group(1))
+    return False, False
+
+
+def _fork_line_sharing(line, name):
+    """Return the sharing a whole fork line names, by call name.
+
+    A clone names its sharing in its flags argument and a clone3
+    in the flags field of its struct argument. Every other fork
+    call names no sharing and returns the copy pair.
+    """
+    if name == "clone":
+        return _clone_line_sharing(line)
+    if name == "clone3":
+        return _clone3_line_sharing(line)
+    return False, False
+
+
+def _kept_clone3_half(line):
+    """Return the sharing an unfinished clone3 line's flags name.
+
+    The half is kept for its flag text alone, and only when the
+    struct flags list stands complete in the half, closed by the
+    comma or the closing brace that follows it in the printed
+    call, under the read whole principle the split lines already
+    follow. Anything else returns None, and the split clone3 then
+    reads as a copy.
+    """
+    marker_at = line.find(_UNFINISHED_MARKER)
+    if marker_at < 0:
+        return None
+    if line[marker_at + len(_UNFINISHED_MARKER):].strip():
+        return None
+    prefix = line[:marker_at]
+    call = _CALL_NAME_RE.match(prefix)
+    if call is None or call.group(1) != "clone3":
+        return None
+    opening = prefix.find("{")
+    if opening < 0:
+        return None
+    match = _CLONE3_FLAGS_CLOSED_RE.match(prefix, opening)
+    if match is None:
+        return None
+    return _sharing_from_flag_text(match.group(1))
+
+
 def _record_opened_descriptor(fds, raw_path, base, root, fd):
     """Record what one successful open made of a descriptor number.
 
@@ -403,9 +501,11 @@ def parse_trace(text, root, check_shape=True):
     force, and an fchdir line against a recorded descriptor moves
     the directory in force to it. A fork seeds the child with the
     state its parent held at that line, held in common with the
-    parent when the clone's flags carry CLONE_FILES for the
-    descriptor map or CLONE_FS for the directory state, and
-    copied otherwise.
+    parent when the flags the fork line prints carry CLONE_FILES
+    for the descriptor map or CLONE_FS for the directory state,
+    whether those flags stand in a clone flags argument or in
+    the flags field of a decoded clone3 struct, and copied
+    otherwise.
 
     Split lines are reassembled while the lines are read. An
     unfinished line of one of the split calls whose arguments the
@@ -434,14 +534,21 @@ def parse_trace(text, root, check_shape=True):
             continue
         clone_half = _kept_clone_half(raw_line)
         if clone_half is not None:
-            clone_halves[_pid_key(raw_line)] = clone_half
+            clone_halves[(_pid_key(raw_line), "clone")] = clone_half
+            continue
+        clone3_half = _kept_clone3_half(raw_line)
+        if clone3_half is not None:
+            clone_halves[(_pid_key(raw_line), "clone3")] = (
+                clone3_half
+            )
             continue
         line = _spend_resumed(raw_line, pending)
         pid_key = _pid_key(line)
         if _EXIT_RE.match(line) is not None:
             for key in [key for key in pending if key[0] == pid_key]:
                 del pending[key]
-            clone_halves.pop(pid_key, None)
+            for name in ("clone", "clone3"):
+                clone_halves.pop((pid_key, name), None)
             continue
         fork_child = None
         fork_name = None
@@ -454,14 +561,19 @@ def parse_trace(text, root, check_shape=True):
                 fork_resumed = fork_index == 1
                 break
         if fork_child:
-            if fork_resumed and fork_name == "clone":
-                kept_sharing = clone_halves.pop(pid_key, None)
+            if fork_resumed and fork_name in ("clone", "clone3"):
+                kept_sharing = clone_halves.pop(
+                    (pid_key, fork_name), None
+                )
                 share_files, share_fs = kept_sharing or (False, False)
             elif fork_resumed:
                 share_files, share_fs = (False, False)
             else:
-                clone_halves.pop(pid_key, None)
-                share_files, share_fs = _clone_line_sharing(line)
+                for name in ("clone", "clone3"):
+                    clone_halves.pop((pid_key, name), None)
+                share_files, share_fs = _fork_line_sharing(
+                    line, fork_name
+                )
             parent_cell = cwd_by_pid.setdefault(pid_key, [root_path])
             if share_fs:
                 cwd_by_pid[fork_child] = parent_cell
@@ -474,7 +586,8 @@ def parse_trace(text, root, check_shape=True):
                 fds_by_pid[fork_child] = dict(parent_fds)
             for key in [key for key in pending if key[0] == fork_child]:
                 del pending[key]
-            clone_halves.pop(fork_child, None)
+            for name in ("clone", "clone3"):
+                clone_halves.pop((fork_child, name), None)
             continue
         chdir_match = _CHDIR_RE.search(line)
         if chdir_match is not None:
