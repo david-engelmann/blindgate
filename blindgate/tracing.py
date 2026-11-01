@@ -35,6 +35,9 @@ strace split across an unfinished line and a resumed line is
 reassembled and judged as the one exec it is, and a pair a
 thread began completes under the leader number its trace
 names through the superseded banner or the pid changed tail.
+The variant call execveat is read with the same discipline,
+whole and split and renumbered alike, because the kernel
+event an execveat works is the same exec.
 """
 
 from __future__ import annotations
@@ -122,14 +125,20 @@ _RESUMED_RE = re.compile(
 )
 _EXIT_RE = re.compile(r"^\s*(?:\d+\s+)?\+\+\+\s+(?:exited|killed)\b")
 _EXECVE_RE = re.compile(r"^\s*(?:\d+\s+)?execve\(.*\)")
+_EXECVEAT_RE = re.compile(r"^\s*(?:\d+\s+)?execveat\(.*\)")
 _SUPERSEDED_RE = re.compile(
     r"^\s*(\d+)\s+\+\+\+\s+superseded by execve in pid\s+(\d+)\s+\+\+\+"
 )
 _PID_CHANGED_TAIL_RE = re.compile(r"<pid changed to (\d+) \.\.\.>\s*$")
 _TRACED_CALLS = (
     "open,openat,chdir,fchdir,close,dup,dup2,dup3,"
-    "clone,fork,vfork,clone3,execve"
+    "clone,fork,vfork,clone3,execve,execveat"
 )
+# The calls of the exec family this parse reads, whole and
+# split alike. A kept half is keyed by its process and its
+# call name, so the halves of the two calls never spend each
+# other even though they share one closing and one lifetime.
+_EXEC_CALLS = ("execve", "execveat")
 _ARGUMENT_FLAGS_TAIL_RE = re.compile(r",\s*([A-Za-z0-9_|]+)$")
 _CALL_NAME_RE = re.compile(r"^\s*(?:\d+\s+)?([A-Za-z_][A-Za-z0-9_]*)\(")
 _SPLIT_CALLS = frozenset(
@@ -422,41 +431,43 @@ def _close_flagged_entries(fds):
         del fds[number]
 
 
-def _kept_execve_half(line):
-    """Return the start and completion numbers of an execve half.
+def _kept_exec_half(line):
+    """Return the start and completion numbers and name of a half.
 
-    An execve half is kept on its identity alone, the process
-    its line names and the call name, because no reading in
-    this parse consumes the arguments of an execve and the
-    return of the call stands complete on the resumed half.
-    The split can fall anywhere in the argument text, so no
-    argument shape is required of the half, only that it names
-    execve at the call position and ends with one of the two
-    tails strace gives a deferred execve. One tail is the
-    unfinished marker with nothing standing after it, and a
-    line whose first marker stands inside its arguments with
-    text after it is not a half, under the marker position
-    rule every kept half in this parse follows. The other
-    tail is the pid changed tail strace prints when an exec
-    renumbers its process, and it names the number the call
-    completes under. The pair returned is the number the line
-    carries and the number the call completes under, which
-    are the same number for the unfinished marker spelling.
-    Anything else returns None.
+    A half of an exec family call is kept on its identity
+    alone, the process its line names and the call name,
+    because no reading in this parse consumes the arguments
+    of an execve or an execveat and the return of the call
+    stands complete on the resumed half. The split can fall
+    anywhere in the argument text, so no argument shape is
+    required of the half, only that it names one of the exec
+    calls at the call position and ends with one of the two
+    tails strace gives a deferred call of the family. One
+    tail is the unfinished marker with nothing standing
+    after it, and a line whose first marker stands inside
+    its arguments with text after it is not a half, under
+    the marker position rule every kept half in this parse
+    follows. The other tail is the pid changed tail strace
+    prints when an exec renumbers its process, and it names
+    the number the call completes under. The triple returned
+    is the number the line carries, the number the call
+    completes under, which are the same number for the
+    unfinished marker spelling, and the call name the half
+    is kept under. Anything else returns None.
     """
     call = _CALL_NAME_RE.match(line)
-    if call is None or call.group(1) != "execve":
+    if call is None or call.group(1) not in _EXEC_CALLS:
         return None
     starter = _pid_key(line)
     changed = _PID_CHANGED_TAIL_RE.search(line)
     if changed is not None:
-        return starter, int(changed.group(1))
+        return starter, int(changed.group(1)), call.group(1)
     marker_at = line.find(_UNFINISHED_MARKER)
     if marker_at < 0:
         return None
     if line[marker_at + len(_UNFINISHED_MARKER):].strip():
         return None
-    return starter, starter
+    return starter, starter, call.group(1)
 
 
 def _record_opened_descriptor(fds, raw_path, base, root, fd, cloexec=False):
@@ -662,6 +673,21 @@ def parse_trace(text, root, check_shape=True):
     the banner onward the state under the leader number is the
     state the starting number held.
 
+    The variant call execveat is read with the same discipline
+    in both its forms, because the kernel event it works is
+    the same exec. A whole execveat line with a recorded
+    success closes the flagged entries of its process, and an
+    execveat split across an unfinished line and a resumed
+    line is judged as the one exec it is, under the leader
+    number when its thread renumbered, following the same
+    link records, which the superseded banner serves for
+    both calls because strace names execve in the banner
+    whatever call renumbered the process. No argument of an
+    execveat is consumed, neither its directory descriptor
+    nor its path nor its flags, and the closing follows its
+    recorded return alone. The halves of the two calls are
+    kept under their own names and never spend each other.
+
     Split lines are reassembled while the lines are read. An
     unfinished line of one of the split calls whose arguments the
     shape rules can read whole is kept per process, and a resumed
@@ -683,7 +709,7 @@ def parse_trace(text, root, check_shape=True):
     fds_by_pid = {}
     pending = {}
     clone_halves = {}
-    execve_halves = {}
+    exec_halves = {}
     exec_links = {}
 
     def adopt_starter_state(survivor_key, starter_key):
@@ -707,10 +733,10 @@ def parse_trace(text, root, check_shape=True):
                 clone3_half
             )
             continue
-        execve_half = _kept_execve_half(raw_line)
-        if execve_half is not None:
-            starter_key, survivor_key = execve_half
-            execve_halves[starter_key] = survivor_key
+        exec_half = _kept_exec_half(raw_line)
+        if exec_half is not None:
+            starter_key, survivor_key, call_name = exec_half
+            exec_halves[(starter_key, call_name)] = survivor_key
             exec_links[survivor_key] = starter_key
             continue
         line = _spend_resumed(raw_line, pending)
@@ -720,7 +746,8 @@ def parse_trace(text, root, check_shape=True):
                 del pending[key]
             for name in ("clone", "clone3"):
                 clone_halves.pop((pid_key, name), None)
-            execve_halves.pop(pid_key, None)
+            for name in _EXEC_CALLS:
+                exec_halves.pop((pid_key, name), None)
             exec_links.pop(pid_key, None)
             for key in [
                 key
@@ -741,7 +768,8 @@ def parse_trace(text, root, check_shape=True):
                 del pending[key]
             for name in ("clone", "clone3"):
                 clone_halves.pop((survivor_key, name), None)
-            execve_halves.pop(survivor_key, None)
+            for name in _EXEC_CALLS:
+                exec_halves.pop((survivor_key, name), None)
             continue
         fork_child = None
         fork_name = None
@@ -781,7 +809,8 @@ def parse_trace(text, root, check_shape=True):
                 del pending[key]
             for name in ("clone", "clone3"):
                 clone_halves.pop((fork_child, name), None)
-            execve_halves.pop(fork_child, None)
+            for name in _EXEC_CALLS:
+                exec_halves.pop((fork_child, name), None)
             exec_links.pop(fork_child, None)
             for key in [
                 key
@@ -791,15 +820,16 @@ def parse_trace(text, root, check_shape=True):
                 del exec_links[key]
             continue
         resumed = _RESUMED_RE.match(line)
-        if resumed is not None and resumed.group(1) == "execve":
-            if pid_key in execve_halves:
+        if resumed is not None and resumed.group(1) in _EXEC_CALLS:
+            call_name = resumed.group(1)
+            if (pid_key, call_name) in exec_halves:
                 starter_key = pid_key
             else:
                 starter_key = exec_links.get(pid_key)
             if starter_key is not None and (
-                starter_key in execve_halves
+                (starter_key, call_name) in exec_halves
             ):
-                del execve_halves[starter_key]
+                del exec_halves[(starter_key, call_name)]
                 exec_links.pop(pid_key, None)
                 if starter_key != pid_key:
                     adopt_starter_state(pid_key, starter_key)
@@ -824,6 +854,14 @@ def parse_trace(text, root, check_shape=True):
         if execve_match is not None and not line_is_unfinished:
             returned = _ASSIGN_RETURN_RE.search(
                 line[execve_match.end():]
+            )
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                _close_flagged_entries(fds_by_pid.get(pid_key, {}))
+            continue
+        execveat_match = _EXECVEAT_RE.match(line)
+        if execveat_match is not None and not line_is_unfinished:
+            returned = _ASSIGN_RETURN_RE.search(
+                line[execveat_match.end():]
             )
             if returned is not None and int(returned.group(1), 0) >= 0:
                 _close_flagged_entries(fds_by_pid.get(pid_key, {}))
