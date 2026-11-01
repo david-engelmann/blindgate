@@ -1,0 +1,43 @@
+{
+  "checks": [
+    {
+      "claimed_surface": [
+        "src/**",
+        "tests/**"
+      ],
+      "job": "unit-tests",
+      "name": "unit tests",
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "reads_in_surface": [
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "verdict": "proven"
+    },
+    {
+      "claimed_surface": [
+        "docs/*.md"
+      ],
+      "job": "docs-check",
+      "name": "docs check",
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "reads_in_surface": [],
+      "verdict": "unproven"
+    }
+  ],
+  "summary": {
+    "proven": 1,
+    "unproven": 1
+  }
+}

@@ -1,0 +1,6 @@
+checks:
+  - name: unit tests
+    job: unit-tests
+    surface:
+      - "src/**"
+      - "tests/**"

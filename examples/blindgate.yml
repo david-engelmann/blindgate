@@ -1,0 +1,10 @@
+checks:
+  - name: unit tests
+    job: unit-tests
+    surface:
+      - "src/**"
+      - "tests/**"
+  - name: docs check
+    job: docs-check
+    surface:
+      - "docs/*.md"
