@@ -26,11 +26,12 @@ from .analysis import (
     TraceSource,
     analyse,
     analyse_judged,
+    analyse_with_outside,
 )
 from .config import load_config, unknown_jobs
 from .errors import BlindgateError
 from .report import render_json, render_text
-from .tracing import read_set_from_log_file, run_traced
+from .tracing import read_trace_from_log_file, run_traced
 from .workflow import load_workflow_jobs
 
 
@@ -91,31 +92,34 @@ def parse_trace_for(values, checks, config_dir):
 
 def _read_set_naming(path, root, owner):
     try:
-        return read_set_from_log_file(path, root)
+        return read_trace_from_log_file(path, root)
     except BlindgateError as exc:
         raise BlindgateError(f"{owner}, {exc}") from exc
 
 
 def _judgements(args, checks, overrides, root):
-    """Build one read set and trace source pair per check."""
+    """Build one read set, source, and outside reads triple per check."""
     shared_read_set = None
     shared_source = None
+    shared_outside = ()
     shared_ready = False
 
     def shared():
-        nonlocal shared_read_set, shared_source, shared_ready
+        nonlocal shared_read_set, shared_source, shared_outside, shared_ready
         if not shared_ready:
             if args.trace:
-                shared_read_set = read_set_from_log_file(args.trace, root)
+                shared_read_set, shared_outside = read_trace_from_log_file(
+                    args.trace, root
+                )
                 shared_source = TraceSource(SOURCE_SHARED_TRACE, args.trace)
             else:
                 command = list(args.run)
                 if command and command[0] == "--":
                     command = command[1:]
-                shared_read_set = run_traced(command, root)
+                shared_read_set, shared_outside = run_traced(command, root)
                 shared_source = TraceSource(SOURCE_SHARED_RUN, " ".join(command))
             shared_ready = True
-        return shared_read_set, shared_source
+        return shared_read_set, shared_source, shared_outside
 
     has_shared = bool(args.trace) or bool(args.run)
     if args.trace:
@@ -127,16 +131,20 @@ def _judgements(args, checks, overrides, root):
     for check in checks:
         if check.job in overrides:
             display, read_path = overrides[check.job]
-            read_set = _read_set_naming(
+            read_set, outside = _read_set_naming(
                 read_path, root, f"the trace for job {check.job} cannot be used"
             )
-            judgements.append((read_set, TraceSource(SOURCE_OWN_TRACE, display)))
+            judgements.append(
+                (read_set, TraceSource(SOURCE_OWN_TRACE, display), outside)
+            )
             any_own = True
         elif check.trace_path is not None:
-            read_set = _read_set_naming(
+            read_set, outside = _read_set_naming(
                 check.trace_path, root, f"check {check.name} names a trace that cannot be used"
             )
-            judgements.append((read_set, TraceSource(SOURCE_OWN_TRACE, check.trace)))
+            judgements.append(
+                (read_set, TraceSource(SOURCE_OWN_TRACE, check.trace), outside)
+            )
             any_own = True
         elif has_shared:
             judgements.append(shared())
@@ -174,9 +182,15 @@ def main(argv=None):
         return 2
     if any_own:
         results = analyse_judged(checks, judgements)
-    else:
+    elif judgements and judgements[0][2]:
         # No check carried its own trace, so the per check sources are
-        # dropped on purpose here to keep the report in its slice 1 shape.
+        # dropped on purpose here to keep the report in its slice 1
+        # shape, but the shared trace did name outside reads and those
+        # are carried into the report.
+        results = analyse_with_outside(checks, judgements[0][0], judgements[0][2])
+    else:
+        # No check carried its own trace and nothing resolved outside
+        # the root, so the report stays in its exact slice 1 shape.
         results = analyse(checks, judgements[0][0])
     print(render_json(results) if args.json else render_text(results))
     return 0

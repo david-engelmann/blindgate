@@ -2,8 +2,13 @@
 
 A read set is the set of paths a run opened for reading, taken from
 openat lines in an strace log. Writes-only opens and failed opens are
-not reads. Paths are reported relative to the repo root, and paths
-outside the root are dropped.
+not reads. Paths are resolved canonically, with symlinks followed,
+before they are scoped to the repo root. Resolved paths inside the
+root are reported relative to it. A path written inside the root
+that resolves outside it is named as an outside read, and a path
+that was already outside in its written form is dropped unnamed. A
+trace file that is not empty and holds no recognizable strace line
+is refused as not strace output.
 """
 
 from __future__ import annotations
@@ -49,38 +54,119 @@ def _is_read(flags):
     return any(flag in parts for flag in _READ_FLAGS)
 
 
-def _root_relative(raw_path, root):
-    """Normalise a traced path and scope it to the root.
+def _canonical_scoped(raw_path, root):
+    """Resolve a traced path canonically and scope it to the root.
 
-    Dot segments are resolved lexically before scoping, so a path
-    carrying .. segments is judged by where it actually lands. A path
-    that lands outside the root is dropped. Symlinks are not followed;
-    the traced path itself is what is judged, and that limit is stated
-    in the contract.
+    Returns a pair. The first item is the resolved path relative to
+    the root when the path lands inside the root, else None. The
+    second item is the resolved absolute path when the path is an
+    outside read, else None. Canonical resolution follows symlink
+    components on disk and settles dot segments, so a path is judged
+    by where it actually lands. A path that resolves to the root
+    itself names no file inside it and lands in neither item.
+    Relative traced paths are taken against the root, which is the
+    working directory a traced run is scoped to.
+
+    An outside read is a path whose written form lands inside the
+    root once dot segments settle lexically, yet whose canonical
+    resolution lands outside it, which is the shape of an escape
+    through a symlink. The same naming covers a path spelled
+    through an alias of the root itself, when the directory the
+    path hangs from resolves inside the root while the path itself
+    resolves outside it. A path that was already outside the root
+    in its written form and hangs from a directory outside the
+    root, the way system library opens are, is dropped unnamed
+    exactly as the earlier slices dropped it.
     """
     if not raw_path:
-        return None
-    if os.path.isabs(raw_path):
-        normalized = os.path.normpath(raw_path)
-        try:
-            return Path(normalized).relative_to(root).as_posix()
-        except ValueError:
-            return None
-    normalized = os.path.normpath(raw_path)
-    if normalized in ("", "."):
-        return None
-    if normalized.split(os.sep)[0] == "..":
-        return None
-    return Path(normalized).as_posix()
+        return None, None
+    candidate = Path(raw_path)
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    written = Path(os.path.normpath(candidate))
+    try:
+        written.relative_to(root)
+        written_inside = True
+    except ValueError:
+        written_inside = False
+    resolved = Path(os.path.realpath(candidate))
+    if resolved == root:
+        return None, None
+    try:
+        return resolved.relative_to(root).as_posix(), None
+    except ValueError:
+        pass
+    parent_resolved = Path(os.path.realpath(candidate.parent))
+    try:
+        parent_resolved.relative_to(root)
+        parent_inside = True
+    except ValueError:
+        parent_inside = False
+    if written_inside or parent_inside:
+        return None, resolved.as_posix()
+    return None, None
 
 
-def parse_strace_log(text, root):
-    """Return the sorted read set found in an strace log text.
+_STRACE_LINE_RE = re.compile(
+    r"^\s*(?:\d+\s+)?"
+    r"(?:<\.\.\.\s+[A-Za-z_][A-Za-z0-9_]*\s+resumed>|"
+    r"[A-Za-z_][A-Za-z0-9_]*\(.*\)\s*=\s*"
+    r"(?:-?\d+|0x[0-9a-fA-F]+|\?)"
+    r"(?:\s+[A-Z][A-Z0-9_]*(?:\s+\(.*\))?)?)"
+    r"\s*$"
+)
+_STRACE_MARKERS = ("<unfinished ...>", "--- ", "+++ ")
 
-    root is the repo root the read set is scoped to.
+
+def looks_like_strace(text):
+    """Return True when a trace text holds a recognizable strace line.
+
+    A line is recognizable when it carries one of the usual strace
+    markers, the unfinished marker, the signal banner, or the exit
+    marker, or when the whole line is a syscall shape, an optional
+    process id, a syscall name hard against its opening parenthesis,
+    the call, an equals sign, and a return value, where the return
+    value is a number or the question mark strace prints when a
+    return is unknown, with an optional error name and message
+    after it. A call shape buried inside a longer line of prose or
+    source code does not make the line recognizable. An empty text
+    holds no line at all and is not judged by this check.
+    """
+    for line in text.splitlines():
+        if any(marker in line for marker in _STRACE_MARKERS):
+            return True
+        if _STRACE_LINE_RE.match(line):
+            return True
+    return False
+
+
+def refuse_unshaped_trace(text, origin):
+    """Raise BlindgateError when a handed over trace is not strace shaped.
+
+    An empty text keeps the slice 1 meaning and passes. A non empty
+    text with no recognizable strace line is refused with a named
+    error, so a garbage file can no longer read as a genuine trace
+    that happened to record no reads.
+    """
+    if text and not looks_like_strace(text):
+        raise BlindgateError(f"trace {origin} does not look like strace output")
+
+
+def parse_trace(text, root, check_shape=True):
+    """Return the read set and the outside reads found in a log text.
+
+    The read set is the sorted list of resolved paths inside the
+    root. The outside reads are the sorted list of resolved absolute
+    paths that landed outside the root. root is the repo root the
+    paths are scoped to. When check_shape holds, a non empty text
+    with no recognizable strace line is refused before any read set
+    is built.
     """
     root_path = Path(root).resolve()
+    if check_shape:
+        refuse_unshaped_trace(text, "log")
     reads = set()
+    outside = set()
     for line in text.splitlines():
         match = _OPENAT_RE.search(line)
         if match is None:
@@ -92,25 +178,45 @@ def parse_strace_log(text, root):
         returned = _RETURN_RE.search(line[match.end():])
         if returned is None or int(returned.group(1)) < 0:
             continue
-        relative = _root_relative(raw_path, root_path)
+        relative, outside_path = _canonical_scoped(raw_path, root_path)
         if relative is not None:
             reads.add(relative)
-    return sorted(reads)
+        elif outside_path is not None:
+            outside.add(outside_path)
+    return sorted(reads), sorted(outside)
 
 
-def read_set_from_log_file(path, root):
+def parse_strace_log(text, root):
+    """Return the sorted read set found in an strace log text.
+
+    root is the repo root the read set is scoped to. The read set is
+    one half of parse_trace, kept under its slice 1 name.
+    """
+    reads, _outside = parse_trace(text, root)
+    return reads
+
+
+def read_trace_from_log_file(path, root):
+    """Return the read set and outside reads from a trace log file."""
     log_path = Path(path)
     try:
         text = log_path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
         raise BlindgateError(f"cannot read trace log {log_path} ({exc})") from exc
-    return parse_strace_log(text, root)
+    return parse_trace(text, root)
+
+
+def read_set_from_log_file(path, root):
+    reads, _outside = read_trace_from_log_file(path, root)
+    return reads
 
 
 def run_traced(command, root):
-    """Run command under strace and return the read set it produced.
+    """Run command under strace and return its reads and outside reads.
 
-    Raises BlindgateError when strace is not available.
+    The pair matches parse_trace, so a live capture names its outside
+    reads exactly the way a handed over trace file does. Raises
+    BlindgateError when strace is not available.
     """
     if shutil.which("strace") is None:
         raise BlindgateError(
@@ -129,4 +235,6 @@ def run_traced(command, root):
         text = Path(trace_name).read_text(encoding="utf-8", errors="replace")
     finally:
         Path(trace_name).unlink(missing_ok=True)
-    return parse_strace_log(text, root_path)
+    # The capture was produced by strace itself, so the shape check
+    # that guards handed over trace files does not apply to it.
+    return parse_trace(text, root_path, check_shape=False)
