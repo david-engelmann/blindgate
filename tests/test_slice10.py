@@ -277,7 +277,7 @@ def test_exec_by_a_copy_child_leaves_the_parent_entry_standing(tmp_path):
     assert outside == []
 
 
-def test_split_execve_pair_closes_nothing(tmp_path):
+def test_split_execve_pair_closes_the_flagged_entry(tmp_path):
     project = make_project(tmp_path)
     log = "\n".join(
         [
@@ -289,7 +289,7 @@ def test_split_execve_pair_closes_nothing(tmp_path):
         ]
     )
     reads, outside = parse_trace(log, project)
-    assert reads == ["docs/guide.md"]
+    assert reads == ["guide.md"]
     assert outside == []
 
 

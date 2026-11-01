@@ -30,7 +30,11 @@ two readings of a call shape cannot drift apart. A descriptor
 entry also carries whether it holds the close on exec flag,
 decided by the line that created it, and a successful execve
 line closes the flagged entries of its process, in a shared
-descriptor table for both processes that hold it.
+descriptor table for both processes that hold it. An execve
+strace split across an unfinished line and a resumed line is
+reassembled and judged as the one exec it is, and a pair a
+thread began completes under the leader number its trace
+names through the superseded banner or the pid changed tail.
 """
 
 from __future__ import annotations
@@ -118,6 +122,10 @@ _RESUMED_RE = re.compile(
 )
 _EXIT_RE = re.compile(r"^\s*(?:\d+\s+)?\+\+\+\s+(?:exited|killed)\b")
 _EXECVE_RE = re.compile(r"^\s*(?:\d+\s+)?execve\(.*\)")
+_SUPERSEDED_RE = re.compile(
+    r"^\s*(\d+)\s+\+\+\+\s+superseded by execve in pid\s+(\d+)\s+\+\+\+"
+)
+_PID_CHANGED_TAIL_RE = re.compile(r"<pid changed to (\d+) \.\.\.>\s*$")
 _TRACED_CALLS = (
     "open,openat,chdir,fchdir,close,dup,dup2,dup3,"
     "clone,fork,vfork,clone3,execve"
@@ -400,6 +408,57 @@ def _carries_cloexec(flags_text):
     return "O_CLOEXEC" in flags_text.split("|")
 
 
+def _close_flagged_entries(fds):
+    """Forget every entry of a descriptor map that carries the flag.
+
+    A successful exec closes the flagged handles of its process,
+    so the entries that carry the close on exec flag are removed
+    from the map the process holds, in a shared map for both
+    processes that hold it, and every other entry stands.
+    """
+    for number in [
+        number for number, entry in fds.items() if entry[2]
+    ]:
+        del fds[number]
+
+
+def _kept_execve_half(line):
+    """Return the start and completion numbers of an execve half.
+
+    An execve half is kept on its identity alone, the process
+    its line names and the call name, because no reading in
+    this parse consumes the arguments of an execve and the
+    return of the call stands complete on the resumed half.
+    The split can fall anywhere in the argument text, so no
+    argument shape is required of the half, only that it names
+    execve at the call position and ends with one of the two
+    tails strace gives a deferred execve. One tail is the
+    unfinished marker with nothing standing after it, and a
+    line whose first marker stands inside its arguments with
+    text after it is not a half, under the marker position
+    rule every kept half in this parse follows. The other
+    tail is the pid changed tail strace prints when an exec
+    renumbers its process, and it names the number the call
+    completes under. The pair returned is the number the line
+    carries and the number the call completes under, which
+    are the same number for the unfinished marker spelling.
+    Anything else returns None.
+    """
+    call = _CALL_NAME_RE.match(line)
+    if call is None or call.group(1) != "execve":
+        return None
+    starter = _pid_key(line)
+    changed = _PID_CHANGED_TAIL_RE.search(line)
+    if changed is not None:
+        return starter, int(changed.group(1))
+    marker_at = line.find(_UNFINISHED_MARKER)
+    if marker_at < 0:
+        return None
+    if line[marker_at + len(_UNFINISHED_MARKER):].strip():
+        return None
+    return starter, starter
+
+
 def _record_opened_descriptor(fds, raw_path, base, root, fd, cloexec=False):
     """Record what one successful open made of a descriptor number.
 
@@ -590,9 +649,18 @@ def parse_trace(text, root, check_shape=True):
     closes the flagged entries of its process, in the shared map
     itself when the map is held in common, and leaves the
     directory in force and the unflagged entries standing. An
-    execve line with a failure return or no recorded return,
-    and an execve split across an unfinished line and a resumed
-    line, change nothing.
+    execve line with a failure return or no recorded return
+    changes nothing. An execve split across an unfinished line
+    and a resumed line is judged as the one exec it is when the
+    resumed line spends the half the unfinished line kept, with
+    its return read from the resumed half, and a pair begun by
+    a thread that is not the leader of its process completes
+    under the leader number, following the link the trace
+    prints for the renumbering, the pid changed tail on the
+    half or the superseded banner that stands under the leader
+    number and names the number that started the call. From
+    the banner onward the state under the leader number is the
+    state the starting number held.
 
     Split lines are reassembled while the lines are read. An
     unfinished line of one of the split calls whose arguments the
@@ -615,6 +683,14 @@ def parse_trace(text, root, check_shape=True):
     fds_by_pid = {}
     pending = {}
     clone_halves = {}
+    execve_halves = {}
+    exec_links = {}
+
+    def adopt_starter_state(survivor_key, starter_key):
+        fds_by_pid[survivor_key] = fds_by_pid.get(starter_key, {})
+        cwd_by_pid[survivor_key] = cwd_by_pid.get(
+            starter_key, [root_path]
+        )
     for raw_line in text.splitlines():
         kept = _kept_unfinished(raw_line)
         if kept is not None:
@@ -631,6 +707,12 @@ def parse_trace(text, root, check_shape=True):
                 clone3_half
             )
             continue
+        execve_half = _kept_execve_half(raw_line)
+        if execve_half is not None:
+            starter_key, survivor_key = execve_half
+            execve_halves[starter_key] = survivor_key
+            exec_links[survivor_key] = starter_key
+            continue
         line = _spend_resumed(raw_line, pending)
         pid_key = _pid_key(line)
         if _EXIT_RE.match(line) is not None:
@@ -638,6 +720,28 @@ def parse_trace(text, root, check_shape=True):
                 del pending[key]
             for name in ("clone", "clone3"):
                 clone_halves.pop((pid_key, name), None)
+            execve_halves.pop(pid_key, None)
+            exec_links.pop(pid_key, None)
+            for key in [
+                key
+                for key, value in exec_links.items()
+                if value == pid_key
+            ]:
+                del exec_links[key]
+            continue
+        superseded = _SUPERSEDED_RE.match(line)
+        if superseded is not None:
+            survivor_key = int(superseded.group(1))
+            starter_key = int(superseded.group(2))
+            exec_links[survivor_key] = starter_key
+            adopt_starter_state(survivor_key, starter_key)
+            for key in [
+                key for key in pending if key[0] == survivor_key
+            ]:
+                del pending[key]
+            for name in ("clone", "clone3"):
+                clone_halves.pop((survivor_key, name), None)
+            execve_halves.pop(survivor_key, None)
             continue
         fork_child = None
         fork_name = None
@@ -677,6 +781,40 @@ def parse_trace(text, root, check_shape=True):
                 del pending[key]
             for name in ("clone", "clone3"):
                 clone_halves.pop((fork_child, name), None)
+            execve_halves.pop(fork_child, None)
+            exec_links.pop(fork_child, None)
+            for key in [
+                key
+                for key, value in exec_links.items()
+                if value == fork_child
+            ]:
+                del exec_links[key]
+            continue
+        resumed = _RESUMED_RE.match(line)
+        if resumed is not None and resumed.group(1) == "execve":
+            if pid_key in execve_halves:
+                starter_key = pid_key
+            else:
+                starter_key = exec_links.get(pid_key)
+            if starter_key is not None and (
+                starter_key in execve_halves
+            ):
+                del execve_halves[starter_key]
+                exec_links.pop(pid_key, None)
+                if starter_key != pid_key:
+                    adopt_starter_state(pid_key, starter_key)
+                tail = line[resumed.end():]
+                closing = tail.rfind(")")
+                region = (
+                    tail[closing + 1:] if closing >= 0 else tail
+                )
+                returned = _ASSIGN_RETURN_RE.search(region)
+                if returned is not None and (
+                    int(returned.group(1), 0) >= 0
+                ):
+                    _close_flagged_entries(
+                        fds_by_pid.get(pid_key, {})
+                    )
             continue
         execve_match = _EXECVE_RE.match(line)
         marker_at = line.find(_UNFINISHED_MARKER)
@@ -688,13 +826,7 @@ def parse_trace(text, root, check_shape=True):
                 line[execve_match.end():]
             )
             if returned is not None and int(returned.group(1), 0) >= 0:
-                fds = fds_by_pid.get(pid_key, {})
-                for number in [
-                    number
-                    for number, entry in fds.items()
-                    if entry[2]
-                ]:
-                    del fds[number]
+                _close_flagged_entries(fds_by_pid.get(pid_key, {}))
             continue
         chdir_match = _CHDIR_RE.search(line)
         if chdir_match is not None:
