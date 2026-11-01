@@ -1,0 +1,2 @@
+8201 openat(AT_FDCWD, "docs/guide.md", O_RDONLY) = -1 ENOENT (No such file or directory)
+8201 exit_group(0) = ?

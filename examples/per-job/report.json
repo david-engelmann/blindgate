@@ -1,0 +1,47 @@
+{
+  "checks": [
+    {
+      "claimed_surface": [
+        "src/**",
+        "tests/**"
+      ],
+      "job": "unit-tests",
+      "name": "unit tests",
+      "read_set": [
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "reads_in_surface": [
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "trace_source": {
+        "detail": "trace-unit.log",
+        "kind": "own_trace",
+        "text": "own trace file trace-unit.log"
+      },
+      "verdict": "proven"
+    },
+    {
+      "claimed_surface": [
+        "docs/*.md"
+      ],
+      "job": "docs-check",
+      "name": "docs check",
+      "read_set": [],
+      "reads_in_surface": [],
+      "trace_source": {
+        "detail": "trace-docs.log",
+        "kind": "own_trace",
+        "text": "own trace file trace-docs.log"
+      },
+      "verdict": "empty read set"
+    }
+  ],
+  "summary": {
+    "empty read set": 1,
+    "proven": 1
+  }
+}

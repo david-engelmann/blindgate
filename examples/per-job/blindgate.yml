@@ -1,0 +1,12 @@
+checks:
+  - name: unit tests
+    job: unit-tests
+    surface:
+      - "src/**"
+      - "tests/**"
+    trace: trace-unit.log
+  - name: docs check
+    job: docs-check
+    surface:
+      - "docs/*.md"
+    trace: trace-docs.log

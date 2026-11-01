@@ -39,25 +39,39 @@ def _unescape(raw):
     return "".join(out)
 
 
+_NON_CONTENT_FLAGS = ("O_PATH", "O_DIRECTORY")
+
+
 def _is_read(flags):
-    return any(flag in flags.split("|") for flag in _READ_FLAGS)
+    parts = flags.split("|")
+    if any(flag in parts for flag in _NON_CONTENT_FLAGS):
+        return False
+    return any(flag in parts for flag in _READ_FLAGS)
 
 
 def _root_relative(raw_path, root):
+    """Normalise a traced path and scope it to the root.
+
+    Dot segments are resolved lexically before scoping, so a path
+    carrying .. segments is judged by where it actually lands. A path
+    that lands outside the root is dropped. Symlinks are not followed;
+    the traced path itself is what is judged, and that limit is stated
+    in the contract.
+    """
     if not raw_path:
         return None
-    path = Path(raw_path)
-    if path.is_absolute():
+    if os.path.isabs(raw_path):
+        normalized = os.path.normpath(raw_path)
         try:
-            return path.relative_to(root).as_posix()
+            return Path(normalized).relative_to(root).as_posix()
         except ValueError:
             return None
-    cleaned = path.as_posix()
-    while cleaned.startswith("./"):
-        cleaned = cleaned[2:]
-    if cleaned in ("", "."):
+    normalized = os.path.normpath(raw_path)
+    if normalized in ("", "."):
         return None
-    return cleaned
+    if normalized.split(os.sep)[0] == "..":
+        return None
+    return Path(normalized).as_posix()
 
 
 def parse_strace_log(text, root):
@@ -76,7 +90,7 @@ def parse_strace_log(text, root):
         if not _is_read(flags):
             continue
         returned = _RETURN_RE.search(line[match.end():])
-        if returned is not None and int(returned.group(1)) < 0:
+        if returned is None or int(returned.group(1)) < 0:
             continue
         relative = _root_relative(raw_path, root_path)
         if relative is not None:

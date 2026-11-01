@@ -4,9 +4,28 @@ from __future__ import annotations
 
 import json
 
+from .analysis import SOURCE_OWN_TRACE, SOURCE_SHARED_RUN, SOURCE_SHARED_TRACE
 
-def result_to_dict(result):
-    return {
+_SOURCE_LABELS = {
+    SOURCE_OWN_TRACE: "own trace file",
+    SOURCE_SHARED_TRACE: "shared trace",
+    SOURCE_SHARED_RUN: "shared run",
+}
+
+
+def source_text(source):
+    label = _SOURCE_LABELS.get(source.kind, source.kind)
+    if source.detail:
+        return f"{label} {source.detail}"
+    return label
+
+
+def _shows_sources(results):
+    return any(result.trace_source is not None for result in results)
+
+
+def result_to_dict(result, show_source=False):
+    data = {
         "name": result.name,
         "job": result.job,
         "verdict": result.verdict,
@@ -14,10 +33,19 @@ def result_to_dict(result):
         "read_set": list(result.read_set),
         "reads_in_surface": list(result.matched),
     }
+    if show_source:
+        source = result.trace_source
+        data["trace_source"] = (
+            None
+            if source is None
+            else {"kind": source.kind, "detail": source.detail, "text": source_text(source)}
+        )
+    return data
 
 
 def report_to_dict(results):
-    checks = [result_to_dict(result) for result in results]
+    show_source = _shows_sources(results)
+    checks = [result_to_dict(result, show_source=show_source) for result in results]
     summary = {}
     for result in results:
         summary[result.verdict] = summary.get(result.verdict, 0) + 1
@@ -31,10 +59,16 @@ def _listing(values):
 
 
 def render_text(results):
+    show_source = _shows_sources(results)
     lines = ["blindgate report", "================", ""]
     for result in results:
         lines.append(f"check            {result.name}")
         lines.append(f"job              {result.job}")
+        if show_source:
+            rendered = (
+                "not recorded" if result.trace_source is None else source_text(result.trace_source)
+            )
+            lines.append(f"trace source     {rendered}")
         lines.append(f"verdict          {result.verdict}")
         lines.append("claimed surface")
         lines.extend(_listing(result.surface))
