@@ -13,8 +13,9 @@ on this machine, with fixture process ids in place of the
 captured ones. The plain fork shape is the clone line a python
 os.fork printed, the sharing shape is the clone line a small C
 program printed when made with CLONE_FS and CLONE_FILES, the
-clone3 shape is the line a python thread printed, and the vfork
-shape is the line a python subprocess printed. The split clone
+clone3 shape is the line a small C program printed for a
+clone3 that shares nothing, and the vfork shape is the line a
+python subprocess printed. The split clone
 halves are derived from the verbatim whole line by the split
 the unfinished and resumed markers name, the derivation slice 6
 used for its halves, because a split clone cannot be captured
@@ -255,18 +256,15 @@ def test_a_second_fork_with_the_flag_joins_the_shared_state(tmp_path):
     assert outside == []
 
 
-def test_clone3_keeps_the_copy_reading(tmp_path):
+def test_clone3_without_sharing_flags_keeps_the_copy_reading(
+    tmp_path,
+):
     project = make_project(tmp_path)
     log = "\n".join(
         [
             dir_open_line("docs", 3, pid=100),
-            "100 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|"
-            "CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|"
-            "CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, "
-            "child_tid=0x7976e800d990, parent_tid=0x7976e800d990, "
-            "exit_signal=0, stack=0x7976e780d000, "
-            "stack_size=0x7fff80, tls=0x7976e800d6c0} => "
-            "{parent_tid=[101]}, 88) = 101",
+            "100 clone3({flags=0, exit_signal=SIGCHLD, "
+            "stack=NULL, stack_size=0}, 88) = 101",
             close_line(3, pid=101),
             chdir_line("docs", pid=101),
             fd_open_line(3, "guide.md", pid=100),
