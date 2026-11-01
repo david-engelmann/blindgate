@@ -22,9 +22,11 @@ Slice 5 is built on a local branch as the Round 4 work increment. The slice 5 ob
 
 Slice 6 is built on a local branch as the Round 5 work increment. The slice 6 obligations in CONTRACT.md are met by the test suite. The trace parse now reassembles the calls strace splits into an unfinished line and a resumed line, so a split chdir or fchdir moves the directory in force, a split open records its descriptor, a split close or dup keeps the descriptor map honest, and a read on a reassembled openat counts exactly as a whole line read does. The split line limits the Round 3 fixes and S5-7 stated are retired for the pairs the shape rules can read whole, and they stand for a half that never pairs and for a half cut off mid argument. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a split line. Round 5 closed on 2026-11-01 after slice 6 was audited and reviewed on two axes and attacked by a red team, with every material finding fixed under the contract fix obligations FIX5-1 to FIX5-3 before the owner of this line approved the round.
 
+Slice 7 is built on a local branch as the Round 6 work increment. The slice 7 obligations in CONTRACT.md are met by the test suite. What a clone shares is now decided by its flags, so a clone whose flags carry CLONE_FILES holds one descriptor map with its parent and a close or an open in either process lands for both, and a clone whose flags carry CLONE_FS holds one directory state with its parent the same way. The limit S5-7 stated, that a clone sharing its descriptor table is read as a copy, is retired for the calls whose flags the trace prints, and it stands for clone3 and for the flagless calls whose flags cannot be read from the line. A split clone is read from a kept flag half when the flag list stands complete in the half, and as a copy when it does not. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a clone. Round 6 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 6 review fixes.
+
 AGENTS.md is pending. The canonical template has not been supplied by the main chat and no local substitute has been invented in its place.
 
-Closed rounds stand at 5 of 100. Pinned formats stand at none.
+Closed rounds stand at 6 of 100. Pinned formats stand at none.
 
 ## Licence
 

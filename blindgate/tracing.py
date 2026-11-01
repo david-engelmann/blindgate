@@ -17,7 +17,11 @@ directory that descriptor was opened on, and an fchdir against a
 recorded descriptor moves the directory in force to it. A call
 strace split into an unfinished line and a resumed line is
 reassembled and judged as the whole line it reads as, for the
-state changing calls and for reads alike.
+state changing calls and for reads alike. What a clone shares
+is decided by its flags. A clone whose flags carry CLONE_FILES
+shares its descriptor table with its parent in this reading,
+and a clone whose flags carry CLONE_FS shares its directory
+state, the way the kernel holds both.
 """
 
 from __future__ import annotations
@@ -47,10 +51,11 @@ _CHDIR_RE = re.compile(
 _ASSIGN_RETURN_RE = re.compile(r"=\s*(-?(?:0x[0-9a-fA-F]+|\d+))")
 _FORK_RES = (
     re.compile(
-        r"^\s*(?:\d+\s+)?(?:clone3?|v?fork)\(.*\)\s*=\s*(\d+)\s*$"
+        r"^\s*(?:\d+\s+)?(clone3?|v?fork)\(.*\)\s*=\s*(\d+)\s*$"
     ),
     re.compile(
-        r"<\.\.\.\s+(?:clone3?|v?fork)\s+resumed>.*\)\s*=\s*(\d+)"
+        r"^\s*(?:\d+\s+)?<\.\.\.\s+(clone3?|v?fork)\s+resumed>"
+        r".*\)\s*=\s*(\d+)"
     ),
 )
 _PID_RE = re.compile(r"^\s*(\d+)\s+")
@@ -171,6 +176,61 @@ def _spend_resumed(line, pending):
     if prefix is None:
         return line
     return prefix + line[resumed.end():]
+
+
+_CLONE_FLAGS_RE = re.compile(r"\bflags=([A-Za-z0-9_|]+)")
+_CLONE_FLAGS_CLOSED_RE = re.compile(r"\bflags=([A-Za-z0-9_|]+),")
+
+
+def _sharing_from_flag_text(flag_text):
+    """Return the sharing a bar joined flag list names.
+
+    The pair is the descriptor table sharing CLONE_FILES names
+    and the directory state sharing CLONE_FS names, each true
+    only when the flag stands in the list as its own token.
+    """
+    tokens = flag_text.split("|")
+    return "CLONE_FILES" in tokens, "CLONE_FS" in tokens
+
+
+def _clone_line_sharing(line):
+    """Return the sharing a whole clone line's flags name.
+
+    Only a clone line carries a flags argument this parse reads.
+    Any other fork call, and a clone line with no readable flags
+    argument, names no sharing and returns the copy pair.
+    """
+    call = _CALL_NAME_RE.match(line)
+    if call is None or call.group(1) != "clone":
+        return False, False
+    match = _CLONE_FLAGS_RE.search(line)
+    if match is None:
+        return False, False
+    return _sharing_from_flag_text(match.group(1))
+
+
+def _kept_clone_half(line):
+    """Return the sharing an unfinished clone line's flags name.
+
+    The half is kept for its flag text alone, and only when the
+    flag list stands complete in the half, closed by the comma
+    that follows it in the printed call, under the read whole
+    principle the split lines already follow. Anything else
+    returns None, and the split clone then reads as a copy.
+    """
+    marker_at = line.find(_UNFINISHED_MARKER)
+    if marker_at < 0:
+        return None
+    if line[marker_at + len(_UNFINISHED_MARKER):].strip():
+        return None
+    prefix = line[:marker_at]
+    call = _CALL_NAME_RE.match(prefix)
+    if call is None or call.group(1) != "clone":
+        return None
+    match = _CLONE_FLAGS_CLOSED_RE.search(prefix)
+    if match is None:
+        return None
+    return _sharing_from_flag_text(match.group(1))
 
 
 def _record_opened_descriptor(fds, raw_path, base, root, fd):
@@ -341,8 +401,11 @@ def parse_trace(text, root, check_shape=True):
     relative openat against a recorded descriptor resolves
     against that descriptor directory instead of the directory in
     force, and an fchdir line against a recorded descriptor moves
-    the directory in force to it. A fork seeds the child with a
-    copy of the descriptor map its parent held at that line.
+    the directory in force to it. A fork seeds the child with the
+    state its parent held at that line, held in common with the
+    parent when the clone's flags carry CLONE_FILES for the
+    descriptor map or CLONE_FS for the directory state, and
+    copied otherwise.
 
     Split lines are reassembled while the lines are read. An
     unfinished line of one of the split calls whose arguments the
@@ -362,29 +425,56 @@ def parse_trace(text, root, check_shape=True):
     cwd_by_pid = {}
     fds_by_pid = {}
     pending = {}
+    clone_halves = {}
     for raw_line in text.splitlines():
         kept = _kept_unfinished(raw_line)
         if kept is not None:
             name, prefix = kept
             pending[(_pid_key(raw_line), name)] = prefix
             continue
+        clone_half = _kept_clone_half(raw_line)
+        if clone_half is not None:
+            clone_halves[_pid_key(raw_line)] = clone_half
+            continue
         line = _spend_resumed(raw_line, pending)
         pid_key = _pid_key(line)
         if _EXIT_RE.match(line) is not None:
             for key in [key for key in pending if key[0] == pid_key]:
                 del pending[key]
+            clone_halves.pop(pid_key, None)
             continue
         fork_child = None
-        for fork_re in _FORK_RES:
+        fork_name = None
+        fork_resumed = False
+        for fork_index, fork_re in enumerate(_FORK_RES):
             fork_match = fork_re.search(line)
             if fork_match is not None:
-                fork_child = int(fork_match.group(1))
+                fork_name = fork_match.group(1)
+                fork_child = int(fork_match.group(2))
+                fork_resumed = fork_index == 1
                 break
         if fork_child:
-            cwd_by_pid[fork_child] = cwd_by_pid.get(pid_key, root_path)
-            fds_by_pid[fork_child] = dict(fds_by_pid.get(pid_key, {}))
+            if fork_resumed and fork_name == "clone":
+                kept_sharing = clone_halves.pop(pid_key, None)
+                share_files, share_fs = kept_sharing or (False, False)
+            elif fork_resumed:
+                share_files, share_fs = (False, False)
+            else:
+                clone_halves.pop(pid_key, None)
+                share_files, share_fs = _clone_line_sharing(line)
+            parent_cell = cwd_by_pid.setdefault(pid_key, [root_path])
+            if share_fs:
+                cwd_by_pid[fork_child] = parent_cell
+            else:
+                cwd_by_pid[fork_child] = [parent_cell[0]]
+            parent_fds = fds_by_pid.setdefault(pid_key, {})
+            if share_files:
+                fds_by_pid[fork_child] = parent_fds
+            else:
+                fds_by_pid[fork_child] = dict(parent_fds)
             for key in [key for key in pending if key[0] == fork_child]:
                 del pending[key]
+            clone_halves.pop(fork_child, None)
             continue
         chdir_match = _CHDIR_RE.search(line)
         if chdir_match is not None:
@@ -392,11 +482,11 @@ def parse_trace(text, root, check_shape=True):
             if returned is not None and int(returned.group(1), 0) >= 0:
                 target = _unescape(chdir_match.group(1))
                 if target:
-                    base = cwd_by_pid.get(pid_key, root_path)
+                    cell = cwd_by_pid.setdefault(pid_key, [root_path])
                     candidate = Path(target)
                     if not candidate.is_absolute():
-                        candidate = base / candidate
-                    cwd_by_pid[pid_key] = Path(os.path.realpath(candidate))
+                        candidate = cell[0] / candidate
+                    cell[0] = Path(os.path.realpath(candidate))
             continue
         fchdir_match = _FCHDIR_RE.match(line)
         if fchdir_match is not None:
@@ -406,7 +496,9 @@ def parse_trace(text, root, check_shape=True):
                     int(fchdir_match.group(1))
                 )
                 if entry is not None:
-                    cwd_by_pid[pid_key] = entry[0]
+                    cwd_by_pid.setdefault(pid_key, [root_path])[0] = (
+                        entry[0]
+                    )
             continue
         close_match = _CLOSE_RE.match(line)
         if close_match is not None:
@@ -443,7 +535,7 @@ def parse_trace(text, root, check_shape=True):
                 _record_opened_descriptor(
                     fds_by_pid.setdefault(pid_key, {}),
                     _unescape(open_match.group(1)),
-                    cwd_by_pid.get(pid_key, root_path),
+                    cwd_by_pid.setdefault(pid_key, [root_path])[0],
                     root_path,
                     int(returned.group(1), 0),
                 )
@@ -457,12 +549,12 @@ def parse_trace(text, root, check_shape=True):
         fds = fds_by_pid.setdefault(pid_key, {})
         entry = None
         if dirfd_token == "AT_FDCWD":
-            base = cwd_by_pid.get(pid_key, root_path)
+            base = cwd_by_pid.setdefault(pid_key, [root_path])[0]
         elif dirfd_token.isdigit() and int(dirfd_token) in fds:
             entry = fds[int(dirfd_token)]
             base = entry[0]
         else:
-            base = cwd_by_pid.get(pid_key, root_path)
+            base = cwd_by_pid.setdefault(pid_key, [root_path])[0]
         returned = _ASSIGN_RETURN_RE.search(line[match.end():])
         returned_value = (
             int(returned.group(1), 0) if returned is not None else None
