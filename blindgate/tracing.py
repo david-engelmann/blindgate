@@ -11,6 +11,10 @@ trace file that is not empty and holds no recognizable strace line
 is refused as not strace output. Directory changes recorded by
 chdir are tracked per process, so a relative path is resolved
 against the directory in force for its process when it was opened.
+Directory descriptors are tracked beside that state, so a relative
+path opened against a recorded descriptor is resolved against the
+directory that descriptor was opened on, and an fchdir against a
+recorded descriptor moves the directory in force to it.
 """
 
 from __future__ import annotations
@@ -25,9 +29,15 @@ from pathlib import Path
 from .errors import BlindgateError
 
 _OPENAT_RE = re.compile(
-    r'openat\(\s*[^,]+,\s*"((?:[^"\\]|\\.)*)"\s*,\s*([A-Za-z0-9_|]+)'
+    r'openat\(\s*([^,]+?)\s*,\s*"((?:[^"\\]|\\.)*)"\s*,\s*([A-Za-z0-9_|]+)'
 )
-_RETURN_RE = re.compile(r"\)\s*=\s*(-?\d+)")
+_OPEN_RE = re.compile(
+    r'^\s*(?:\d+\s+)?open\(\s*"((?:[^"\\]|\\.)*)"\s*,\s*[A-Za-z0-9_|]+'
+)
+_FCHDIR_RE = re.compile(r"^\s*(?:\d+\s+)?fchdir\(\s*(\d+)\s*\)")
+_CLOSE_RE = re.compile(r"^\s*(?:\d+\s+)?close\(\s*(\d+)\s*\)")
+_DUP_RE = re.compile(r"^\s*(?:\d+\s+)?dup\(\s*(\d+)\s*\)")
+_DUP2_RE = re.compile(r"^\s*(?:\d+\s+)?dup[23]\(\s*(\d+)\s*,\s*(\d+)")
 _CHDIR_RE = re.compile(
     r'^\s*(?:\d+\s+)?chdir\(\s*"((?:[^"\\]|\\.)*)"\s*\)'
 )
@@ -78,6 +88,46 @@ def _pid_key(line):
     """
     match = _PID_RE.match(line)
     return int(match.group(1)) if match is not None else None
+
+
+def _record_opened_descriptor(fds, raw_path, base, root, fd):
+    """Record what one successful open made of a descriptor number.
+
+    When the opened path resolves to a directory standing on disk,
+    the number names that directory in the map, stored as its
+    canonical resolution beside whether the spelled path landed
+    inside the root once its dot segments settle. Any other
+    successful opening hands the number to something the map does
+    not track, so any earlier entry for the number is dropped.
+    """
+    if raw_path:
+        spelled = Path(raw_path)
+        if not spelled.is_absolute():
+            spelled = base / spelled
+        resolved = Path(os.path.realpath(spelled))
+        if resolved.is_dir():
+            written = Path(os.path.normpath(spelled))
+            try:
+                written.relative_to(root)
+                inside = True
+            except ValueError:
+                inside = False
+            fds[fd] = (resolved, inside)
+            return
+    fds.pop(fd, None)
+
+
+def _copy_descriptor(fds, source, target):
+    """Give the target number whatever the source number names.
+
+    A recorded source hands its directory entry to the target. An
+    unrecorded source leaves the target naming the same untracked
+    thing, so any earlier entry for the target is dropped.
+    """
+    if source in fds:
+        fds[target] = fds[source]
+    else:
+        fds.pop(target, None)
 
 
 def _canonical_scoped(raw_path, root, base=None):
@@ -198,8 +248,18 @@ def parse_trace(text, root, check_shape=True):
     the directory the process moved to. A fork the trace records
     seeds the child process with the directory its parent held at
     that line. A relative open resolves against the directory in
-    force for its process at that line. Directory changes made
-    through a file descriptor are not tracked.
+    force for its process at that line.
+
+    Descriptor state is tracked beside the directory state. An
+    open or openat line that returns a descriptor for a path
+    resolving to a directory on disk records that directory for
+    the number, a close line with a recorded success forgets the
+    number, and a dup line copies an entry to its new number. A
+    relative openat against a recorded descriptor resolves
+    against that descriptor directory instead of the directory in
+    force, and an fchdir line against a recorded descriptor moves
+    the directory in force to it. A fork seeds the child with a
+    copy of the descriptor map its parent held at that line.
     """
     root_path = Path(root).resolve()
     if check_shape:
@@ -207,6 +267,7 @@ def parse_trace(text, root, check_shape=True):
     reads = set()
     outside = set()
     cwd_by_pid = {}
+    fds_by_pid = {}
     for line in text.splitlines():
         pid_key = _pid_key(line)
         fork_child = None
@@ -217,6 +278,7 @@ def parse_trace(text, root, check_shape=True):
                 break
         if fork_child:
             cwd_by_pid[fork_child] = cwd_by_pid.get(pid_key, root_path)
+            fds_by_pid[fork_child] = dict(fds_by_pid.get(pid_key, {}))
             continue
         chdir_match = _CHDIR_RE.search(line)
         if chdir_match is not None:
@@ -230,22 +292,105 @@ def parse_trace(text, root, check_shape=True):
                         candidate = base / candidate
                     cwd_by_pid[pid_key] = Path(os.path.realpath(candidate))
             continue
+        fchdir_match = _FCHDIR_RE.match(line)
+        if fchdir_match is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[fchdir_match.end():])
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                entry = fds_by_pid.get(pid_key, {}).get(
+                    int(fchdir_match.group(1))
+                )
+                if entry is not None:
+                    cwd_by_pid[pid_key] = entry[0]
+            continue
+        close_match = _CLOSE_RE.match(line)
+        if close_match is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[close_match.end():])
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                fds_by_pid.get(pid_key, {}).pop(
+                    int(close_match.group(1)), None
+                )
+            continue
+        dup_match = _DUP_RE.match(line)
+        if dup_match is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[dup_match.end():])
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                _copy_descriptor(
+                    fds_by_pid.setdefault(pid_key, {}),
+                    int(dup_match.group(1)),
+                    int(returned.group(1), 0),
+                )
+            continue
+        dup2_match = _DUP2_RE.match(line)
+        if dup2_match is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[dup2_match.end():])
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                _copy_descriptor(
+                    fds_by_pid.setdefault(pid_key, {}),
+                    int(dup2_match.group(1)),
+                    int(dup2_match.group(2)),
+                )
+            continue
+        open_match = _OPEN_RE.match(line)
+        if open_match is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[open_match.end():])
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                _record_opened_descriptor(
+                    fds_by_pid.setdefault(pid_key, {}),
+                    _unescape(open_match.group(1)),
+                    cwd_by_pid.get(pid_key, root_path),
+                    root_path,
+                    int(returned.group(1), 0),
+                )
+            continue
         match = _OPENAT_RE.search(line)
         if match is None:
             continue
-        raw_path = _unescape(match.group(1))
-        flags = match.group(2)
+        dirfd_token = match.group(1).strip()
+        raw_path = _unescape(match.group(2))
+        flags = match.group(3)
+        fds = fds_by_pid.setdefault(pid_key, {})
+        entry = None
+        if dirfd_token == "AT_FDCWD":
+            base = cwd_by_pid.get(pid_key, root_path)
+        elif dirfd_token.isdigit() and int(dirfd_token) in fds:
+            entry = fds[int(dirfd_token)]
+            base = entry[0]
+        else:
+            base = cwd_by_pid.get(pid_key, root_path)
+        returned = _ASSIGN_RETURN_RE.search(line[match.end():])
+        returned_value = (
+            int(returned.group(1), 0) if returned is not None else None
+        )
+        if returned_value is not None and returned_value >= 0:
+            _record_opened_descriptor(
+                fds, raw_path, base, root_path, returned_value
+            )
         if not _is_read(flags):
             continue
-        returned = _RETURN_RE.search(line[match.end():])
-        if returned is None or int(returned.group(1)) < 0:
+        if returned_value is None or returned_value < 0:
             continue
-        base = cwd_by_pid.get(pid_key, root_path)
         relative, outside_path = _canonical_scoped(raw_path, root_path, base)
         if relative is not None:
             reads.add(relative)
         elif outside_path is not None:
             outside.add(outside_path)
+        elif (
+            entry is not None
+            and entry[1]
+            and raw_path
+            and not Path(raw_path).is_absolute()
+        ):
+            spelled = Path(raw_path)
+            if not spelled.is_absolute():
+                spelled = base / spelled
+            resolved = Path(os.path.realpath(spelled))
+            if resolved != root_path and resolved != Path(
+                os.path.realpath(base)
+            ):
+                try:
+                    resolved.relative_to(root_path)
+                except ValueError:
+                    outside.add(resolved.as_posix())
     return sorted(reads), sorted(outside)
 
 
@@ -292,7 +437,7 @@ def run_traced(command, root):
     os.close(handle)
     try:
         subprocess.run(
-            ["strace", "-f", "-e", "trace=openat,chdir,clone,fork,vfork,clone3", "-o", trace_name, "--", *command],
+            ["strace", "-f", "-e", "trace=open,openat,chdir,fchdir,close,dup,dup2,dup3,clone,fork,vfork,clone3", "-o", trace_name, "--", *command],
             check=False,
         )
         text = Path(trace_name).read_text(encoding="utf-8", errors="replace")

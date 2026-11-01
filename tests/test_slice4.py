@@ -252,7 +252,7 @@ def test_chdir_back_inside_the_root_restores_inside_reads(tmp_path):
     assert outside == []
 
 
-def test_fchdir_is_not_tracked_and_the_last_chdir_stands(tmp_path):
+def test_fchdir_on_an_unrecorded_descriptor_moves_nothing(tmp_path):
     project = make_project(tmp_path)
     log = "\n".join(
         [
