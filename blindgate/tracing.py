@@ -41,7 +41,11 @@ event an execveat works is the same exec. An fcntl line in
 the F_SETFD shape moves the flag of a recorded entry to the
 flag its value names, whole or reassembled from a split pair
 alike, so the flag a later exec reads is the flag as last
-set, and a fcntl line of any other command changes no flag.
+set. A successful fcntl line in one of the duplicating
+shapes creates an entry at the returned number from the
+entry its source holds, with the flag its command gives the
+product, and a fcntl line of any other command changes no
+flag and creates no entry.
 """
 
 from __future__ import annotations
@@ -74,10 +78,12 @@ _OPEN_RE = re.compile(
 # prints, the shape the Round 5 fix repaired in one twin only.
 # Open and openat hold no entry here, because their keep check
 # already reuses the branch pattern itself. The fcntl pattern
-# admits the F_SETFD shape alone, a descriptor and the command
-# token and a descriptor flags value, so a line of any other
-# fcntl command fails the whole line reading and the keep
-# reading at the command place alike, refused by shape.
+# states its third argument by command, a descriptor flags
+# value for F_SETFD and a decimal requested floor for the two
+# duplicating commands, so a line of any other fcntl command
+# or a duplicating command carrying the wrong argument kind
+# fails the whole line reading and the keep reading alike,
+# refused by shape.
 _LINE_PREFIX = r"^\s*(?:\d+\s+)?"
 _CALL_ARGUMENTS = {
     "chdir": (r'\s*"((?:[^"\\]|\\.)*)"', r"\s*\)"),
@@ -90,7 +96,10 @@ _CALL_ARGUMENTS = {
         "",
     ),
     "fcntl": (
-        r"\s*(\d+)\s*,\s*F_SETFD\s*,\s*([A-Za-z0-9_|]+)",
+        r"\s*(\d+)\s*,\s*(?:"
+        r"F_SETFD\s*,\s*([A-Za-z0-9_|]+)"
+        r"|F_DUPFD_CLOEXEC\s*,\s*(\d+)"
+        r"|F_DUPFD\s*,\s*(\d+))",
         r"\s*\)",
     ),
 }
@@ -519,8 +528,9 @@ def _copy_descriptor(fds, source, target, cloexec=False):
 
     A recorded source hands its directory entry to the target,
     with the close on exec flag the creating call gives its
-    product, which dup and dup2 always give as clear and dup3
-    gives from its own flags argument. An unrecorded source
+    product, which dup and dup2 and fcntl F_DUPFD always give
+    as clear, dup3 gives from its own flags argument, and
+    fcntl F_DUPFD_CLOEXEC always gives as set. An unrecorded source
     leaves the target naming the same untracked thing, so any
     earlier entry for the target is dropped.
     """
@@ -733,13 +743,24 @@ def parse_trace(text, root, check_shape=True):
     FD_CLOEXEC and clear when none of them does, and the
     entry keeps its directory and its inside fact. An
     F_SETFD line with a failure return or no recorded
-    return changes nothing, a fcntl line of any other
-    command changes no flag and creates no entry, and an
-    F_SETFD against a number that holds no entry changes
-    nothing. Fcntl joins the split calls, its keep pattern
-    built from the same argument pattern holding as its
-    whole line pattern, so a split F_SETFD pair spends its
-    kept half and is judged as the whole line it reads as.
+    return changes nothing, and an F_SETFD against a number
+    that holds no entry changes nothing.
+
+    An fcntl line in a duplicating shape, a source number
+    and the F_DUPFD or F_DUPFD_CLOEXEC command token and a
+    decimal requested floor, with a recorded success creates
+    an entry at the returned number when its source holds
+    an entry, copying that entry with the flag the command
+    gives its product, clear for F_DUPFD and set for
+    F_DUPFD_CLOEXEC. The requested floor is never the number
+    created. A duplicating line with a failure return or
+    no recorded return creates nothing, a successful one
+    whose source holds no entry creates nothing, and a
+    fcntl line of any other command changes no flag and
+    creates no entry. Fcntl joins the split calls, its keep
+    pattern built from the same argument pattern holding as
+    its whole line pattern, so a split pair spends its kept
+    half and is judged as the whole line it reads as.
 
     Split lines are reassembled while the lines are read. An
     unfinished line of one of the split calls whose arguments the
@@ -982,14 +1003,26 @@ def parse_trace(text, root, check_shape=True):
                 )
             continue
         fcntl_match = _FCNTL_RE.match(line)
+        # The fcntl pattern's groups stand by command: group 2 is
+        # the F_SETFD flags value, group 3 the F_DUPFD_CLOEXEC
+        # floor, and group 4 the F_DUPFD floor, so a group standing
+        # names the command the line carries.
         if fcntl_match is not None:
             returned = _ASSIGN_RETURN_RE.search(line[fcntl_match.end():])
             if returned is not None and int(returned.group(1), 0) >= 0:
-                _reflag_descriptor(
-                    fds_by_pid.get(pid_key, {}),
-                    int(fcntl_match.group(1)),
-                    fcntl_match.group(2),
-                )
+                if fcntl_match.group(2) is not None:
+                    _reflag_descriptor(
+                        fds_by_pid.get(pid_key, {}),
+                        int(fcntl_match.group(1)),
+                        fcntl_match.group(2),
+                    )
+                else:
+                    _copy_descriptor(
+                        fds_by_pid.setdefault(pid_key, {}),
+                        int(fcntl_match.group(1)),
+                        int(returned.group(1), 0),
+                        fcntl_match.group(3) is not None,
+                    )
             continue
         open_match = _OPEN_RE.match(line)
         if open_match is not None:

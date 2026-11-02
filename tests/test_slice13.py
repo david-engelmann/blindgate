@@ -227,7 +227,7 @@ def test_fcntl_getfd_changes_no_flag(tmp_path):
     assert outside == []
 
 
-def test_fcntl_dupfd_cloexec_creates_no_entry_and_changes_no_flag(
+def test_fcntl_dupfd_cloexec_creates_an_entry(
     tmp_path,
 ):
     project = make_project(tmp_path)
@@ -240,7 +240,7 @@ def test_fcntl_dupfd_cloexec_creates_no_entry_and_changes_no_flag(
         ]
     )
     reads, outside = parse_trace(log, project)
-    assert reads == ["guide.md"]
+    assert reads == ["docs/guide.md"]
     assert outside == []
 
 
