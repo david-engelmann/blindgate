@@ -145,7 +145,7 @@ _FORK_RES = (
     ),
 )
 _PID_RE = re.compile(r"^\s*(\d+)\s+")
-_BRACKET_PID_RE = re.compile(r"^\[pid (\d+)\] ")
+_BRACKET_PID_RE = re.compile(r"^\[pid +(\d+)\] ")
 
 
 def _bare_pid_form(line):

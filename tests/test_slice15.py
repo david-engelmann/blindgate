@@ -408,17 +408,37 @@ def test_live_churn_capture_from_the_error_stream_holds_bracketed_split_pairs(
     assert "[pid " in text
     assert "<unfinished ...>" in text
     assert re.search(
-        r"\[pid \d+\] <\.\.\. openat resumed>", text
+        r"\[pid +\d+\] <\.\.\. openat resumed>", text
     ) is not None
     reads, outside = parse_trace(text, project)
     assert "docs/guide.md" in reads
     assert "guide.md" in reads
 
 
-def test_padded_bracket_spellings_are_not_the_probed_form(tmp_path):
+def test_space_padded_bracket_numbers_are_the_probed_spelling(
+    tmp_path,
+):
+    project = make_project(tmp_path)
+    for prefix in ("[pid  4242] ", "[pid     37] "):
+        number = prefix.split()[1].rstrip("]")
+        text = "\n".join(
+            [
+                prefix + 'chdir("docs") = 0',
+                prefix + 'openat(AT_FDCWD, "guide.md", '
+                "O_RDONLY) = 3",
+                '5151 openat(AT_FDCWD, "guide.md", O_RDONLY) = 4',
+            ]
+        )
+        reads, outside = parse_trace(text, project)
+        assert reads == ["docs/guide.md", "guide.md"], number
+        assert outside == []
+
+
+def test_tab_and_leading_space_bracket_spellings_are_not_the_probed_form(
+    tmp_path,
+):
     project = make_project(tmp_path)
     padded = [
-        '[pid  4242] openat(AT_FDCWD, "guide.md", O_RDONLY) = 3',
         '[pid\t4242] openat(AT_FDCWD, "guide.md", O_RDONLY) = 3',
         ' [pid 4242] openat(AT_FDCWD, "guide.md", O_RDONLY) = 3',
     ]
