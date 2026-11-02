@@ -45,7 +45,11 @@ set. A successful fcntl line in one of the duplicating
 shapes creates an entry at the returned number from the
 entry its source holds, with the flag its command gives the
 product, and a fcntl line of any other command changes no
-flag and creates no entry.
+flag and creates no entry. The process id prefix of a line
+is read in both spellings strace prints, the bare number of
+a file capture and the bracketed form of its standard error
+stream, and the two spellings name the same process at
+every reading.
 """
 
 from __future__ import annotations
@@ -141,6 +145,29 @@ _FORK_RES = (
     ),
 )
 _PID_RE = re.compile(r"^\s*(\d+)\s+")
+_BRACKET_PID_RE = re.compile(r"^\[pid (\d+)\] ")
+
+
+def _bare_pid_form(line):
+    """Return the line with its pid prefix in the bare spelling.
+
+    Strace spells the process id prefix of a line as a bare
+    number in a file capture and in brackets on its standard
+    error stream, and the text after the prefix is the same
+    in both spellings. The parse reads the bare spelling, so
+    a bracketed line is rewritten to it at the one place
+    lines enter the parse, and every branch and holding
+    downstream sees the line it already reads. A line with
+    no bracketed prefix comes back unchanged, and bracketed
+    text anywhere but the start of a line is data the
+    rewrite never touches.
+    """
+    match = _BRACKET_PID_RE.match(line)
+    if match is None:
+        return line
+    return f"{match.group(1)} {line[match.end():]}"
+
+
 _UNFINISHED_MARKER = "<unfinished ...>"
 _RESUMED_RE = re.compile(
     r"^\s*(?:\d+\s+)?<\.\.\.\s+([A-Za-z_][A-Za-z0-9_]*)\s+resumed>"
@@ -635,7 +662,8 @@ def looks_like_strace(text):
     A line is recognizable when it carries one of the usual strace
     markers, the unfinished marker, the signal banner, or the exit
     marker, or when the whole line is a syscall shape, an optional
-    process id, a syscall name hard against its opening parenthesis,
+    process id in either of its spellings, a syscall name hard
+    against its opening parenthesis,
     the call, an equals sign, and a return value, where the return
     value is a number or the question mark strace prints when a
     return is unknown, with an optional error name and message
@@ -646,7 +674,7 @@ def looks_like_strace(text):
     for line in text.splitlines():
         if any(marker in line for marker in _STRACE_MARKERS):
             return True
-        if _STRACE_LINE_RE.match(line):
+        if _STRACE_LINE_RE.match(_bare_pid_form(line)):
             return True
     return False
 
@@ -773,6 +801,23 @@ def parse_trace(text, root, check_shape=True):
     nothing, exactly as split lines always have. The shape rules
     for a covered call are built once from its argument pattern,
     for the whole line reading and the keep reading alike.
+
+    The process id prefix of a line is read in either spelling
+    strace prints it in, the bare number of a file capture or
+    the bracketed form of a capture from the standard error
+    stream, and a bracketed line is judged with the state of
+    the process its bracket names exactly as its bare spelling
+    is judged. A line with no prefix in a capture of either
+    form keeps the unnumbered bucket reading, and the error
+    stream form prefixes one process on some of its lines and
+    not on others, so that process can stand in two buckets in
+    such a capture and its state can split between them, and
+    the buckets are not merged. A superseded banner standing
+    with no prefix is not followed, because it names only the
+    starting number, and an attach note strace writes into the
+    error stream records nothing, standing alone or injected
+    inside a call line, whose fragments are then read as the
+    shape rules find them.
     """
     root_path = Path(root).resolve()
     if check_shape:
@@ -791,7 +836,8 @@ def parse_trace(text, root, check_shape=True):
         cwd_by_pid[survivor_key] = cwd_by_pid.get(
             starter_key, [root_path]
         )
-    for raw_line in text.splitlines():
+    for spelled_line in text.splitlines():
+        raw_line = _bare_pid_form(spelled_line)
         kept = _kept_unfinished(raw_line)
         if kept is not None:
             name, prefix = kept
