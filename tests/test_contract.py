@@ -25,7 +25,7 @@ def test_readme_status_section_states_the_facts():
         "403",
         "contract.md",
         "slice 1",
-        "13 of 100",
+        "14 of 100",
         "agents.md",
         "canonical template",
         "pinned formats stand at none",
