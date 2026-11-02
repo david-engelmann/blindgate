@@ -37,7 +37,11 @@ thread began completes under the leader number its trace
 names through the superseded banner or the pid changed tail.
 The variant call execveat is read with the same discipline,
 whole and split and renumbered alike, because the kernel
-event an execveat works is the same exec.
+event an execveat works is the same exec. An fcntl line in
+the F_SETFD shape moves the flag of a recorded entry to the
+flag its value names, whole or reassembled from a split pair
+alike, so the flag a later exec reads is the flag as last
+set, and a fcntl line of any other command changes no flag.
 """
 
 from __future__ import annotations
@@ -69,7 +73,11 @@ _OPEN_RE = re.compile(
 # pattern carries the optional flags argument the call always
 # prints, the shape the Round 5 fix repaired in one twin only.
 # Open and openat hold no entry here, because their keep check
-# already reuses the branch pattern itself.
+# already reuses the branch pattern itself. The fcntl pattern
+# admits the F_SETFD shape alone, a descriptor and the command
+# token and a descriptor flags value, so a line of any other
+# fcntl command fails the whole line reading and the keep
+# reading at the command place alike, refused by shape.
 _LINE_PREFIX = r"^\s*(?:\d+\s+)?"
 _CALL_ARGUMENTS = {
     "chdir": (r'\s*"((?:[^"\\]|\\.)*)"', r"\s*\)"),
@@ -80,6 +88,10 @@ _CALL_ARGUMENTS = {
     "dup3": (
         r"\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[A-Za-z0-9_|]+)?",
         "",
+    ),
+    "fcntl": (
+        r"\s*(\d+)\s*,\s*F_SETFD\s*,\s*([A-Za-z0-9_|]+)",
+        r"\s*\)",
     ),
 }
 
@@ -102,6 +114,7 @@ def _keep_re(name):
     )
 
 
+_FCNTL_RE = _whole_line_re("fcntl")
 _FCHDIR_RE = _whole_line_re("fchdir")
 _CLOSE_RE = _whole_line_re("close")
 _DUP_RE = _whole_line_re("dup")
@@ -131,7 +144,7 @@ _SUPERSEDED_RE = re.compile(
 )
 _PID_CHANGED_TAIL_RE = re.compile(r"<pid changed to (\d+) \.\.\.>\s*$")
 _TRACED_CALLS = (
-    "open,openat,chdir,fchdir,close,dup,dup2,dup3,"
+    "open,openat,chdir,fchdir,close,dup,dup2,dup3,fcntl,"
     "clone,fork,vfork,clone3,execve,execveat"
 )
 # The calls of the exec family this parse reads, whole and
@@ -142,7 +155,10 @@ _EXEC_CALLS = ("execve", "execveat")
 _ARGUMENT_FLAGS_TAIL_RE = re.compile(r",\s*([A-Za-z0-9_|]+)$")
 _CALL_NAME_RE = re.compile(r"^\s*(?:\d+\s+)?([A-Za-z_][A-Za-z0-9_]*)\(")
 _SPLIT_CALLS = frozenset(
-    ("chdir", "fchdir", "open", "openat", "close", "dup", "dup2", "dup3")
+    (
+        "chdir", "fchdir", "open", "openat", "close", "dup", "dup2",
+        "dup3", "fcntl",
+    )
 )
 # The keep patterns are derived from the same holdings as the
 # whole line patterns, one per covered call, never restated.
@@ -515,6 +531,27 @@ def _copy_descriptor(fds, source, target, cloexec=False):
         fds.pop(target, None)
 
 
+def _reflag_descriptor(fds, number, flags_text):
+    """Set the close on exec flag of one recorded entry.
+
+    An F_SETFD line moves the flag of the entry its process
+    already holds for the number, to the flag its flags value
+    names, standing when the bar joined tokens of the value
+    name FD_CLOEXEC and clear when none of them does. The
+    entry keeps the directory it names and the inside fact
+    it carries, and only its flag changes. A number that
+    holds no entry is left alone, so the call creates
+    nothing and adopts nothing.
+    """
+    entry = fds.get(number)
+    if entry is not None:
+        fds[number] = (
+            entry[0],
+            entry[1],
+            "FD_CLOEXEC" in flags_text.split("|"),
+        )
+
+
 def _canonical_scoped(raw_path, root, base=None):
     """Resolve a traced path canonically and scope it to the root.
 
@@ -687,6 +724,22 @@ def parse_trace(text, root, check_shape=True):
     nor its path nor its flags, and the closing follows its
     recorded return alone. The halves of the two calls are
     kept under their own names and never spend each other.
+
+    An fcntl line in the F_SETFD shape, a descriptor number
+    and the F_SETFD command token and a descriptor flags
+    value, with a recorded success sets the close on exec
+    flag of the entry its process holds for that number to
+    the flag the value names, standing when its tokens name
+    FD_CLOEXEC and clear when none of them does, and the
+    entry keeps its directory and its inside fact. An
+    F_SETFD line with a failure return or no recorded
+    return changes nothing, a fcntl line of any other
+    command changes no flag and creates no entry, and an
+    F_SETFD against a number that holds no entry changes
+    nothing. Fcntl joins the split calls, its keep pattern
+    built from the same argument pattern holding as its
+    whole line pattern, so a split F_SETFD pair spends its
+    kept half and is judged as the whole line it reads as.
 
     Split lines are reassembled while the lines are read. An
     unfinished line of one of the split calls whose arguments the
@@ -926,6 +979,16 @@ def parse_trace(text, root, check_shape=True):
                     int(dup_pair.group(1)),
                     int(dup_pair.group(2)),
                     cloexec,
+                )
+            continue
+        fcntl_match = _FCNTL_RE.match(line)
+        if fcntl_match is not None:
+            returned = _ASSIGN_RETURN_RE.search(line[fcntl_match.end():])
+            if returned is not None and int(returned.group(1), 0) >= 0:
+                _reflag_descriptor(
+                    fds_by_pid.get(pid_key, {}),
+                    int(fcntl_match.group(1)),
+                    fcntl_match.group(2),
                 )
             continue
         open_match = _OPEN_RE.match(line)

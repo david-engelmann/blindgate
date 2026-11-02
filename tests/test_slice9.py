@@ -63,11 +63,14 @@ _WHOLE_RES = {
     "dup": tracing._DUP_RE,
     "dup2": tracing._DUP2_RE,
     "dup3": tracing._DUP3_RE,
+    "fcntl": tracing._FCNTL_RE,
 }
 
 
 def test_every_covered_call_holds_one_argument_pattern():
-    covered = {"chdir", "fchdir", "close", "dup", "dup2", "dup3"}
+    covered = {
+        "chdir", "fchdir", "close", "dup", "dup2", "dup3", "fcntl"
+    }
     assert set(tracing._CALL_ARGUMENTS) == covered
     assert set(tracing._SPLIT_PREFIX_RES) == covered
     for name, (arguments, _tail) in tracing._CALL_ARGUMENTS.items():
@@ -117,6 +120,11 @@ _KEEP_TABLE = [
     ("dup3", "dup3(3, 9,", False),
     ("dup3", "dup3(3, 9, O_CLOEXEC, 1", False),
     ("dup3", "dup3(3, 9)", False),
+    ("fcntl", "fcntl(3, F_SETFD, FD_CLOEXEC", True),
+    ("fcntl", "fcntl(3, F_SETFD, 0", True),
+    ("fcntl", "fcntl(3, F_SETFD", False),
+    ("fcntl", "fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK", False),
+    ("fcntl", "fcntl(3, F_SETFD, FD_CLOEXEC)", False),
     ("open", 'open("docs", O_RDONLY', True),
     ("open", 'open("docs"', False),
     ("open", 'open("do', False),
