@@ -1,0 +1,14 @@
+[package]
+name = "blindgate"
+version = "0.1.0"
+edition = "2021"
+description = "Diff what a CI gate read against the surface it claims to certify."
+license = "MIT"
+
+[lib]
+name = "blindgate"
+path = "src/lib.rs"
+
+[[bin]]
+name = "blindgate"
+path = "src/main.rs"

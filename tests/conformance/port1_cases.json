@@ -1,0 +1,1963 @@
+{
+  "generated_by": "probe_gen.py in the Round 15 scratch, run against the landed Python at the round base head; regenerate by running it again, never by editing recordings by hand",
+  "cases": [
+    {
+      "name": "slice1_read_opens_are_collected",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\n4321 openat(AT_FDCWD, \"src/data.txt\", O_RDWR|O_CLOEXEC) = 4\n4321 openat(AT_FDCWD, \"tests/test_app.py\", O_RDONLY|O_CLOEXEC) = 5",
+      "expected_reads": [
+        "src/app.py",
+        "src/data.txt",
+        "tests/test_app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "slice1_writes_only_open_is_not_a_read",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"out/report.txt\", O_WRONLY|O_CREAT|O_TRUNC, 0644) = 3\n4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "slice1_failed_open_is_not_a_read",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/missing.py\", O_RDONLY) = -1 ENOENT (No such file or directory)\n4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "slice1_paths_outside_root_are_dropped",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"/etc/hostname\", O_RDONLY) = 3\n4321 openat(AT_FDCWD, \"/usr/lib/python3.12/os.py\", O_RDONLY) = 3\n4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "slice1_paths_inside_root_become_relative",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"{ROOT}/docs/guide.md\", O_RDONLY) = 3",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "slice1_unrelated_syscalls_are_ignored",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 read(3, \"payload\", 7) = 7\n4321 execve(\"/bin/true\", [\"/bin/true\"], 0x0) = 0\n4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "empty_text_reads_nothing",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "",
+      "expected_reads": [],
+      "expected_outside": []
+    },
+    {
+      "name": "one_recognizable_line_accepts_the_whole_trace",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "Operator notes before the capture started.\nThe gate ran on the small runner again.\n99 getpid() = 99\nMore notes after the capture ended.\n",
+      "expected_reads": [],
+      "expected_outside": []
+    },
+    {
+      "name": "garbage_trace_is_refused",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "Weekly notes from the docs meeting.\nThe guide needs a new owner and the screenshots are stale.\nNothing in this file came from a tracing tool.\n",
+      "expected_error": "trace log does not look like strace output"
+    },
+    {
+      "name": "whitespace_only_trace_is_refused",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "  \n \n",
+      "expected_error": "trace log does not look like strace output"
+    },
+    {
+      "name": "attach_notes_only_trace_is_refused",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "strace: Process 4242 attached\nstrace: Process 5151 attached\n",
+      "expected_error": "trace log does not look like strace output"
+    },
+    {
+      "name": "unfinished_openat_counts_as_no_read",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY <unfinished ...>\n4321 openat(AT_FDCWD, \"src/real.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/real.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "openat_without_recorded_return_counts_as_no_read",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY)\n4321 openat(AT_FDCWD, \"src/real.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/real.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "opath_and_odirectory_are_not_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_PATH) = 3\n4321 openat(AT_FDCWD, \"src/util.py\", O_DIRECTORY|O_RDONLY) = 4\n4321 openat(AT_FDCWD, \"src/real.py\", O_RDONLY) = 5",
+      "expected_reads": [
+        "src/real.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "hex_returns_judge_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/hex.py\", O_RDONLY) = 0x3\n4321 openat(AT_FDCWD, \"src/missing.py\", O_RDONLY) = -0x1 ENOENT (No such file or directory)\n4321 openat(AT_FDCWD, \"src/real.py\", O_RDONLY) = 5",
+      "expected_reads": [
+        "src/hex.py",
+        "src/real.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "bracketed_openat_line_is_judged_as_a_read",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "[pid 4321] openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\n[pid   432] openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "openat_mode_argument_form_still_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/made.py\", O_RDONLY|O_CREAT, 0644) = 3",
+      "expected_reads": [
+        "src/made.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "unnumbered_openat_line_is_a_read",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "escaped_path_is_unescaped",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/a\\\"b.py\", O_RDONLY) = 3\n4321 openat(AT_FDCWD, \"src/back\\\\slash.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/a\"b.py",
+        "src/back\\slash.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "symlink_escape_is_named",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/real.md",
+            "the real guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/secret.txt",
+            "project/docs/escape.txt"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/project/docs/real.md",
+            "project/docs/alias.md"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside",
+            "project/linkdir"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"docs/escape.txt\", O_RDONLY) = 3\n",
+      "expected_reads": [],
+      "expected_outside": [
+        "{BASE}/outside/secret.txt"
+      ]
+    },
+    {
+      "name": "symlink_inside_is_judged_on_the_resolved_path",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/real.md",
+            "the real guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/secret.txt",
+            "project/docs/escape.txt"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/project/docs/real.md",
+            "project/docs/alias.md"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside",
+            "project/linkdir"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"docs/alias.md\", O_RDONLY) = 3\n",
+      "expected_reads": [
+        "docs/real.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "linkdir_escape_is_named",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/real.md",
+            "the real guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/secret.txt",
+            "project/docs/escape.txt"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/project/docs/real.md",
+            "project/docs/alias.md"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside",
+            "project/linkdir"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"linkdir/secret.txt\", O_RDONLY) = 3\n",
+      "expected_reads": [],
+      "expected_outside": [
+        "{BASE}/outside/secret.txt"
+      ]
+    },
+    {
+      "name": "written_outside_paths_are_dropped_unnamed",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/real.md",
+            "the real guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/secret.txt",
+            "project/docs/escape.txt"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/project/docs/real.md",
+            "project/docs/alias.md"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside",
+            "project/linkdir"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"/etc/hostname\", O_RDONLY) = 3\n99 openat(AT_FDCWD, \"{BASE}/outside/secret.txt\", O_RDONLY) = 3\n99 openat(AT_FDCWD, \"docs/../../outside/secret.txt\", O_RDONLY) = 3\n99 openat(AT_FDCWD, \"docs/real.md\", O_RDONLY) = 3\n",
+      "expected_reads": [
+        "docs/real.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "root_itself_is_never_a_read",
+      "kind": "parse",
+      "setup": [],
+      "root": "",
+      "trace": "99 openat(AT_FDCWD, \".\", O_RDONLY) = 3\n99 openat(AT_FDCWD, \"./\", O_RDONLY) = 3\n99 openat(AT_FDCWD, \"{BASE}\", O_RDONLY) = 3",
+      "expected_reads": [],
+      "expected_outside": []
+    },
+    {
+      "name": "dangling_symlink_to_outside_is_named",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/missing.txt",
+            "project/docs/dangling"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"docs/dangling\", O_RDONLY) = 3",
+      "expected_reads": [],
+      "expected_outside": [
+        "{BASE}/outside/missing.txt"
+      ]
+    },
+    {
+      "name": "escape_through_root_alias_is_named",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside"
+          ]
+        },
+        {
+          "mkdir": "project"
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/secret.txt",
+            "project/escape.txt"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/project",
+            "rootlink"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"{BASE}/rootlink/escape.txt\", O_RDONLY) = 3",
+      "expected_reads": [],
+      "expected_outside": [
+        "{BASE}/outside/secret.txt"
+      ]
+    },
+    {
+      "name": "relative_dotdot_escape_is_dropped",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        },
+        {
+          "write": [
+            "outside.txt",
+            "outside"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"../outside.txt\", O_RDONLY) = 3\n99 openat(AT_FDCWD, \"docs/../src/app.py\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "example_trace_log",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "7101 openat(AT_FDCWD, \"/usr/lib/python3.12/encodings/__init__.py\", O_RDONLY|O_CLOEXEC) = 3\n7101 openat(AT_FDCWD, \"src/app.py\", O_RDONLY|O_CLOEXEC) = 4\n7101 openat(AT_FDCWD, \"src/util.py\", O_RDONLY|O_CLOEXEC) = 5\n7102 openat(AT_FDCWD, \"tests/test_app.py\", O_RDONLY|O_CLOEXEC) = 3\n7102 openat(AT_FDCWD, \"notes.txt\", O_RDONLY) = 4\n7102 openat(AT_FDCWD, \"docs/guide.md\", O_RDONLY) = -1 ENOENT (No such file or directory)\n7102 openat(AT_FDCWD, \"out/coverage.txt\", O_WRONLY|O_CREAT|O_TRUNC, 0644) = 6\n7102 exit_group(0) = ?\n",
+      "trace_file": "examples/trace.log",
+      "expected_reads": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "strace_log_read_opens_are_collected",
+      "kind": "parse_strace_log",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\n4321 openat(AT_FDCWD, \"src/data.txt\", O_RDWR|O_CLOEXEC) = 4\n4321 openat(AT_FDCWD, \"tests/test_app.py\", O_RDONLY|O_CLOEXEC) = 5",
+      "expected_reads": [
+        "src/app.py",
+        "src/data.txt",
+        "tests/test_app.py"
+      ]
+    },
+    {
+      "name": "strace_log_empty_text",
+      "kind": "parse_strace_log",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "",
+      "expected_reads": []
+    },
+    {
+      "name": "strace_log_garbage_is_refused",
+      "kind": "parse_strace_log",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "Weekly notes from the docs meeting.\nThe guide needs a new owner and the screenshots are stale.\nNothing in this file came from a tracing tool.\n",
+      "expected_error": "trace log does not look like strace output"
+    },
+    {
+      "name": "strace_log_example_trace",
+      "kind": "parse_strace_log",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "7101 openat(AT_FDCWD, \"/usr/lib/python3.12/encodings/__init__.py\", O_RDONLY|O_CLOEXEC) = 3\n7101 openat(AT_FDCWD, \"src/app.py\", O_RDONLY|O_CLOEXEC) = 4\n7101 openat(AT_FDCWD, \"src/util.py\", O_RDONLY|O_CLOEXEC) = 5\n7102 openat(AT_FDCWD, \"tests/test_app.py\", O_RDONLY|O_CLOEXEC) = 3\n7102 openat(AT_FDCWD, \"notes.txt\", O_RDONLY) = 4\n7102 openat(AT_FDCWD, \"docs/guide.md\", O_RDONLY) = -1 ENOENT (No such file or directory)\n7102 openat(AT_FDCWD, \"out/coverage.txt\", O_WRONLY|O_CREAT|O_TRUNC, 0644) = 6\n7102 exit_group(0) = ?\n",
+      "trace_file": "examples/trace.log",
+      "expected_reads": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ]
+    },
+    {
+      "name": "garbage_text_is_not_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "Weekly notes from the docs meeting.\nThe guide needs a new owner and the screenshots are stale.\nNothing in this file came from a tracing tool.\n",
+      "expected_looks": false
+    },
+    {
+      "name": "source_shape_result_assignment_is_not_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "result = compute(value=42)\n",
+      "expected_looks": false
+    },
+    {
+      "name": "source_shape_function_sentence_is_not_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "the function read(file) = 3 times today\n",
+      "expected_looks": false
+    },
+    {
+      "name": "openat_line_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\n",
+      "expected_looks": true
+    },
+    {
+      "name": "negative_return_line_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"docs/x.md\", O_RDONLY) = -1 ENOENT (No such file or directory)\n",
+      "expected_looks": true
+    },
+    {
+      "name": "notes_with_one_recognizable_line_are_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "Operator notes before the capture started.\nThe gate ran on the small runner again.\n99 getpid() = 99\nMore notes after the capture ended.\n",
+      "expected_looks": true
+    },
+    {
+      "name": "empty_text_classifies_false",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "",
+      "expected_looks": false
+    },
+    {
+      "name": "signal_banner_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "4321 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=4322} ---\n",
+      "expected_looks": true
+    },
+    {
+      "name": "exit_banner_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "4321 +++ exited with 0 +++\n",
+      "expected_looks": true
+    },
+    {
+      "name": "unfinished_line_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY <unfinished ...>\n",
+      "expected_looks": true
+    },
+    {
+      "name": "bracketed_line_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "[pid 4321] openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\n",
+      "expected_looks": true
+    },
+    {
+      "name": "bracketed_garbage_is_not_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "[pid 4321] Weekly notes from the docs meeting.\n",
+      "expected_looks": false
+    },
+    {
+      "name": "resumed_only_text_is_not_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "4321 <... openat resumed>\"src/app.py\", O_RDONLY) = 3\n",
+      "expected_looks": false
+    },
+    {
+      "name": "hex_return_line_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 0x3\n",
+      "expected_looks": true
+    },
+    {
+      "name": "question_return_line_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "7102 exit_group(0) = ?\n",
+      "expected_looks": true
+    },
+    {
+      "name": "attach_notes_are_not_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "strace: Process 4242 attached\nstrace: Process 5151 attached\n",
+      "expected_looks": false
+    },
+    {
+      "name": "splitlines_cr_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\r4321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_vt_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\u000b4321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_ff_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\f4321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_fs_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\u001c4321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_gs_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\u001d4321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_rs_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\u001e4321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_nel_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\u00854321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_ls_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\u20284321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "splitlines_ps_separates_two_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\u20294321 openat(AT_FDCWD, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "next_line_inside_a_quoted_path_refuses_the_trace",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/a\u0085b.py\", O_RDONLY) = 3",
+      "expected_error": "trace log does not look like strace output"
+    },
+    {
+      "name": "classify_cr_boundary_reveals_a_line",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "meeting notes\r99 getpid() = 99",
+      "expected_looks": true
+    },
+    {
+      "name": "classify_fs_boundary_reveals_a_line",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "meeting notes\u001c99 getpid() = 99",
+      "expected_looks": true
+    },
+    {
+      "name": "classify_vt_boundary_reveals_a_line",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "meeting notes\u000b99 getpid() = 99",
+      "expected_looks": true
+    },
+    {
+      "name": "classify_unit_separator_tail_is_strace",
+      "kind": "classify",
+      "setup": [],
+      "root": "project",
+      "trace": "foo() = 3\u001f",
+      "expected_looks": true
+    },
+    {
+      "name": "unit_separator_before_the_return_still_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) =\u001f3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "chain_of_fifty_links_resolves_to_its_target",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "app\n"
+          ]
+        },
+        {
+          "symlink": [
+            "l02",
+            "project/l01"
+          ]
+        },
+        {
+          "symlink": [
+            "l03",
+            "project/l02"
+          ]
+        },
+        {
+          "symlink": [
+            "l04",
+            "project/l03"
+          ]
+        },
+        {
+          "symlink": [
+            "l05",
+            "project/l04"
+          ]
+        },
+        {
+          "symlink": [
+            "l06",
+            "project/l05"
+          ]
+        },
+        {
+          "symlink": [
+            "l07",
+            "project/l06"
+          ]
+        },
+        {
+          "symlink": [
+            "l08",
+            "project/l07"
+          ]
+        },
+        {
+          "symlink": [
+            "l09",
+            "project/l08"
+          ]
+        },
+        {
+          "symlink": [
+            "l10",
+            "project/l09"
+          ]
+        },
+        {
+          "symlink": [
+            "l11",
+            "project/l10"
+          ]
+        },
+        {
+          "symlink": [
+            "l12",
+            "project/l11"
+          ]
+        },
+        {
+          "symlink": [
+            "l13",
+            "project/l12"
+          ]
+        },
+        {
+          "symlink": [
+            "l14",
+            "project/l13"
+          ]
+        },
+        {
+          "symlink": [
+            "l15",
+            "project/l14"
+          ]
+        },
+        {
+          "symlink": [
+            "l16",
+            "project/l15"
+          ]
+        },
+        {
+          "symlink": [
+            "l17",
+            "project/l16"
+          ]
+        },
+        {
+          "symlink": [
+            "l18",
+            "project/l17"
+          ]
+        },
+        {
+          "symlink": [
+            "l19",
+            "project/l18"
+          ]
+        },
+        {
+          "symlink": [
+            "l20",
+            "project/l19"
+          ]
+        },
+        {
+          "symlink": [
+            "l21",
+            "project/l20"
+          ]
+        },
+        {
+          "symlink": [
+            "l22",
+            "project/l21"
+          ]
+        },
+        {
+          "symlink": [
+            "l23",
+            "project/l22"
+          ]
+        },
+        {
+          "symlink": [
+            "l24",
+            "project/l23"
+          ]
+        },
+        {
+          "symlink": [
+            "l25",
+            "project/l24"
+          ]
+        },
+        {
+          "symlink": [
+            "l26",
+            "project/l25"
+          ]
+        },
+        {
+          "symlink": [
+            "l27",
+            "project/l26"
+          ]
+        },
+        {
+          "symlink": [
+            "l28",
+            "project/l27"
+          ]
+        },
+        {
+          "symlink": [
+            "l29",
+            "project/l28"
+          ]
+        },
+        {
+          "symlink": [
+            "l30",
+            "project/l29"
+          ]
+        },
+        {
+          "symlink": [
+            "l31",
+            "project/l30"
+          ]
+        },
+        {
+          "symlink": [
+            "l32",
+            "project/l31"
+          ]
+        },
+        {
+          "symlink": [
+            "l33",
+            "project/l32"
+          ]
+        },
+        {
+          "symlink": [
+            "l34",
+            "project/l33"
+          ]
+        },
+        {
+          "symlink": [
+            "l35",
+            "project/l34"
+          ]
+        },
+        {
+          "symlink": [
+            "l36",
+            "project/l35"
+          ]
+        },
+        {
+          "symlink": [
+            "l37",
+            "project/l36"
+          ]
+        },
+        {
+          "symlink": [
+            "l38",
+            "project/l37"
+          ]
+        },
+        {
+          "symlink": [
+            "l39",
+            "project/l38"
+          ]
+        },
+        {
+          "symlink": [
+            "l40",
+            "project/l39"
+          ]
+        },
+        {
+          "symlink": [
+            "l41",
+            "project/l40"
+          ]
+        },
+        {
+          "symlink": [
+            "l42",
+            "project/l41"
+          ]
+        },
+        {
+          "symlink": [
+            "l43",
+            "project/l42"
+          ]
+        },
+        {
+          "symlink": [
+            "l44",
+            "project/l43"
+          ]
+        },
+        {
+          "symlink": [
+            "l45",
+            "project/l44"
+          ]
+        },
+        {
+          "symlink": [
+            "l46",
+            "project/l45"
+          ]
+        },
+        {
+          "symlink": [
+            "l47",
+            "project/l46"
+          ]
+        },
+        {
+          "symlink": [
+            "l48",
+            "project/l47"
+          ]
+        },
+        {
+          "symlink": [
+            "l49",
+            "project/l48"
+          ]
+        },
+        {
+          "symlink": [
+            "l50",
+            "project/l49"
+          ]
+        },
+        {
+          "symlink": [
+            "src/app.py",
+            "project/l50"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"l01\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "chain_of_forty_one_links_resolves_to_its_target",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "app\n"
+          ]
+        },
+        {
+          "symlink": [
+            "m02",
+            "project/m01"
+          ]
+        },
+        {
+          "symlink": [
+            "m03",
+            "project/m02"
+          ]
+        },
+        {
+          "symlink": [
+            "m04",
+            "project/m03"
+          ]
+        },
+        {
+          "symlink": [
+            "m05",
+            "project/m04"
+          ]
+        },
+        {
+          "symlink": [
+            "m06",
+            "project/m05"
+          ]
+        },
+        {
+          "symlink": [
+            "m07",
+            "project/m06"
+          ]
+        },
+        {
+          "symlink": [
+            "m08",
+            "project/m07"
+          ]
+        },
+        {
+          "symlink": [
+            "m09",
+            "project/m08"
+          ]
+        },
+        {
+          "symlink": [
+            "m10",
+            "project/m09"
+          ]
+        },
+        {
+          "symlink": [
+            "m11",
+            "project/m10"
+          ]
+        },
+        {
+          "symlink": [
+            "m12",
+            "project/m11"
+          ]
+        },
+        {
+          "symlink": [
+            "m13",
+            "project/m12"
+          ]
+        },
+        {
+          "symlink": [
+            "m14",
+            "project/m13"
+          ]
+        },
+        {
+          "symlink": [
+            "m15",
+            "project/m14"
+          ]
+        },
+        {
+          "symlink": [
+            "m16",
+            "project/m15"
+          ]
+        },
+        {
+          "symlink": [
+            "m17",
+            "project/m16"
+          ]
+        },
+        {
+          "symlink": [
+            "m18",
+            "project/m17"
+          ]
+        },
+        {
+          "symlink": [
+            "m19",
+            "project/m18"
+          ]
+        },
+        {
+          "symlink": [
+            "m20",
+            "project/m19"
+          ]
+        },
+        {
+          "symlink": [
+            "m21",
+            "project/m20"
+          ]
+        },
+        {
+          "symlink": [
+            "m22",
+            "project/m21"
+          ]
+        },
+        {
+          "symlink": [
+            "m23",
+            "project/m22"
+          ]
+        },
+        {
+          "symlink": [
+            "m24",
+            "project/m23"
+          ]
+        },
+        {
+          "symlink": [
+            "m25",
+            "project/m24"
+          ]
+        },
+        {
+          "symlink": [
+            "m26",
+            "project/m25"
+          ]
+        },
+        {
+          "symlink": [
+            "m27",
+            "project/m26"
+          ]
+        },
+        {
+          "symlink": [
+            "m28",
+            "project/m27"
+          ]
+        },
+        {
+          "symlink": [
+            "m29",
+            "project/m28"
+          ]
+        },
+        {
+          "symlink": [
+            "m30",
+            "project/m29"
+          ]
+        },
+        {
+          "symlink": [
+            "m31",
+            "project/m30"
+          ]
+        },
+        {
+          "symlink": [
+            "m32",
+            "project/m31"
+          ]
+        },
+        {
+          "symlink": [
+            "m33",
+            "project/m32"
+          ]
+        },
+        {
+          "symlink": [
+            "m34",
+            "project/m33"
+          ]
+        },
+        {
+          "symlink": [
+            "m35",
+            "project/m34"
+          ]
+        },
+        {
+          "symlink": [
+            "m36",
+            "project/m35"
+          ]
+        },
+        {
+          "symlink": [
+            "m37",
+            "project/m36"
+          ]
+        },
+        {
+          "symlink": [
+            "m38",
+            "project/m37"
+          ]
+        },
+        {
+          "symlink": [
+            "m39",
+            "project/m38"
+          ]
+        },
+        {
+          "symlink": [
+            "m40",
+            "project/m39"
+          ]
+        },
+        {
+          "symlink": [
+            "m41",
+            "project/m40"
+          ]
+        },
+        {
+          "symlink": [
+            "src/app.py",
+            "project/m41"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"m01\", O_RDONLY) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "chain_to_outside_names_the_secret",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "secret\n"
+          ]
+        },
+        {
+          "symlink": [
+            "o02",
+            "project/o01"
+          ]
+        },
+        {
+          "symlink": [
+            "o03",
+            "project/o02"
+          ]
+        },
+        {
+          "symlink": [
+            "o04",
+            "project/o03"
+          ]
+        },
+        {
+          "symlink": [
+            "o05",
+            "project/o04"
+          ]
+        },
+        {
+          "symlink": [
+            "o06",
+            "project/o05"
+          ]
+        },
+        {
+          "symlink": [
+            "o07",
+            "project/o06"
+          ]
+        },
+        {
+          "symlink": [
+            "o08",
+            "project/o07"
+          ]
+        },
+        {
+          "symlink": [
+            "o09",
+            "project/o08"
+          ]
+        },
+        {
+          "symlink": [
+            "o10",
+            "project/o09"
+          ]
+        },
+        {
+          "symlink": [
+            "o11",
+            "project/o10"
+          ]
+        },
+        {
+          "symlink": [
+            "o12",
+            "project/o11"
+          ]
+        },
+        {
+          "symlink": [
+            "o13",
+            "project/o12"
+          ]
+        },
+        {
+          "symlink": [
+            "o14",
+            "project/o13"
+          ]
+        },
+        {
+          "symlink": [
+            "o15",
+            "project/o14"
+          ]
+        },
+        {
+          "symlink": [
+            "o16",
+            "project/o15"
+          ]
+        },
+        {
+          "symlink": [
+            "o17",
+            "project/o16"
+          ]
+        },
+        {
+          "symlink": [
+            "o18",
+            "project/o17"
+          ]
+        },
+        {
+          "symlink": [
+            "o19",
+            "project/o18"
+          ]
+        },
+        {
+          "symlink": [
+            "o20",
+            "project/o19"
+          ]
+        },
+        {
+          "symlink": [
+            "o21",
+            "project/o20"
+          ]
+        },
+        {
+          "symlink": [
+            "o22",
+            "project/o21"
+          ]
+        },
+        {
+          "symlink": [
+            "o23",
+            "project/o22"
+          ]
+        },
+        {
+          "symlink": [
+            "o24",
+            "project/o23"
+          ]
+        },
+        {
+          "symlink": [
+            "o25",
+            "project/o24"
+          ]
+        },
+        {
+          "symlink": [
+            "o26",
+            "project/o25"
+          ]
+        },
+        {
+          "symlink": [
+            "o27",
+            "project/o26"
+          ]
+        },
+        {
+          "symlink": [
+            "o28",
+            "project/o27"
+          ]
+        },
+        {
+          "symlink": [
+            "o29",
+            "project/o28"
+          ]
+        },
+        {
+          "symlink": [
+            "o30",
+            "project/o29"
+          ]
+        },
+        {
+          "symlink": [
+            "o31",
+            "project/o30"
+          ]
+        },
+        {
+          "symlink": [
+            "o32",
+            "project/o31"
+          ]
+        },
+        {
+          "symlink": [
+            "o33",
+            "project/o32"
+          ]
+        },
+        {
+          "symlink": [
+            "o34",
+            "project/o33"
+          ]
+        },
+        {
+          "symlink": [
+            "o35",
+            "project/o34"
+          ]
+        },
+        {
+          "symlink": [
+            "o36",
+            "project/o35"
+          ]
+        },
+        {
+          "symlink": [
+            "o37",
+            "project/o36"
+          ]
+        },
+        {
+          "symlink": [
+            "o38",
+            "project/o37"
+          ]
+        },
+        {
+          "symlink": [
+            "o39",
+            "project/o38"
+          ]
+        },
+        {
+          "symlink": [
+            "o40",
+            "project/o39"
+          ]
+        },
+        {
+          "symlink": [
+            "o41",
+            "project/o40"
+          ]
+        },
+        {
+          "symlink": [
+            "o42",
+            "project/o41"
+          ]
+        },
+        {
+          "symlink": [
+            "o43",
+            "project/o42"
+          ]
+        },
+        {
+          "symlink": [
+            "o44",
+            "project/o43"
+          ]
+        },
+        {
+          "symlink": [
+            "o45",
+            "project/o44"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/secret.txt",
+            "project/o45"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"o01\", O_RDONLY) = 3",
+      "expected_reads": [],
+      "expected_outside": [
+        "{BASE}/outside/secret.txt"
+      ]
+    },
+    {
+      "name": "cycle_of_three_rests_on_the_entry_spelling",
+      "kind": "parse",
+      "setup": [
+        {
+          "symlink": [
+            "triob",
+            "project/trioa"
+          ]
+        },
+        {
+          "symlink": [
+            "trioc",
+            "project/triob"
+          ]
+        },
+        {
+          "symlink": [
+            "trioa",
+            "project/trioc"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"trioa\", O_RDONLY) = 3",
+      "expected_reads": [
+        "trioa"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "cycle_of_three_keeps_the_tail_on_the_entry_spelling",
+      "kind": "parse",
+      "setup": [
+        {
+          "symlink": [
+            "triob",
+            "project/trioa"
+          ]
+        },
+        {
+          "symlink": [
+            "trioc",
+            "project/triob"
+          ]
+        },
+        {
+          "symlink": [
+            "trioa",
+            "project/trioc"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"trioa/tail.txt\", O_RDONLY) = 3",
+      "expected_reads": [
+        "trioa/tail.txt"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "root_alias_escape_spelled_with_a_trailing_slash_is_named",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside"
+          ]
+        },
+        {
+          "mkdir": "project"
+        },
+        {
+          "symlink": [
+            "{BASE}/outside/secret.txt",
+            "project/escape.txt"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/project",
+            "rootlink"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 openat(AT_FDCWD, \"{BASE}/rootlink/escape.txt/\", O_RDONLY) = 3",
+      "expected_reads": [],
+      "expected_outside": [
+        "{BASE}/outside/secret.txt"
+      ]
+    },
+    {
+      "name": "whitespace_only_descriptor_segment_still_reads",
+      "kind": "parse",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "trace": "4321 openat( , \"src/app.py\", O_RDONLY) = 3\n4321 openat(\t, \"src/util.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py",
+        "src/util.py"
+      ],
+      "expected_outside": []
+    }
+  ]
+}
