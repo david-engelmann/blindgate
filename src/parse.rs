@@ -254,8 +254,7 @@ pub fn parse_trace_with_switch(
         if returned < 0 {
             continue;
         }
-        let (relative, outside_path) =
-            canonical_scoped(&unescape(matched.raw_path), &root_path);
+        let (relative, outside_path) = canonical_scoped(&unescape(matched.raw_path), &root_path);
         if let Some(relative) = relative {
             reads.insert(relative);
         } else if let Some(outside_path) = outside_path {
@@ -304,9 +303,15 @@ mod tests {
     #[test]
     fn returns_read_whole_tokens_in_decimal_and_hex() {
         assert_eq!(find_return(") = 3"), Some(3));
-        assert_eq!(find_return(") = -1 ENOENT (No such file or directory)"), Some(-1));
+        assert_eq!(
+            find_return(") = -1 ENOENT (No such file or directory)"),
+            Some(-1)
+        );
         assert_eq!(find_return(") = 0x3"), Some(3));
-        assert_eq!(find_return(") = -0x1 ENOENT (No such file or directory)"), Some(-1));
+        assert_eq!(
+            find_return(") = -0x1 ENOENT (No such file or directory)"),
+            Some(-1)
+        );
         assert_eq!(find_return(" <unfinished ...>"), None);
         assert_eq!(find_return(""), None);
         assert_eq!(find_return(") = ?"), None);

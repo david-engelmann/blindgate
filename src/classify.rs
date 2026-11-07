@@ -72,8 +72,7 @@ pub fn bare_pid_form(line: &str) -> String {
         return line.to_string();
     }
     let after_spaces = &after_pid[spaces..];
-    let digits = after_spaces
-        .len()
+    let digits = after_spaces.len()
         - after_spaces
             .trim_start_matches(|c: char| c.is_ascii_digit())
             .len();
@@ -148,9 +147,7 @@ fn ws_prefix(s: &str) -> Option<&str> {
 }
 
 fn strip_pid_prefix(s: &str) -> Option<&str> {
-    let digits = s.len()
-        - s.trim_start_matches(|c: char| c.is_ascii_digit())
-            .len();
+    let digits = s.len() - s.trim_start_matches(|c: char| c.is_ascii_digit()).len();
     if digits == 0 {
         return None;
     }
@@ -300,13 +297,19 @@ mod tests {
 
     #[test]
     fn bare_form_leaves_other_lines_alone() {
-        assert_eq!(bare_pid_form("openat(AT_FDCWD, \"x\") = 3"), "openat(AT_FDCWD, \"x\") = 3");
+        assert_eq!(
+            bare_pid_form("openat(AT_FDCWD, \"x\") = 3"),
+            "openat(AT_FDCWD, \"x\") = 3"
+        );
         assert_eq!(
             bare_pid_form("openat(AT_FDCWD, \"[pid 9] x\", O_RDONLY) = 3"),
             "openat(AT_FDCWD, \"[pid 9] x\", O_RDONLY) = 3"
         );
         assert_eq!(bare_pid_form("[pid] openat() = 3"), "[pid] openat() = 3");
-        assert_eq!(bare_pid_form("[pid 12]openat() = 3"), "[pid 12]openat() = 3");
+        assert_eq!(
+            bare_pid_form("[pid 12]openat() = 3"),
+            "[pid 12]openat() = 3"
+        );
     }
 
     #[test]
@@ -319,7 +322,9 @@ mod tests {
 
     #[test]
     fn prose_with_a_buried_call_is_not_a_shape() {
-        assert!(!strace_line_shape("the function read(file) = 3 times today"));
+        assert!(!strace_line_shape(
+            "the function read(file) = 3 times today"
+        ));
         assert!(strace_line_shape("99 getpid() = 99"));
     }
 

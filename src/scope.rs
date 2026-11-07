@@ -124,15 +124,17 @@ fn is_within(path: &str, root: &str) -> bool {
     if root == "/" {
         return path.starts_with('/');
     }
-    path == root || path.strip_prefix(root).is_some_and(|rest| rest.starts_with('/'))
+    path == root
+        || path
+            .strip_prefix(root)
+            .is_some_and(|rest| rest.starts_with('/'))
 }
 
 fn relative_to(path: &str, root: &str) -> Option<String> {
     if root == "/" {
         return Some(path.trim_start_matches('/').to_string());
     }
-    path.strip_prefix(&format!("{root}/"))
-        .map(str::to_string)
+    path.strip_prefix(&format!("{root}/")).map(str::to_string)
 }
 
 fn lexical_parent(path: &str) -> String {
@@ -206,10 +208,8 @@ mod tests {
 
     fn fresh_dir() -> PathBuf {
         let n = COUNTER.fetch_add(1, Ordering::SeqCst);
-        let dir = std::env::temp_dir().join(format!(
-            "blindgate-scope-test-{}-{n}",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("blindgate-scope-test-{}-{n}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         fs::canonicalize(&dir).unwrap()
     }
@@ -261,7 +261,9 @@ mod tests {
         fs::write(project.join("src/app.py"), "x").unwrap();
         let names: Vec<String> = (1..=50).map(|n| format!("link{n:02}")).collect();
         for (index, name) in names.iter().enumerate() {
-            let target = names.get(index + 1).map_or("src/app.py", |next| next.as_str());
+            let target = names
+                .get(index + 1)
+                .map_or("src/app.py", |next| next.as_str());
             std::os::unix::fs::symlink(target, project.join(name)).unwrap();
         }
         let base = base.to_string_lossy().into_owned();
