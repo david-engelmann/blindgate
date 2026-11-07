@@ -38,7 +38,7 @@ from .workflow import load_workflow_jobs
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="blindgate",
-        description="Diff what a CI gate read against the surface it claims to certify.",
+        description="It traces what a gate actually opened while it ran and diffs that against the surface the gate claims to certify.",
     )
     parser.add_argument("--workflow", required=True, help="GitHub Actions workflow file")
     parser.add_argument("--config", required=True, help="config file declaring the checks")

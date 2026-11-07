@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "blindgate"
 version = "0.1.0"
-description = "Diff what a CI gate read against the surface it claims to certify."
+description = "It traces what a gate actually opened while it ran and diffs that against the surface the gate claims to certify."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

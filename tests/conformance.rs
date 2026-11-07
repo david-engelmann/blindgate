@@ -256,7 +256,7 @@ fn build_setup(base: &Path, setup: &[Json]) {
             let items = link.as_list();
             let target = items[0]
                 .as_text()
-                .replace("{BASE}", &base.to_string_lossy().into_owned());
+                .replace("{BASE}", &base.to_string_lossy());
             let link_path = base.join(items[1].as_text());
             fs::create_dir_all(link_path.parent().expect("symlink parent"))
                 .expect("symlink parent");
@@ -415,4 +415,104 @@ fn port_refusal_cases_match_the_python_record() {
         let _ = fs::remove_dir_all(&run.base);
     }
     assert!(refused > 0, "the recordings hold refusal cases");
+}
+
+// ---------------------------------------------------------------------
+// Port slice 2 conformance: the trace state machinery.
+//
+// The recordings in tests/conformance/port2_cases.json were
+// produced by probe_gen2.py in the Round 16 scratch, run
+// against the landed Python package over case inputs drawn
+// from the Python tests of the ported machinery. The two
+// cases marked python_crash record the contract's stated
+// limit: the Python raises uncaught on a return token its
+// base zero conversion refuses, and the recorded expectation
+// is the sanctioned answer the contract states for the port,
+// the decimal the token spells read as a success. Every other
+// case compares the Rust answers against the Python record
+// at content level, reads and outside reads alike.
+
+fn recordings2() -> Vec<Json> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("conformance")
+        .join("port2_cases.json");
+    let text = fs::read_to_string(&path).expect("the slice 2 recordings stand in the repo");
+    let parsed = JsonParser::new(&text).parse();
+    parsed
+        .get("cases")
+        .expect("the slice 2 recordings carry cases")
+        .as_list()
+        .to_vec()
+}
+
+fn cases_of_kind2(kind: &str) -> Vec<Json> {
+    recordings2()
+        .into_iter()
+        .filter(|case| case.get("kind").map(|item| item.as_text()) == Some(kind))
+        .collect()
+}
+
+fn assert_port2_case(case: &Json) {
+    let name = case.get("name").unwrap().as_text();
+    assert!(
+        case.get("python_error").is_none(),
+        "case {name} records a Python error the slice does not sanction: {:?}",
+        case.get("python_error")
+    );
+    let run = run_case(case);
+    let result = parse_trace(&run.trace, &run.root);
+    let read = result.unwrap_or_else(|err| panic!("case {name} errors: {err}"));
+    assert_eq!(
+        read.reads,
+        expected(case, "expected_reads", &run),
+        "case {name} read set"
+    );
+    assert_eq!(
+        read.outside_reads,
+        expected(case, "expected_outside", &run),
+        "case {name} outside reads"
+    );
+    let _ = fs::remove_dir_all(&run.base);
+}
+
+fn run_port2_kind(kind: &str) {
+    let cases = cases_of_kind2(kind);
+    assert!(
+        !cases.is_empty(),
+        "the slice 2 recordings hold {kind} cases"
+    );
+    for case in &cases {
+        assert_port2_case(case);
+    }
+}
+
+#[test]
+fn port_directory_state_cases_match_the_python_record() {
+    run_port2_kind("directory");
+}
+
+#[test]
+fn port_descriptor_state_cases_match_the_python_record() {
+    run_port2_kind("descriptor");
+}
+
+#[test]
+fn port_dup_and_fcntl_cases_match_the_python_record() {
+    run_port2_kind("dup_fcntl");
+}
+
+#[test]
+fn port_fork_sharing_cases_match_the_python_record() {
+    run_port2_kind("fork");
+}
+
+#[test]
+fn port_exec_closing_cases_match_the_python_record() {
+    run_port2_kind("exec");
+}
+
+#[test]
+fn port_split_line_cases_match_the_python_record() {
+    run_port2_kind("split");
 }

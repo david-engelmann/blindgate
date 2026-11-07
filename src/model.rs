@@ -5,7 +5,7 @@
 /// root. The second list is the outside reads, holding resolved
 /// absolute paths that landed outside the root. This is the
 /// counterpart of the pair the Python parse entry returns, and it
-/// is the whole of what a trace read produces in port slice 1.
+/// is the whole of what a trace read produces.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TraceRead {
     pub reads: Vec<String>,
