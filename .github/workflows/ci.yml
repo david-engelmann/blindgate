@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  merge_group:
 
 jobs:
   test:
@@ -24,3 +25,7 @@ jobs:
         run: cargo build
       - name: Run the Rust port tests
         run: cargo test
+      - name: Check the formatting
+        run: cargo fmt --check
+      - name: Run the linter
+        run: cargo clippy --offline --all-targets
