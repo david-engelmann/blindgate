@@ -16,7 +16,7 @@ pub fn normpath(path: &str) -> String {
     format!("/{}", stack.join("/"))
 }
 
-fn posix_join(first: &str, second: &str) -> String {
+pub fn posix_join(first: &str, second: &str) -> String {
     if second.starts_with('/') {
         return second.to_string();
     }
@@ -120,7 +120,7 @@ fn join_real_path(
     (path, true)
 }
 
-fn is_within(path: &str, root: &str) -> bool {
+pub fn is_within(path: &str, root: &str) -> bool {
     if root == "/" {
         return path.starts_with('/');
     }
@@ -130,7 +130,7 @@ fn is_within(path: &str, root: &str) -> bool {
             .is_some_and(|rest| rest.starts_with('/'))
 }
 
-fn relative_to(path: &str, root: &str) -> Option<String> {
+pub fn relative_to(path: &str, root: &str) -> Option<String> {
     if root == "/" {
         return Some(path.trim_start_matches('/').to_string());
     }
@@ -174,19 +174,44 @@ fn lexical_parent(path: &str) -> String {
 /// a directory outside the root, the way system library opens
 /// are, is dropped unnamed.
 pub fn canonical_scoped(raw: &str, root: &str) -> (Option<String>, Option<String>) {
+    canonical_scoped_based(raw, root, None)
+}
+
+/// Resolve a traced path taken against a base directory.
+///
+/// The base is the directory in force for the process that
+/// opened the path, or the directory a recorded descriptor
+/// names, and a relative path is taken against it instead of
+/// the root. A path that resolves to the base itself names no
+/// file inside it and lands in neither item, the same resting
+/// the root itself gets. With no base standing, this is the
+/// slice 1 reading the root alone gives.
+pub fn canonical_scoped_based(
+    raw: &str,
+    root: &str,
+    base: Option<&str>,
+) -> (Option<String>, Option<String>) {
     if raw.is_empty() {
         return (None, None);
     }
     let candidate = if raw.starts_with('/') {
         raw.to_string()
     } else {
-        format!("{}/{raw}", root.trim_end_matches('/'))
+        match base {
+            Some(base) => posix_join(base, raw),
+            None => posix_join(root, raw),
+        }
     };
     let written = normpath(&candidate);
     let written_inside = is_within(&written, root);
     let resolved = realpath(&candidate);
     if resolved == root {
         return (None, None);
+    }
+    if let Some(base) = base {
+        if resolved == realpath(base) {
+            return (None, None);
+        }
     }
     if let Some(relative) = relative_to(&resolved, root) {
         return (Some(relative), None);

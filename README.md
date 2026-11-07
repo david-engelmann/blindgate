@@ -2,49 +2,92 @@
 
 It traces what a gate actually opened while it ran and diffs that against the surface the gate claims to certify.
 
-## What this is
+Blindgate captures what a CI job actually opened at the filesystem and process level and pairs that read set with the surface the check claims to cover. A gate whose read set never touches its surface is reported as unproven, with the trace attached, and an empty read set is named outright. It is used by handing it a workflow file, a config that declares each check and the surface it claims, and either a trace recorded earlier or a command to run under strace. The boundary with its siblings is one sentence. Deadgate asks whether it ran, finaltree asks what it ran on, blindgate asks what it read.
 
-Gates can pass while never reading the thing they certify, and audit programs have found required checks whose green tick rested on an empty read list, including a visual gate that read a screenshot's hash and never opened the image. Blindgate captures what a CI job actually opened at the filesystem and process level and pairs that read set with the surface the check claims to cover. A gate whose read set never touches its surface is reported as unproven, with the trace attached, and an empty read set is named outright. The boundary with its siblings is one sentence. Deadgate asks whether it ran, finaltree asks what it ran on, blindgate asks what it read.
+[![CI](https://github.com/david-engelmann/blindgate/actions/workflows/ci.yml/badge.svg)](https://github.com/david-engelmann/blindgate/actions/workflows/ci.yml)
+
+```
+blindgate report
+================
+
+check            unit tests
+job              unit-tests
+verdict          proven
+claimed surface
+    src/**
+    tests/**
+read set
+    notes.txt
+    src/app.py
+    src/util.py
+    tests/test_app.py
+reads in surface
+    src/app.py
+    src/util.py
+    tests/test_app.py
+```
+
+## Install
+
+From a checkout of this repo, the Python tool installs with pip and the Rust crate builds with cargo. Both commands run as written from the repo root.
+
+```
+python -m pip install -e .
+cargo build
+```
+
+## Quickstart
+
+The crate carries a thin binary over the trace parse. Build it and run it over the example trace that ships in this repo, with the repo root as the root the read set is scoped to.
+
+```
+cargo build
+./target/debug/blindgate examples/trace.log .
+```
+
+It prints the read set the trace holds, one path per line.
+
+```
+notes.txt
+src/app.py
+src/util.py
+tests/test_app.py
+```
+
+## Usage
+
+The full report pairs every check a config declares with the read set its job produced. This run uses the workflow, the config, and the trace that ship under examples, and its output is the report that stands in examples/report.txt.
+
+```
+python -m blindgate --workflow examples/workflow.yml --config examples/blindgate.yml --trace examples/trace.log --root examples
+```
+
+The first check is the captured block on the first screen of this README. The second check in the same report reads as follows.
+
+```
+check            docs check
+job              docs-check
+verdict          unproven
+claimed surface
+    docs/*.md
+read set
+    notes.txt
+    src/app.py
+    src/util.py
+    tests/test_app.py
+reads in surface
+    none
+```
+
+A check can carry its own trace in the config, and a command line override can replace the trace for a whole job. A check with no trace of its own falls back to the shared trace. In place of a handed over trace, the tool can run a command under strace itself and judge the capture, on a machine that has strace installed, by giving the run flag and the command in place of the trace flag. A json flag on any of these runs renders the same report as JSON, and the JSON form of the example report stands in examples/report.json.
 
 ## Status
 
-Local seed is done and the seed commit sits on the local main branch. The remote seed is still pending because remote writes return 403 and that was verified again on 2026-10-31. A token access fix has to land before the seed and the branches built on it can be pushed.
+The local seed is done and the repo stands on GitHub. The 403 refusals the seed week recorded no longer hold, and work lands through pull requests. The contract in CONTRACT.md holds the obligations for this repo. AGENTS.md stands in this repo, the canonical template of the program with this repo's annex below its marked line.
 
-Setup is in progress locally. The contract in CONTRACT.md holds the obligations for this repo and the slice 1 obligations in it are met by the test suite. Slice 1 is built. It covers GitHub Actions workflows, one tracing method built on strace openat capture, and one report that pairs each check with its read set and its claimed surface.
+The Python tool is the complete tool today. It judges a handed over trace or a live capture against the checks a config declares, and the example reports under examples regenerate byte identical on every head. The Rust port stands beside it as a library crate with a thin binary. The crate opened as port slice 1 with the reader model, the line classification, the canonical scoping, and the openat reading, and it now carries the parse entry whole, so the Rust parse answers any trace the Python parse answers, proven against recordings the Python package itself produced over the inputs its own tests use. What stays Python only is the file reading entry points and the live capture, the config and workflow and analysis and report modules, and the command line whole. Later port slices take those in the order the contract names.
 
-Slice 2 is built on a local branch as the Round 1 work increment. The slice 2 obligations in CONTRACT.md are met by the test suite. Each check can now carry its own trace in the config, a command line override can replace the trace for a whole job, and a check with no trace of its own falls back to the shared trace or the shared run exactly as slice 1 behaved. The report states which trace source judged each check whenever a check is judged on a trace of its own. A committed example under examples/per-job shows one check proven by its own trace and a second check named an empty read set by its own trace in the same report, and the slice 1 example reports still regenerate byte identical under the shared trace invocation. Round 1 closed on 2026-10-31 after its audit, its two axis review, its red team, and owner approval. The red team found three Major defects in the first slice 2 head, covering dot segment paths, trace-for resolution, and unfinished opens, and every one was fixed with regression tests before the round closed.
-
-Slice 3 is built on a local branch as the Round 2 work increment. The slice 3 obligations in CONTRACT.md are met by the test suite. Traced paths are now resolved canonically before they are scoped to the root, so the limit FIX-1 stated in Round 1, that symlinks are not followed, is retired. A symlink inside the project that points outside it resolves outside and never supports a proven verdict, and the reads that escape through a symlink are named in the report as outside reads, while an open that was already outside in its written form, the way a system library open is, stays dropped and unnamed as before. A trace file that is not strace output at all is now refused with a named error instead of reading as a genuine trace with no reads, and that retires the second limit Round 1 accepted in writing. The slice 1 and slice 2 example reports still regenerate byte identical. Round 2 closed on 2026-10-31 after slice 3 was audited and reviewed on two axes and attacked by a red team, with every material finding fixed under the contract fix obligations FIX2-1 to FIX2-5 before the owner of this line approved the round.
-
-Slice 4 is built on a local branch as the Round 3 work increment. The slice 4 obligations in CONTRACT.md are met by the test suite. Traced paths are now resolved against the directory in force for their process at the line where they were opened, because the trace parse tracks the directory changes a chdir record makes, one current directory per process id, starting from the root. A gate that changed into a subdirectory and read there is judged at the place it actually read, and a gate that changed out of the project and read there can no longer support a proven verdict for a surface inside it. Directory changes made through a file descriptor are not tracked, and the contract states that limit in writing rather than half implementing it. The live capture records chdir beside openat so a capture can be read the same way as a handed over trace. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a directory change. Round 3 closed on 2026-11-01 after slice 4 was audited and reviewed on two axes and attacked by a red team, with every material finding fixed under the contract fix obligations FIX3-1 to FIX3-4 before the owner of this line approved the round.
-
-Slice 5 is built on a local branch as the Round 4 work increment. The slice 5 obligations in CONTRACT.md are met by the test suite. The trace parse now tracks directory file descriptors beside the directory in force, so a relative open against a descriptor the trace recorded is judged at the directory that descriptor was opened on, and an fchdir against a recorded descriptor moves the directory in force the way a chdir does. The limit S4-5 stated for directory changes made through a file descriptor is retired wherever the trace records the opening, and a descriptor the trace never recorded still falls back to the directory in force, so nothing the trace cannot explain is read worse than slice 4 read it. A read through a recorded descriptor that was opened on a path spelled inside the project and lands outside it is named as an outside read, because the handle was taken from inside the project. The live capture records open and fchdir and close and the dup calls beside openat and chdir so a capture can be read the same way as a handed over trace. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace navigates by descriptor. Round 4 closed on 2026-11-01 after slice 5 was audited and reviewed on two axes and attacked by a red team, with every material finding fixed under the contract fix obligations FIX4-1 and FIX4-2 before the owner of this line approved the round.
-
-Slice 6 is built on a local branch as the Round 5 work increment. The slice 6 obligations in CONTRACT.md are met by the test suite. The trace parse now reassembles the calls strace splits into an unfinished line and a resumed line, so a split chdir or fchdir moves the directory in force, a split open records its descriptor, a split close or dup keeps the descriptor map honest, and a read on a reassembled openat counts exactly as a whole line read does. The split line limits the Round 3 fixes and S5-7 stated are retired for the pairs the shape rules can read whole, and they stand for a half that never pairs and for a half cut off mid argument. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a split line. Round 5 closed on 2026-11-01 after slice 6 was audited and reviewed on two axes and attacked by a red team, with every material finding fixed under the contract fix obligations FIX5-1 to FIX5-3 before the owner of this line approved the round.
-
-Slice 7 is built on a local branch as the Round 6 work increment. The slice 7 obligations in CONTRACT.md are met by the test suite. What a clone shares is now decided by its flags, so a clone whose flags carry CLONE_FILES holds one descriptor map with its parent and a close or an open in either process lands for both, and a clone whose flags carry CLONE_FS holds one directory state with its parent the same way. The limit S5-7 stated, that a clone sharing its descriptor table is read as a copy, is retired for the calls whose flags the trace prints, and it stands for clone3 and for the flagless calls whose flags cannot be read from the line. A split clone is read from a kept flag half when the flag list stands complete in the half, and as a copy when it does not. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a clone. Round 6 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 6 review fixes.
-
-Slice 8 is built on a local branch as the Round 7 work increment. The slice 8 obligations in CONTRACT.md are met by the test suite. A clone3 line whose struct strace decodes is now read for the flags that struct prints, so a thread created through clone3 shares its descriptor table and its directory state with its parent in the reading exactly the way a sharing clone already did, and the copy reading S7-4 stated for clone3 stands only where the trace prints no struct to read, as with the bare pointer form strace prints when it cannot decode the struct. A split clone3 is read from a kept flag half under the same read whole discipline as a split clone, each kept half spent only by its own resumed line. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a clone3. Round 7 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 7 review fixes.
-
-Slice 9 is built on a local branch as the Round 8 work increment. The slice 9 obligations in CONTRACT.md are met by the test suite. The keep patterns for split lines are now derived from the whole line patterns of their calls, built from one argument pattern per call held once in the trace parse, so the two readings of a call shape cannot drift apart the way the hand written twins did when the dup3 keep pattern narrowed and a split dup3 in its canonical shape never paired. The derivation covers the six calls that held twins, and open and openat keep the direct reuse of their branch patterns they already had, while the flag half readers for clone and clone3 stay hand written as one family, the clone3 reader on the position rule ground FIX7-1 set and the clone reader beside it by decision, since no branch pattern judges the argument shape of those calls the way it judges the six. Nothing the parse accepts or refuses has changed, and the slice 1 and slice 2 example reports still regenerate byte identical. Round 8 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 8 review fixes.
-
-Slice 10 is built on a local branch as the Round 9 work increment. The slice 10 obligations in CONTRACT.md are met by the test suite. The trace parse now tracks the close on exec flag on the descriptor entries it records and reads a successful execve as closing the flagged entries of its process, so a directory handle the kernel closed at an exec no longer resolves reads after it. The flag is set by an open whose flags name O_CLOEXEC and by a dup3 whose flags argument names it, and a product of dup or dup2 never carries it, and where a descriptor table is shared under CLONE_FILES the closing lands for both processes that hold it. A failed execve changes nothing, and an execve split across an unfinished and a resumed line is not read, with the contract stating that limit in writing. The live capture records execve beside the calls it already recorded. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds an execve. Round 9 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 9 review fixes.
-
-Slice 11 is built on a local branch as the Round 10 work increment. The slice 11 obligations in CONTRACT.md are met by the test suite. The trace parse now reassembles an execve that strace split into an unfinished line and a resumed line and judges the pair as the one exec it is, so the closing a successful exec works under slice 10 lands for split pairs too, and threaded captures split a successful execve every time in the captures behind this slice. A pair begun by a thread that is not the leader of its process completes under the leader number, and the parse follows the link strace prints for that renumbering, in the pid changed tail on the half and in the banner that says the leader was superseded, so the closing lands in the map the process carries from the exec onward and the state under the leader number from the banner onward is the state the starting thread held. A kept pair is proven by the process, the call name, and the link records the trace prints alone, and the parse never checks that the two halves' argument texts agree, because no reading in this tool consumes the arguments of an execve. The split pair limit S10-4 stated is retired for the pairs the reassembly can read, and it stands for a half that never pairs. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds an execve. Round 10 closed on 2026-11-01 after audit and two axis review and red team and owner approval, with the findings recorded in the Round 10 review fixes.
-
-Slice 12 landed as Round 11 of the perfection program, closed after audit and two axis review and red team and owner approval, with the review fixes recorded in CONTRACT.md. The slice 12 obligations in CONTRACT.md are met by the test suite. The trace parse now reads execveat with the discipline it gives execve, so a successful execveat closes the flagged descriptor entries of its process on a whole line and on a reassembled split pair alike, and a pair begun by a thread that is not the leader of its process completes under the leader number through the pid changed tail and through the superseded banner, which names execve whatever call of the family renumbered the process. No argument of the call is consumed, neither the directory descriptor nor the path nor the flags, and the closing follows the recorded return alone, so the execveat limit S10-4 stated is retired. The live capture records execveat beside execve in the one capture set it already held. A pid changed execveat entry line standing on its own is not a shape the trace shape check recognises either, under the same decision S11-5 recorded, because every renumbering capture carries the banner the check does recognise. The parse also spends prints in the order strace prints them, so a racing close in a shared descriptor table can delete an entry a split open just recorded, a limit the Round 11 review fixes state in the contract for every slice at once and pin as stated. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds an execveat.
-
-Slice 13 landed as Round 12 of the perfection program, closed after audit and two axis review and red team and owner approval, with the review fixes recorded in CONTRACT.md. The slice 13 obligations in CONTRACT.md are met by the test suite. The trace parse now reads an fcntl line in the F_SETFD shape as moving the close on exec flag of a recorded descriptor entry, so the flag a successful exec closes by is the flag as last set, by the creating line or by a later fcntl, whichever stands later in the trace, and the fcntl reflagging limit the slice 10 preamble stated is retired. A fcntl line of any other command changes no flag and no fcntl line creates an entry, and an F_SETFD against a number that holds no entry changes nothing. A split F_SETFD pair is reassembled and judged as the whole line it reads as, through the one pairing the split calls already share, with its keep pattern built from the same argument pattern holding as its whole line pattern. Where a descriptor table is shared under CLONE_FILES the reflag lands in the one map both processes hold, and where the map was seeded as a copy it lands in the acting process map alone. The live capture records fcntl beside the calls it already recorded. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds an fcntl line.
-
-Slice 14 landed as Round 13 of the perfection program, closed after audit and two axis review and red team and owner approval, with the review fixes recorded in CONTRACT.md. The slice 14 obligations in CONTRACT.md are met by the test suite. The trace parse now reads a successful fcntl line in the F_DUPFD or F_DUPFD_CLOEXEC shape as creating a descriptor entry at the returned number, copying the directory and inside fact of the source entry into the descriptor map the acting process holds. The requested number is only a floor for the kernel search and never names the created entry. The created flag follows the duplicating command, clear for F_DUPFD and set for F_DUPFD_CLOEXEC whatever flag the source carries, and a split duplicating pair is reassembled and judged as the whole line it reads as through the one fcntl argument pattern holding. A failed duplicating line and a successful one whose source holds no entry create nothing, and every other fcntl command keeps its slice 13 reading. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a duplicating fcntl line.
-
-Slice 15 is built on a local branch as the Round 14 work increment. The slice 15 obligations in CONTRACT.md are met by the test suite. The trace parse now reads the bracketed process id prefix strace prints on its standard error stream everywhere it reads the bare number of a file capture, so a line in either spelling is judged with the directory state, the descriptor map, and the kept halves of the process it names, and the two spellings hold one state for one process across whole lines, split pairs, fork seedings, exit lines, and the renumbering halves. The shape check recognises a bracketed line exactly when its bare spelling would be recognised. Two limits the slice 15 probes forced stand stated in the contract rather than half read. A superseded banner standing with no prefix is not followed, because the error stream form prints it with no prefix as the renumbering completes and its text names only the starting number, and the attach notes strace writes into the same stream record nothing, with a note injected inside a call line splitting that line in the text itself. A line with no prefix in a capture of either form keeps the unnumbered bucket reading it has always had. The slice 1 and slice 2 example reports still regenerate byte identical, because no earlier trace holds a bracketed line.
-
-The Rust port of blindgate opens as the Round 15 work increment, under the ruling of 2026-11-02 that makes every repo in the program a Rust library. Port slice 1 stands in this repo beside the Python, which stays untouched and stands as the behavioral spec. A library crate named blindgate and a thin binary of the same name carry the trace reading core, the reader model and the line classification and the canonical scoping and the parse entry for the slice 1 reading as the later fixes amended it, and the continuous integration workflow runs a cargo job beside the Python job. Equivalence is proven against answers the Python package itself recorded over the inputs its own tests use, seventy cases covering the parse entry in both its forms and the shape refusals and the classification, and the directory and descriptor state and the split line reassembly and the fork and exec readings and live capture stay with the Python until a later port slice names them.
-
-AGENTS.md stands in this repo, the canonical template of the program with this repo's annex below its marked line.
-
-Closed rounds stand at 15 of 100. Pinned formats stand at none.
+Closed rounds stand at 16 of 100. Pinned formats stand at none.
 
 ## Licence
 

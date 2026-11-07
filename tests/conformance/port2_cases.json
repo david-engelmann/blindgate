@@ -1,0 +1,3626 @@
+{
+  "generated_by": "probe_gen2.py in the Round 16 scratch, run against the landed Python at the round base head; regenerate by running it again, never by editing recordings by hand",
+  "cases": [
+    {
+      "name": "dir_chdir_then_relative_open_lands_in_the_subdirectory",
+      "kind": "directory",
+      "source": "test_slice4 test_open_after_chdir_into_a_subdirectory_lands_there",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"docs\") = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_relative_chdir_chain_walks_step_by_step",
+      "kind": "directory",
+      "source": "test_slice4 test_relative_chdir_chain_walks_step_by_step",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"docs\") = 0\nchdir(\"../src\") = 0\nopenat(AT_FDCWD, \"app.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_failed_chdir_moves_nothing",
+      "kind": "directory",
+      "source": "test_slice4 test_failed_chdir_moves_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"docs\") = -1 ENOENT (No such file or directory)\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_two_processes_keep_separate_directories",
+      "kind": "directory",
+      "source": "test_slice4 test_two_processes_keep_separate_directories",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 chdir(\"docs\") = 0\n101 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 5",
+      "expected_reads": [
+        "docs/guide.md",
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_fchdir_moves_to_the_entry_directory",
+      "kind": "directory",
+      "source": "test_slice5 test_fchdir_round_trip_lands_at_the_descriptor_directory",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nfchdir(3) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_fchdir_against_an_unrecorded_number_moves_nothing",
+      "kind": "directory",
+      "source": "test_slice4 test_fchdir_on_an_unrecorded_descriptor_moves_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "fchdir(9) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_failed_fchdir_moves_nothing",
+      "kind": "directory",
+      "source": "test_slice5 test_failed_fchdir_moves_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nfchdir(3) = -1 EBADF (Bad file descriptor)\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_chdir_through_a_symlink_and_back_out_lands_outside",
+      "kind": "directory",
+      "source": "test_round3_fixes test_a_chdir_through_a_symlink_and_back_out_lands_outside",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/outside",
+            "project/linkdeep"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"linkdeep\") = 0\nchdir(\"..\") = 0\nopenat(AT_FDCWD, \"secret.txt\", O_RDONLY) = 4",
+      "expected_reads": [],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_hex_spelled_failure_return_moves_nothing",
+      "kind": "directory",
+      "source": "test_round3_fixes test_a_hex_spelled_failure_return_moves_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 chdir(\"docs\") = -0x1\n99 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_pid_spellings_share_one_bucket",
+      "kind": "directory",
+      "source": "test_round3_fixes test_pid_spellings_share_one_bucket",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "007 chdir(\"docs\") = 0\n7 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_open_of_the_directory_in_force_enters_neither_set",
+      "kind": "directory",
+      "source": "test_round3_fixes test_an_open_of_the_directory_in_force_enters_neither_set",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"docs\") = 0\nopenat(AT_FDCWD, \".\", O_RDONLY) = 4\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_chdir_outside_then_back_inside_restores_reads",
+      "kind": "directory",
+      "source": "test_slice4 test_chdir_back_inside_the_root_restores_inside_reads",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"{BASE}/outside\") = 0\nopenat(AT_FDCWD, \"secret.txt\", O_RDONLY) = 4\nchdir(\"{ROOT}\") = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_leading_zero_return_crashes_the_python",
+      "kind": "directory",
+      "source": "contract preamble probe P1c, a chdir line with return 010",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "99 chdir(\"docs\") = 010\n99 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "python_crash": "ValueError",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_tracked_descriptor_resolves_a_relative_open",
+      "kind": "descriptor",
+      "source": "test_slice5 test_tracked_descriptor_resolves_a_relative_open",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_unconfirmable_directory_records_no_descriptor",
+      "kind": "descriptor",
+      "source": "test_slice5 test_unconfirmable_directory_records_no_descriptor",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"gone\", O_RDONLY|O_DIRECTORY) = 3\nchdir(\"docs\") = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_plain_open_line_records_a_descriptor",
+      "kind": "descriptor",
+      "source": "test_slice5 test_plain_open_line_records_a_descriptor",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "open(\"docs\", O_RDONLY|O_DIRECTORY) = 3\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_outside_read_through_an_inside_entry_is_named",
+      "kind": "descriptor",
+      "source": "test_slice5 test_outside_descriptor_read_is_named_when_the_handle_came_from_inside",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nopenat(3, \"../../outside/secret.txt\", O_RDONLY) = 4",
+      "expected_reads": [],
+      "expected_outside": [
+        "{BASE}/outside/secret.txt"
+      ]
+    },
+    {
+      "name": "desc_entry_opened_outside_drops_its_reads_unnamed",
+      "kind": "descriptor",
+      "source": "test_slice5 test_outside_descriptor_opened_outside_drops_unnamed",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"{BASE}/outside\", O_RDONLY|O_DIRECTORY) = 3\nopenat(3, \"secret.txt\", O_RDONLY) = 4",
+      "expected_reads": [],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_untracked_descriptor_falls_back_to_the_directory_in_force",
+      "kind": "descriptor",
+      "source": "test_slice5 test_untracked_descriptor_falls_back_to_the_directory_in_force",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"src\") = 0\nopenat(9, \"app.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_close_forgets_the_entry",
+      "kind": "descriptor",
+      "source": "test_slice5 test_close_and_reuse_forgets_the_stale_directory",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nclose(3) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_failed_close_forgets_nothing",
+      "kind": "descriptor",
+      "source": "PORT2-2, a close with any other return forgets nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nclose(3) = -1 EBADF (Bad file descriptor)\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_reopening_a_number_on_a_file_replaces_the_entry",
+      "kind": "descriptor",
+      "source": "test_slice5 test_reopening_a_number_on_a_file_replaces_the_entry",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 3\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_entry_for_the_root_itself_reads_inside",
+      "kind": "descriptor",
+      "source": "PORT2-2, the root itself is excepted from the outside rule",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \".\", O_RDONLY|O_DIRECTORY) = 3\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dup_carries_the_directory_to_the_new_number",
+      "kind": "dup_fcntl",
+      "source": "test_slice5 test_dup_carries_the_directory_to_the_new_number",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\ndup(3) = 5\nopenat(5, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dup2_carries_and_the_duplicate_survives_the_source_close",
+      "kind": "dup_fcntl",
+      "source": "test_slice5 test_dup2_carries_the_directory_to_the_new_number",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\ndup2(3, 9) = 9\nclose(3) = 0\nfchdir(9) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dup2_from_an_untracked_source_forgets_the_target",
+      "kind": "dup_fcntl",
+      "source": "test_slice5 test_dup2_from_an_untracked_source_forgets_the_target",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\ndup2(7, 3) = 3\nchdir(\"src\") = 0\nopenat(3, \"app.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dup_of_a_flagged_entry_survives_exec_with_the_flag_clear",
+      "kind": "dup_fcntl",
+      "source": "test_slice10 test_dup_of_a_flagged_entry_survives_exec",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\ndup(3) = 5\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(5, \"guide.md\", O_RDONLY) = 4\nopenat(3, \"guide.md\", O_RDONLY) = 6",
+      "expected_reads": [
+        "docs/guide.md",
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dup3_with_the_flag_closes_at_exec",
+      "kind": "dup_fcntl",
+      "source": "test_slice10 test_dup3_with_the_flag_closes_at_exec",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\ndup3(3, 5, O_CLOEXEC) = 5\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(5, \"guide.md\", O_RDONLY) = 4\nopenat(3, \"guide.md\", O_RDONLY) = 6",
+      "expected_reads": [
+        "docs/guide.md",
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dup3_without_the_flag_survives_exec",
+      "kind": "dup_fcntl",
+      "source": "test_slice10 test_dup3_without_the_flag_survives_exec",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\ndup3(3, 5, 0) = 5\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(5, \"guide.md\", O_RDONLY) = 4\nopenat(3, \"guide.md\", O_RDONLY) = 6",
+      "expected_reads": [
+        "docs/guide.md",
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_dupfd_creates_at_the_returned_number_not_the_floor",
+      "kind": "dup_fcntl",
+      "source": "test_slice14 test_fcntl_dupfd_creates_at_the_returned_number_and_not_at_the_requested_floor",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nfcntl(3, F_DUPFD, 5) = 7\nfchdir(7) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4\nopenat(5, \"guide.md\", O_RDONLY) = 6",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_dupfd_cloexec_creates_a_flagged_entry",
+      "kind": "dup_fcntl",
+      "source": "test_slice14 test_fcntl_dupfd_cloexec_creates_an_entry_at_the_returned_number",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nfcntl(3, F_DUPFD_CLOEXEC, 0) = 7\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(7, \"guide.md\", O_RDONLY) = 4\nopenat(3, \"guide.md\", O_RDONLY) = 6",
+      "expected_reads": [
+        "docs/guide.md",
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_dupfd_from_an_unrecorded_source_creates_no_entry",
+      "kind": "dup_fcntl",
+      "source": "test_slice14 test_fcntl_dupfd_from_an_unrecorded_source_creates_no_entry",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "fcntl(9, F_DUPFD, 0) = 7\nopenat(7, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_dupfd_with_a_flags_value_is_refused_by_shape",
+      "kind": "dup_fcntl",
+      "source": "test_slice14 test_fcntl_dupfd_with_a_flags_value_is_refused_by_shape",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nfcntl(3, F_DUPFD, FD_CLOEXEC) = 7\nfchdir(7) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_setfd_sets_the_flag_so_exec_closes_it",
+      "kind": "dup_fcntl",
+      "source": "test_slice13 test_fcntl_set_flags_an_unflagged_entry_so_exec_closes_it",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nfcntl(3, F_SETFD, FD_CLOEXEC) = 0\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_setfd_clears_the_flag_so_exec_leaves_it_standing",
+      "kind": "dup_fcntl",
+      "source": "test_slice13 test_fcntl_clear_leaves_a_flagged_entry_standing_through_exec",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nfcntl(3, F_SETFD, 0) = 0\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_setfd_on_an_unrecorded_number_creates_nothing",
+      "kind": "dup_fcntl",
+      "source": "test_slice13 test_fcntl_on_an_unrecorded_number_creates_no_entry",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "fcntl(9, F_SETFD, FD_CLOEXEC) = 0\nopenat(9, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_setfl_changes_no_flag",
+      "kind": "dup_fcntl",
+      "source": "test_slice13 test_fcntl_setfl_changes_no_flag",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nfcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fcntl_failed_setfd_changes_no_flag",
+      "kind": "dup_fcntl",
+      "source": "test_slice13 test_failed_fcntl_changes_no_flag",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nfcntl(3, F_SETFD, FD_CLOEXEC) = -1 EBADF (Bad file descriptor)\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_child_inherits_the_parents_directory_fix3_1",
+      "kind": "fork",
+      "source": "test_round3_fixes test_a_forked_child_inherits_its_parents_directory (FIX3-1)",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 chdir(\"docs\") = 0\n100 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID) = 101\n101 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 5",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_seeds_a_copy_of_the_descriptor_map",
+      "kind": "fork",
+      "source": "test_slice5 test_fork_seeds_a_copy_of_the_descriptor_map",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID) = 101\n101 openat(3, \"guide.md\", O_RDONLY) = 4\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 5",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_clone_files_child_close_forgets_the_parent_entry",
+      "kind": "fork",
+      "source": "test_slice7 test_clone_files_child_close_forgets_the_parent_entry",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|SIGCHLD) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_clone_files_child_open_is_visible_to_the_parent",
+      "kind": "fork",
+      "source": "test_slice7 test_clone_files_child_open_is_visible_to_the_parent",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|SIGCHLD) = 101\n101 openat(AT_FDCWD, \"src\", O_RDONLY|O_DIRECTORY) = 4\n100 openat(4, \"app.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_clone_without_files_keeps_the_copy_reading",
+      "kind": "fork",
+      "source": "test_slice7 test_clone_without_clone_files_keeps_the_copy_reading",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7374cca3a350) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_clone_fs_moves_in_either_process_move_both",
+      "kind": "fork",
+      "source": "test_slice7 test_clone_fs_moves_in_either_process_move_both",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 clone(child_stack=0x7623250e2000, flags=CLONE_FS|SIGCHLD) = 101\n101 chdir(\"src\") = 0\n100 openat(AT_FDCWD, \"app.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_clone_files_without_fs_does_not_share_the_directory",
+      "kind": "fork",
+      "source": "test_slice7 test_clone_files_without_clone_fs_does_not_share_the_directory",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|SIGCHLD) = 101\n101 chdir(\"src\") = 0\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_clone3_files_child_close_forgets_the_parent_entry",
+      "kind": "fork",
+      "source": "test_slice8 test_clone3_files_child_close_forgets_the_parent_entry",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x729e32956990, parent_tid=0x729e32956990, exit_signal=0, stack=0x729e32156000, stack_size=0x7fff80, tls=0x729e329566c0} => {parent_tid=[101]}, 88) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_clone3_without_sharing_flags_keeps_the_copy_reading",
+      "kind": "fork",
+      "source": "test_slice7 test_clone3_without_sharing_flags_keeps_the_copy_reading",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone3({flags=CLONE_CHILD_CLEARTID, child_tid=0x729e32956990, parent_tid=0x729e32956990, exit_signal=0, stack=0x729e32156000, stack_size=0x7fff80, tls=0x729e329566c0} => {parent_tid=[101]}, 88) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_vfork_keeps_the_copy_reading",
+      "kind": "fork",
+      "source": "test_slice7 test_vfork_keeps_the_copy_reading",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 vfork() = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_second_fork_without_the_flag_copies_the_current_shared_state",
+      "kind": "fork",
+      "source": "test_slice7 test_a_second_fork_without_the_flag_copies_the_current_shared_state",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|SIGCHLD) = 101\n101 openat(AT_FDCWD, \"src\", O_RDONLY|O_DIRECTORY) = 4\n100 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7374cca3a350) = 102\n102 close(4) = 0\n101 openat(4, \"app.py\", O_RDONLY) = 4\n100 openat(4, \"app.py\", O_RDONLY) = 5",
+      "expected_reads": [
+        "app.py",
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_seeding_clears_the_childs_kept_halves",
+      "kind": "fork",
+      "source": "PORT2-4, the seeding clears any halves the child number carried",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <unfinished ...>\n100 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7374cca3a350) = 101\n101 <... execve resumed>)             = 0\n101 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_shared_map_exec_pair_closes_the_entry_for_the_parent",
+      "kind": "fork",
+      "source": "contract preamble probe P3, the shared map exec pair",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/tests"
+        },
+        {
+          "write": [
+            "project/tests/test_trace.py",
+            "tests\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"tests\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|CLONE_FS|SIGCHLD) = 101\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */) = 0\n100 openat(3, \"test_trace.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "test_trace.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "fork_shared_map_exec_pair_control_without_the_exec",
+      "kind": "fork",
+      "source": "contract preamble probe P3, the control without the exec",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/tests"
+        },
+        {
+          "write": [
+            "project/tests/test_trace.py",
+            "tests\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"tests\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|CLONE_FS|SIGCHLD) = 101\n100 openat(3, \"test_trace.py\", O_RDONLY) = 4",
+      "expected_reads": [
+        "tests/test_trace.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_closes_a_flagged_entry",
+      "kind": "exec",
+      "source": "test_slice10 test_execve_closes_a_flagged_directory_descriptor",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_leaves_an_unflagged_entry_standing",
+      "kind": "exec",
+      "source": "test_slice10 test_execve_leaves_an_unflagged_descriptor_standing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_failed_closes_nothing",
+      "kind": "exec",
+      "source": "test_slice10 test_failed_execve_closes_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = -1 ENOENT (No such file or directory)\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_without_a_recorded_return_closes_nothing",
+      "kind": "exec",
+      "source": "test_slice10 test_execve_without_a_recorded_return_closes_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */)\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_leaves_the_directory_in_force_standing",
+      "kind": "exec",
+      "source": "test_slice10 test_execve_leaves_the_directory_in_force_standing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"docs\") = 0\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_fchdir_against_an_exec_closed_number_moves_nothing",
+      "kind": "exec",
+      "source": "test_slice10 test_fchdir_against_an_exec_closed_number_moves_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nexecve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\nfchdir(3) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_by_a_sharing_child_closes_the_flagged_entry_for_the_parent",
+      "kind": "exec",
+      "source": "test_slice10 test_exec_by_a_sharing_child_closes_the_flagged_entry_for_the_parent",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|SIGCHLD) = 101\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_by_a_copy_child_leaves_the_parent_entry_standing",
+      "kind": "exec",
+      "source": "test_slice10 test_exec_by_a_copy_child_leaves_the_parent_entry_standing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7374cca3a350) = 101\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "execveat_closes_a_flagged_entry",
+      "kind": "exec",
+      "source": "test_slice12 test_execveat_closes_a_flagged_directory_descriptor",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nexecveat(3, \"true\", [\"true\"], 0x2db19d50 /* 55 vars */, 0) = 0\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "execveat_failed_closes_nothing",
+      "kind": "exec",
+      "source": "test_slice12 test_failed_execveat_closes_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\nexecveat(3, \"true\", [\"true\"], 0x2db19d50 /* 55 vars */, 0) = -1 ENOENT (No such file or directory)\nopenat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "execveat_leaves_the_directory_in_force_standing",
+      "kind": "exec",
+      "source": "test_slice12 test_execveat_leaves_the_directory_in_force_standing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "chdir(\"docs\") = 0\nexecveat(3, \"true\", [\"true\"], 0x2db19d50 /* 55 vars */, 0) = 0\nopenat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "exec_leading_zero_return_crashes_the_python",
+      "kind": "exec",
+      "source": "contract preamble probe P1, an execve line with return 010",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */) = 010\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "python_crash": "ValueError",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_openat_read_is_counted",
+      "kind": "split",
+      "source": "test_slice6 test_split_openat_read_is_counted",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"src/app.py\", O_RDONLY <unfinished ...>\n100 <... openat resumed>) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_openat_failure_counts_no_read",
+      "kind": "split",
+      "source": "test_slice6 test_split_openat_failure_counts_no_read",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"src/app.py\", O_RDONLY <unfinished ...>\n100 <... openat resumed>) = -1 ENOENT (No such file or directory)\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_chdir_moves_the_directory_in_force",
+      "kind": "split",
+      "source": "test_slice6 test_split_chdir_moves_the_directory_in_force",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 chdir(\"docs\" <unfinished ...>\n100 <... chdir resumed>) = 0\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_directory_open_records_its_descriptor",
+      "kind": "split",
+      "source": "test_slice6 test_split_directory_open_records_its_descriptor",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY <unfinished ...>\n100 <... openat resumed>) = 3\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_close_forgets_the_descriptor",
+      "kind": "split",
+      "source": "test_slice6 test_split_close_forgets_the_descriptor",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 close(3 <unfinished ...>\n100 <... close resumed>) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_dup_carries_to_the_returned_number",
+      "kind": "split",
+      "source": "test_slice6 test_split_dup_carries_the_descriptor_to_the_returned_number",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 dup(3 <unfinished ...>\n100 <... dup resumed>) = 5\n100 openat(5, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_second_unfinished_replaces_the_first",
+      "kind": "split",
+      "source": "test_slice6 test_second_unfinished_replaces_the_pending_line",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"src/app.py\", O_RDONLY <unfinished ...>\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY <unfinished ...>\n100 <... openat resumed>) = 3",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_resumed_without_a_kept_half_records_nothing",
+      "kind": "split",
+      "source": "test_slice6 test_resumed_line_with_no_pending_unfinished_records_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 <... openat resumed>) = 3\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_unfinished_that_never_resumes_records_nothing",
+      "kind": "split",
+      "source": "test_slice6 test_unfinished_line_with_no_resumed_partner_records_nothing",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"src/app.py\", O_RDONLY <unfinished ...>\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_truncated_half_records_nothing_even_when_resumed",
+      "kind": "split",
+      "source": "test_slice6 test_truncated_unfinished_line_records_nothing_even_when_resumed",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs/gui <unfinished ...>\n100 <... openat resumed>) = 3\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_clone_with_a_complete_flags_half_shares",
+      "kind": "split",
+      "source": "test_slice7 test_split_clone_with_a_readable_flags_half_shares",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=NULL, flags=CLONE_FILES|CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7374cca3a350 <unfinished ...>\n100 <... clone resumed>) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_clone_with_a_cut_flags_list_reads_as_a_copy",
+      "kind": "split",
+      "source": "test_slice7 test_split_clone_with_a_cut_flags_list_reads_as_a_copy",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=NULL, flags=CLONE_FILES <unfinished ...>\n100 <... clone resumed>) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_clone3_with_a_complete_flags_half_shares",
+      "kind": "split",
+      "source": "test_slice8 test_split_clone3_with_a_complete_flags_half_shares",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x729e32956990 <unfinished ...>\n100 <... clone3 resumed>) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_clone3_with_a_cut_flags_list_reads_as_a_copy",
+      "kind": "split",
+      "source": "test_slice8 test_split_clone3_with_a_cut_flags_list_reads_as_a_copy",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone3({flags=CLONE_VM|CLONE_F <unfinished ...>\n100 <... clone3 resumed>) = 101\n101 close(3) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_fcntl_pair_sets_the_flag",
+      "kind": "split",
+      "source": "test_slice13 test_split_fcntl_pair_sets_the_flag",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 fcntl(3, F_SETFD, FD_CLOEXEC <unfinished ...>\n100 <... fcntl resumed>) = 0\n100 execve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_fcntl_dupfd_pair_creates_at_the_returned_number",
+      "kind": "split",
+      "source": "test_slice14 test_split_fcntl_dupfd_pair_creates_an_entry_at_the_returned_number",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 fcntl(3, F_DUPFD, 0 <unfinished ...>\n100 <... fcntl resumed>) = 7\n100 fchdir(7) = 0\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_execve_pair_closes_a_flagged_entry",
+      "kind": "split",
+      "source": "test_slice11 test_split_execve_pair_closes_a_flagged_entry",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <unfinished ...>\n100 <... execve resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_execveat_pair_closes_a_flagged_entry",
+      "kind": "split",
+      "source": "test_slice12 test_split_execveat_pair_closes_a_flagged_entry",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 execveat(3, \"true\", [\"true\"], 0x2db19d50 /* 55 vars */, 0 <unfinished ...>\n100 <... execveat resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_resumed_execve_does_not_spend_a_kept_execveat_half",
+      "kind": "split",
+      "source": "test_slice12 test_a_resumed_execveat_does_not_spend_a_kept_execve_half and its mirror",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 execveat(3, \"true\", [\"true\"], 0x2db19d50 /* 55 vars */, 0 <unfinished ...>\n100 <... execve resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4\n100 <... execveat resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 5",
+      "expected_reads": [
+        "docs/guide.md",
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_thread_exec_closes_under_the_leader_with_the_banner",
+      "kind": "split",
+      "source": "test_slice11 test_split_execve_from_a_thread_closes_under_the_leader_number",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 openat(AT_FDCWD, \"src\", O_RDONLY|O_DIRECTORY) = 4\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|SIGCHLD) = 101\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <unfinished ...>\n100 +++ superseded by execve in pid 101 +++\n100 <... execve resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 5\n100 openat(4, \"app.py\", O_RDONLY) = 6",
+      "expected_reads": [
+        "guide.md",
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_pid_changed_half_pairs_with_its_resumed_line",
+      "kind": "split",
+      "source": "test_slice11 test_a_pid_changed_half_pairs_with_its_resumed_line",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 clone(child_stack=0x7623250e2000, flags=CLONE_FILES|SIGCHLD) = 101\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <pid changed to 100 ...>\n100 <... execve resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_survivor_state_is_the_starting_threads_state",
+      "kind": "split",
+      "source": "test_slice11 test_the_survivor_state_is_the_starting_threads_state",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=NULL, flags=CLONE_VM|SIGCHLD) = 101\n101 openat(AT_FDCWD, \"src\", O_RDONLY|O_DIRECTORY) = 4\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <unfinished ...>\n100 +++ superseded by execve in pid 101 +++\n100 <... execve resumed>)             = 0\n100 openat(4, \"app.py\", O_RDONLY) = 4\n100 openat(3, \"guide.md\", O_RDONLY) = 5",
+      "expected_reads": [
+        "docs/guide.md",
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_kept_execve_half_dies_with_its_process",
+      "kind": "split",
+      "source": "test_slice11 test_a_kept_execve_half_dies_with_its_process",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <unfinished ...>\n100 +++ exited with 0 +++\n100 <... execve resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_bracketed_openat_pair_is_reassembled",
+      "kind": "split",
+      "source": "test_slice15 test_bracketed_split_openat_pair_is_reassembled",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "[pid 100] openat(AT_FDCWD, \"src/app.py\", O_RDONLY <unfinished ...>\n[pid 100] <... openat resumed>) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_unfinished_line_with_a_spelled_return_is_spent_by_its_resumed_line",
+      "kind": "split",
+      "source": "PORT2-6, an unfinished line carrying a spelled return is taken as an unfinished half",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3 <unfinished ...>\n100 <... openat resumed>) = 3",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "desc_descriptor_numbers_past_the_machine_word_stay_distinct",
+      "kind": "descriptor",
+      "source": "red team finding F1, the descriptor form minimal trace",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 9223372036854775808\n100 openat(9223372036854775807, \"guide.md\", O_RDONLY) = 5",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "dir_process_numbers_past_the_machine_word_stay_distinct",
+      "kind": "directory",
+      "source": "red team finding F1, the process form minimal trace",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "9223372036854775808 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n9223372036854775807 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_open_records_its_descriptor",
+      "kind": "split",
+      "source": "Axis A finding F1, the open keep reading of PORT2-6 beside test_slice6 split pairs",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 open(\"docs\", O_RDONLY|O_DIRECTORY <unfinished ...>\n100 <... open resumed>) = 3\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_fchdir_moves_to_the_entry_directory",
+      "kind": "split",
+      "source": "Axis A finding F1, the fchdir keep reading of PORT2-6 beside test_slice5 test_fchdir_round_trip",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 fchdir(3 <unfinished ...>\n100 <... fchdir resumed>) = 0\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_dup2_carries_to_the_spelled_number",
+      "kind": "split",
+      "source": "Axis A finding F1, the dup2 keep reading of PORT2-6 beside test_slice5 test_dup2_carries",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 dup2(3, 9 <unfinished ...>\n100 <... dup2 resumed>) = 9\n100 close(3) = 0\n100 openat(9, \"guide.md\", O_RDONLY) = 4",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_dup3_carries_with_its_flag",
+      "kind": "split",
+      "source": "Axis A finding F1, the dup3 keep reading of PORT2-6 beside test_slice10 test_dup3_with_the_flag",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 dup3(3, 5, O_CLOEXEC <unfinished ...>\n100 <... dup3 resumed>) = 5\n100 execve(\"/usr/bin/reader\", [\"reader\"], 0x7ffd48416d98 /* 54 vars */) = 0\n100 openat(5, \"guide.md\", O_RDONLY) = 4\n100 openat(3, \"guide.md\", O_RDONLY) = 6",
+      "expected_reads": [
+        "docs/guide.md",
+        "guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "split_survivor_adoption_stands_in_common_not_in_copy",
+      "kind": "split",
+      "source": "Axis A observation O1 on PORT2-5, adoption in common discriminated by post banner mutations under the starter key",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "write": [
+            "project/guide.md",
+            "root guide\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n100 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7374cca3a350) = 101\n101 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <unfinished ...>\n100 +++ superseded by execve in pid 101 +++\n100 <... execve resumed>)             = 0\n101 openat(AT_FDCWD, \"src\", O_RDONLY|O_DIRECTORY) = 4\n100 openat(4, \"app.py\", O_RDONLY) = 4\n101 chdir(\"docs\") = 0\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 6",
+      "expected_reads": [
+        "docs/guide.md",
+        "src/app.py"
+      ],
+      "expected_outside": []
+    }
+  ]
+}
