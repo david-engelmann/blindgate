@@ -207,7 +207,10 @@ impl Json {
     }
 
     fn text_list(&self) -> Vec<String> {
-        self.as_list().iter().map(|item| item.as_text().to_string()).collect()
+        self.as_list()
+            .iter()
+            .map(|item| item.as_text().to_string())
+            .collect()
     }
 }
 
@@ -229,10 +232,8 @@ static COUNTER: AtomicU32 = AtomicU32::new(0);
 
 fn fresh_base() -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let dir = std::env::temp_dir().join(format!(
-        "blindgate-conformance-{}-{n}",
-        std::process::id()
-    ));
+    let dir =
+        std::env::temp_dir().join(format!("blindgate-conformance-{}-{n}", std::process::id()));
     fs::create_dir_all(&dir).expect("create the case base");
     fs::canonicalize(&dir).expect("the case base resolves")
 }
@@ -276,7 +277,10 @@ struct CaseRun {
 fn run_case(case: &Json) -> CaseRun {
     let base = fresh_base();
     let empty: Vec<Json> = Vec::new();
-    let setup = case.get("setup").map(|item| item.as_list()).unwrap_or(&empty);
+    let setup = case
+        .get("setup")
+        .map(|item| item.as_list())
+        .unwrap_or(&empty);
     build_setup(&base, setup);
     let root_rel = case.get("root").map(|item| item.as_text()).unwrap_or("");
     let root = if root_rel.is_empty() {
@@ -288,7 +292,11 @@ fn run_case(case: &Json) -> CaseRun {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(file.as_text());
         fs::read_to_string(&path).expect("the recorded trace file stands in the repo")
     } else {
-        substitute(case.get("trace").expect("case trace").as_text(), &base, &root)
+        substitute(
+            case.get("trace").expect("case trace").as_text(),
+            &base,
+            &root,
+        )
     };
     CaseRun { base, root, trace }
 }
@@ -371,7 +379,10 @@ fn port_parse_strace_log_cases_match_the_python_record() {
 #[test]
 fn port_classification_cases_match_the_python_record() {
     let cases = cases_of_kind("classify");
-    assert!(!cases.is_empty(), "the recordings hold classification cases");
+    assert!(
+        !cases.is_empty(),
+        "the recordings hold classification cases"
+    );
     for case in &cases {
         let name = case.get("name").unwrap().as_text();
         let run = run_case(case);
