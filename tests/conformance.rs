@@ -14,7 +14,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use blindgate::{looks_like_strace, parse_strace_log, parse_trace, refuse_unshaped_trace};
+use blindgate::{
+    looks_like_strace, parse_strace_log, parse_trace, read_set_from_log_file,
+    read_trace_from_log_file, refuse_unshaped_trace, run_traced,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 enum Json {
@@ -515,4 +518,268 @@ fn port_exec_closing_cases_match_the_python_record() {
 #[test]
 fn port_split_line_cases_match_the_python_record() {
     run_port2_kind("split");
+}
+
+// ---------------------------------------------------------------------
+// Port slice 3 conformance: the file reading entries and the
+// live capture.
+//
+// The recordings in tests/conformance/port3_cases.json were
+// produced by probe_gen3.py in the Round 17 scratch, run
+// against the landed Python package. The byte cases carry the
+// owner probe record's byte cases as hex and are read through
+// read_set_from_log_file, so the recorded read set pins the
+// replacement decoding the parse downstream actually saw. The
+// file cases read whole texts from files through
+// read_trace_from_log_file. The error cases pin the file
+// entry's refusal wordings. The permission denied case is
+// marked constructed, with the provenance PORT3-3 states: a
+// capture running as root reads through mode bits, so no real
+// denial can be driven through the entry on this machine, and
+// the case is checked against the stated template at the
+// test's own base while the entries unit tests pin the port's
+// wording construction to the same template. The live case
+// runs the port's own capture against the recorded command
+// and compares the distilled pair, guarded on strace
+// availability as the annex states.
+
+fn recordings3() -> Vec<Json> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("conformance")
+        .join("port3_cases.json");
+    let text = fs::read_to_string(&path).expect("the slice 3 recordings stand in the repo");
+    let parsed = JsonParser::new(&text).parse();
+    parsed
+        .get("cases")
+        .expect("the slice 3 recordings carry cases")
+        .as_list()
+        .to_vec()
+}
+
+fn cases_of_kind3(kind: &str) -> Vec<Json> {
+    recordings3()
+        .into_iter()
+        .filter(|case| case.get("kind").map(|item| item.as_text()) == Some(kind))
+        .collect()
+}
+
+fn hex_bytes(text: &str) -> Vec<u8> {
+    let bytes = text.as_bytes();
+    assert!(
+        bytes.len().is_multiple_of(2),
+        "a hex recording has even length"
+    );
+    (0..bytes.len())
+        .step_by(2)
+        .map(|at| {
+            let pair = std::str::from_utf8(&bytes[at..at + 2]).expect("a hex pair is ascii");
+            u8::from_str_radix(pair, 16).expect("a hex pair parses")
+        })
+        .collect()
+}
+
+struct FileCase {
+    base: PathBuf,
+    root: PathBuf,
+    log: PathBuf,
+    run: CaseRun,
+}
+
+fn stand_file_case(case: &Json) -> FileCase {
+    let base = fresh_base();
+    let empty: Vec<Json> = Vec::new();
+    let setup = case
+        .get("setup")
+        .map(|item| item.as_list())
+        .unwrap_or(&empty);
+    build_setup(&base, setup);
+    let root_rel = case.get("root").map(|item| item.as_text()).unwrap_or("");
+    let root = if root_rel.is_empty() {
+        base.clone()
+    } else {
+        base.join(root_rel)
+    };
+    let log = base.join("handed.log");
+    let run = CaseRun {
+        base: base.clone(),
+        root: root.clone(),
+        trace: String::new(),
+    };
+    FileCase {
+        base,
+        root,
+        log,
+        run,
+    }
+}
+
+#[test]
+fn port_replacement_decoding_cases_match_the_python_record() {
+    let cases = cases_of_kind3("bytes");
+    assert!(!cases.is_empty(), "the slice 3 recordings hold byte cases");
+    for case in &cases {
+        let name = case.get("name").unwrap().as_text();
+        let stood = stand_file_case(case);
+        let data = hex_bytes(case.get("log_hex").expect("case log hex").as_text());
+        fs::write(&stood.log, &data).expect("write the case log");
+        let result = read_set_from_log_file(&stood.log, &stood.root);
+        match case.get("expected_error") {
+            Some(error) => {
+                let err = result.expect_err(&format!("case {name} refuses"));
+                assert_eq!(err.message(), error.as_text(), "case {name}");
+            }
+            None => {
+                let reads = result.unwrap_or_else(|err| panic!("case {name} errors: {err}"));
+                assert_eq!(
+                    reads,
+                    expected(case, "expected_reads", &stood.run),
+                    "case {name} read set"
+                );
+            }
+        }
+        let _ = fs::remove_dir_all(&stood.base);
+    }
+}
+
+#[test]
+fn port_file_reading_cases_match_the_python_record() {
+    let cases = cases_of_kind3("file");
+    assert!(!cases.is_empty(), "the slice 3 recordings hold file cases");
+    for case in &cases {
+        let name = case.get("name").unwrap().as_text();
+        let stood = stand_file_case(case);
+        let text = substitute(
+            case.get("log_text").expect("case log text").as_text(),
+            &stood.base,
+            &stood.root,
+        );
+        fs::write(&stood.log, text).expect("write the case log");
+        let result = read_trace_from_log_file(&stood.log, &stood.root);
+        match case.get("expected_error") {
+            Some(error) => {
+                let err = result.expect_err(&format!("case {name} refuses"));
+                assert_eq!(err.message(), error.as_text(), "case {name}");
+            }
+            None => {
+                let read = result.unwrap_or_else(|err| panic!("case {name} errors: {err}"));
+                assert_eq!(
+                    read.reads,
+                    expected(case, "expected_reads", &stood.run),
+                    "case {name} read set"
+                );
+                assert_eq!(
+                    read.outside_reads,
+                    expected(case, "expected_outside", &stood.run),
+                    "case {name} outside reads"
+                );
+                let reads = read_set_from_log_file(&stood.log, &stood.root)
+                    .unwrap_or_else(|err| panic!("case {name} reads entry errors: {err}"));
+                assert_eq!(
+                    reads,
+                    expected(case, "expected_reads", &stood.run),
+                    "case {name} read set at the reads entry"
+                );
+            }
+        }
+        let _ = fs::remove_dir_all(&stood.base);
+    }
+}
+
+#[test]
+fn port_file_error_wording_cases_match_the_python_record() {
+    let cases = cases_of_kind3("error");
+    assert!(!cases.is_empty(), "the slice 3 recordings hold error cases");
+    for case in &cases {
+        let name = case.get("name").unwrap().as_text();
+        let stood = stand_file_case(case);
+        let log_rel = case.get("log_rel").expect("case log path").as_text();
+        let log = if log_rel.is_empty() {
+            stood.base.clone()
+        } else {
+            stood.base.join(log_rel)
+        };
+        let want = substitute(
+            case.get("expected_error").expect("case wording").as_text(),
+            &stood.base,
+            &stood.root,
+        );
+        let constructed = case
+            .get("constructed")
+            .map(|item| item.as_bool())
+            .unwrap_or(false);
+        if constructed {
+            // This arm checks the recording against the stated
+            // template only, and it does not drive the port
+            // entry. The port's own construction is pinned by
+            // the entries unit test over from_raw_os_error(13),
+            // so no reader is invited to believe the entry was
+            // driven here.
+            let spelled = log.to_string_lossy().into_owned();
+            assert_eq!(
+                want,
+                format!(
+                    "cannot read trace log {spelled} ([Errno 13] Permission denied: '{spelled}')"
+                ),
+                "case {name} recorded wording matches the stated template"
+            );
+        } else {
+            let err = read_trace_from_log_file(&log, &stood.root)
+                .expect_err(&format!("case {name} refuses"));
+            assert_eq!(err.message(), want, "case {name}");
+            let err = read_set_from_log_file(&log, &stood.root)
+                .expect_err(&format!("case {name} refuses at the reads entry"));
+            assert_eq!(err.message(), want, "case {name} reads entry");
+        }
+        let _ = fs::remove_dir_all(&stood.base);
+    }
+}
+
+#[test]
+fn port_live_capture_pair_matches_the_python_record() {
+    let cases = cases_of_kind3("live");
+    assert!(!cases.is_empty(), "the slice 3 recordings hold live cases");
+    for case in &cases {
+        let name = case.get("name").unwrap().as_text();
+        let stood = stand_file_case(case);
+        let command: Vec<String> = case
+            .get("command")
+            .expect("case command")
+            .text_list()
+            .iter()
+            .map(|part| substitute(part, &stood.base, &stood.root))
+            .collect();
+        let read = match run_traced(&command, &stood.root) {
+            Ok(read) => read,
+            Err(err)
+                if err.message()
+                    == "strace is not available on this machine, so no read set can be captured" =>
+            {
+                let _ = fs::remove_dir_all(&stood.base);
+                continue;
+            }
+            Err(err) => panic!("case {name} errors: {err}"),
+        };
+        assert_eq!(
+            read.reads,
+            expected(case, "expected_reads", &stood.run),
+            "case {name} read set"
+        );
+        assert_eq!(
+            read.outside_reads,
+            expected(case, "expected_outside", &stood.run),
+            "case {name} outside reads"
+        );
+        let leftovers: Vec<String> = fs::read_dir(&stood.root)
+            .expect("read the capture root")
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .filter(|file| file.starts_with(".blindgate-trace-"))
+            .collect();
+        assert!(
+            leftovers.is_empty(),
+            "case {name} leaves trace temp files behind: {leftovers:?}"
+        );
+        let _ = fs::remove_dir_all(&stood.base);
+    }
 }

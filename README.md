@@ -85,9 +85,9 @@ A check can carry its own trace in the config, and a command line override can r
 
 The local seed is done and the repo stands on GitHub. The 403 refusals the seed week recorded no longer hold, and work lands through pull requests. The contract in CONTRACT.md holds the obligations for this repo. AGENTS.md stands in this repo, the canonical template of the program with this repo's annex below its marked line.
 
-The Python tool is the complete tool today. It judges a handed over trace or a live capture against the checks a config declares, and the example reports under examples regenerate byte identical on every head. The Rust port stands beside it as a library crate with a thin binary. The crate opened as port slice 1 with the reader model, the line classification, the canonical scoping, and the openat reading, and it now carries the parse entry whole, so the Rust parse answers any trace the Python parse answers, proven against recordings the Python package itself produced over the inputs its own tests use. What stays Python only is the file reading entry points and the live capture, the config and workflow and analysis and report modules, and the command line whole. Later port slices take those in the order the contract names.
+The Python tool is the complete tool today. It judges a handed over trace or a live capture against the checks a config declares, and the example reports under examples regenerate byte identical on every head. The Rust port stands beside it as a library crate with a thin binary. The crate opened as port slice 1 with the reader model, the line classification, the canonical scoping, and the openat reading, and it now carries the parse entry whole, so the Rust parse answers any trace the Python parse answers, proven against recordings the Python package itself produced over the inputs its own tests use. The crate now carries the file reading entries and the live capture beside the parse. What stays Python only is the config and workflow and analysis and report modules, and the command line whole. Later port slices take those in the order the contract names.
 
-Closed rounds stand at 16 of 100. Pinned formats stand at none.
+Closed rounds stand at 17 of 100. Pinned formats stand at none.
 
 ## Licence
 

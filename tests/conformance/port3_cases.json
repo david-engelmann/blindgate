@@ -1,0 +1,464 @@
+{
+  "generated_by": "probe_gen3.py in the Round 17 scratch, run against the landed Python at the round base head; regenerate by running it again, never by editing recordings by hand",
+  "cases": [
+    {
+      "name": "byte_lone_continuation_in_a_path",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B1, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c20226180622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_two_continuations_in_a_path",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B2, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c2022618080622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffd\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_truncated_two_byte_at_the_token_end",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B3, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c2022636166c3222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "caf\ufffd"
+      ]
+    },
+    {
+      "name": "byte_three_byte_broken_by_a_plain_byte",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B4, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202278e282792e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "x\ufffdy.txt"
+      ]
+    },
+    {
+      "name": "byte_overlong_form",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B5, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202261c0af622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffd\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_ff_single",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B6, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202261ff622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_ff_fe_pair",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B7, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202261fffe622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffd\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_f5_starter",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B8, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202261f5622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_valid_sequence_then_a_lone_continuation",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B9, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c2022636166c3a9802e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "caf\u00e9\ufffd.txt"
+      ]
+    },
+    {
+      "name": "byte_four_byte_broken_by_a_quote",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B10, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202278f09f222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "x\ufffd"
+      ]
+    },
+    {
+      "name": "byte_surrogate_range",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B12, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202261eda080622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffd\ufffd\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_past_the_last_scalar",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B13, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202261f4908080622e747874222c204f5f52444f4e4c5929203d20330a",
+      "expected_reads": [
+        "a\ufffd\ufffd\ufffd\ufffdb.txt"
+      ]
+    },
+    {
+      "name": "byte_truncated_sequence_at_the_end_of_the_file",
+      "kind": "bytes",
+      "source": "owner probe record 2026-11-08 case B11, read through read_set_from_log_file",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_hex": "313031206f70656e61742841545f46444357442c202278e282",
+      "expected_error": "trace log does not look like strace output"
+    },
+    {
+      "name": "file_shaped_trace_reads_both_halves",
+      "kind": "file",
+      "source": "PORT3-1 and PORT3-7, a shaped log read from a file answers reads and outside reads",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "log_text": "101 openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\n101 openat(AT_FDCWD, \"docs/guide.md\", O_RDONLY) = 5\n101 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n101 openat(3, \"../../outside/secret.txt\", O_RDONLY) = 4\n",
+      "expected_reads": [
+        "docs/guide.md",
+        "src/app.py"
+      ],
+      "expected_outside": [
+        "{BASE}/outside/secret.txt"
+      ]
+    },
+    {
+      "name": "file_descriptor_state_runs_over_a_files_text",
+      "kind": "file",
+      "source": "PORT3-1, the file entries compose with the ported parse whole, directory state included",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "log_text": "101 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY) = 3\n101 openat(3, \"guide.md\", O_RDONLY) = 4\n",
+      "expected_reads": [
+        "docs/guide.md"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "file_bracketed_pid_line_reads",
+      "kind": "file",
+      "source": "PORT3-1 beside the slice 2 bracket reading, a bracketed line in a file parses under its process",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "log_text": "[pid 101] openat(AT_FDCWD, \"src/app.py\", O_RDONLY) = 3\n",
+      "expected_reads": [
+        "src/app.py"
+      ],
+      "expected_outside": []
+    },
+    {
+      "name": "file_unshaped_text_is_refused",
+      "kind": "file",
+      "source": "PORT3-7, the shape check stands in the file entries' composition",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "log_text": "a handed over note\nthat is not a trace\n",
+      "expected_error": "trace log does not look like strace output"
+    },
+    {
+      "name": "file_empty_reads_as_an_empty_result",
+      "kind": "file",
+      "source": "PORT3-7, an empty file passes the shape check and reads as an empty result",
+      "setup": [
+        {
+          "mkdir": "project/docs"
+        },
+        {
+          "write": [
+            "project/docs/guide.md",
+            "the guide\n"
+          ]
+        },
+        {
+          "mkdir": "project/src"
+        },
+        {
+          "write": [
+            "project/src/app.py",
+            "x = 1\n"
+          ]
+        },
+        {
+          "mkdir": "outside"
+        },
+        {
+          "write": [
+            "outside/secret.txt",
+            "outside the project\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "log_text": "",
+      "expected_reads": [],
+      "expected_outside": []
+    },
+    {
+      "name": "error_missing_file",
+      "kind": "error",
+      "source": "PORT3-3, probed against the Python 2026-11-07 and again at generation",
+      "provenance": "a real call against a path that does not stand",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_rel": "no-such.log",
+      "expected_error": "cannot read trace log {BASE}/no-such.log ([Errno 2] No such file or directory: '{BASE}/no-such.log')"
+    },
+    {
+      "name": "error_directory_handed_over_as_the_file",
+      "kind": "error",
+      "source": "PORT3-3, probed against the Python 2026-11-07 and again at generation",
+      "provenance": "a real call against a directory",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_rel": "project",
+      "expected_error": "cannot read trace log {BASE}/project ([Errno 21] Is a directory: '{BASE}/project')"
+    },
+    {
+      "name": "error_permission_denied",
+      "kind": "error",
+      "source": "PORT3-3, the errno 13 spelling in CPython's bracket form",
+      "provenance": "constructed by requesting the wording from the Python's error construction for errno 13 directly, because a capture running as root reads through mode bits and no real denial can be produced on this machine",
+      "setup": [
+        {
+          "mkdir": "project"
+        }
+      ],
+      "root": "project",
+      "log_rel": "noperm.log",
+      "constructed": true,
+      "expected_error": "cannot read trace log {BASE}/noperm.log ([Errno 13] Permission denied: '{BASE}/noperm.log')"
+    },
+    {
+      "name": "live_capture_of_cat_over_a_payload",
+      "kind": "live",
+      "source": "PORT3-7, one real capture read by both implementations, recorded in distilled form",
+      "setup": [
+        {
+          "mkdir": "project"
+        },
+        {
+          "write": [
+            "project/payload.txt",
+            "the payload\n"
+          ]
+        }
+      ],
+      "root": "project",
+      "command": [
+        "/bin/cat",
+        "{ROOT}/payload.txt"
+      ],
+      "expected_reads": [
+        "payload.txt"
+      ],
+      "expected_outside": []
+    }
+  ]
+}
