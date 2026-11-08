@@ -603,3 +603,247 @@ Tests. tests/conformance.rs port_split_line_cases_match_the_python_record.
 Obligation PORT2-7 states the equivalence method and the boundary of this slice. Equivalence is proven against recorded Python answers under the method PORT-6 states, the recordings drawn from the Python tests of the ported machinery, the trace tests and the slice and fix files that specify the directory and descriptor state, the fork seeding and sharing, the exec closings, and the split readings, with the fork inheritance cases FIX3-1 names drawn from the Round 3 fix file among them, and each recorded directory tree recreated in the conformance tests as the first slice's recordings are. The crash family the preamble names stands as a stated limit of this slice in the sanctioned direction, a return token the base zero conversion refuses crashing the Python parse uncaught on any branch that converts it, and the port reading the decimal the token spells and judging on it, exactly as the first slice stated for the openat reading. No nesting bound is claimed for the trace reading, because the reading is a flat loop over lines and holds no depth the bound could name, and trace size is bounded by memory alone in both implementations. What stays Python only after this slice is the file reading entry points and the live capture, the judgement stack of the config and workflow and analysis and report modules whole, and the command line whole. The capture and the file entries are orchestration over the ported parse, and their own slice judges them by the parse conformance together with a recorded live pair, one real capture read by both implementations, and that doctrine stands here so the two remaining entries and the runner question of the ostensible port are answered the one way.
 
 Tests. tests/conformance.rs, the whole file, with the case recordings under tests/conformance/.
+
+PORT3. The file reading entries and the live capture
+
+CONTRACT SECTION, owner written 2026-11-08 for the port slice 3
+round (expected Round 17). This section is appended to
+CONTRACT.md as the round's first content commit, exactly as
+PORT2 was in Round 16. Its grounding is the groundwork record
+at scratch/bg-rust3/GROUNDWORK.md, the Python read firsthand at
+the Round 16 head (blindgate/tracing.py from line 1149 to the
+end of the file, read whole on 2026-11-08), and the crate
+surface read firsthand the same day. Probe state is stated
+per obligation, and nothing in this section rests on a probe
+that has not run.
+
+Preamble. Slice 1 ported the parse of a trace text and slice 2
+the state machinery the parse runs on. What remains Python only
+in the trace reading is the two entries that read a trace from a
+file and the one entry that captures a trace live. Slice 3 ports
+exactly those three entries and nothing else. The crate already
+carries every piece they compose with. parse_trace and
+parse_trace_with_switch stand in src/parse.rs, TraceRead stands
+in src/model.rs, and BlindgateError stands in src/errors.rs,
+carrying a message String and nothing else, so a refusal built
+by these entries is a BlindgateError whose message is the
+wording stated here, returned as Err on the Result every entry
+in this section returns. The new code lives in a new module,
+src/entries.rs, and the three entries are re-exported from the
+library root beside the parse entries. The binary is unchanged.
+The command line whole is slice 4.
+
+PORT3-1, the file reading entries. read_trace_from_log_file
+takes a path and a root and returns the TraceRead the parse of
+the file's text produces (Result<TraceRead, BlindgateError>),
+and read_set_from_log_file takes the same arguments and
+returns the reads half only (Result<Vec<String>,
+BlindgateError>). Both read the whole file as bytes and decode
+it under PORT3-2, then parse with the shape check on through
+parse_trace, exactly as the Python composes read_text and
+parse_trace. The path argument is a filesystem path taken as
+given, never passed through a lossy text conversion of the
+caller's path. The wording under PORT3-3 names the path as the
+caller spelled it, through the same lossy rendering the Python
+gets from formatting a Path into its message.
+
+PORT3-2, the replacement decoding. The text the parse sees is
+the file's bytes decoded as UTF-8 with undecodable material
+replaced, matching CPython's errors replace reading exactly,
+grouping included. The decoder's behaviour is stated as rules,
+each rule pinned by a recorded case under PORT3-7.
+
+(a) A byte sequence that is well formed UTF-8 decodes to its
+scalar. An overlong form is not well formed. No byte below
+0xC2 ever starts a sequence, and 0xC0 and 0xC1 are invalid
+starters wherever they stand.
+(b) A starter byte whose continuation bytes are missing
+because the text ended yields one U+FFFD for the truncated
+sequence, however many of its continuation bytes stand.
+(c) A starter byte followed by a byte that is not a
+continuation yields one U+FFFD for the starter alone, and
+decoding resumes at the byte that broke the sequence.
+(d) A continuation byte with no starter before it yields one
+U+FFFD per byte. A run of lone continuations yields one
+U+FFFD per byte in the run.
+(e) A sequence whose second byte falls outside the range its
+starter allows, the overlong ranges, the surrogate range
+after 0xED, and the ranges past U+10FFFF after 0xF4, yields
+one U+FFFD for the starter, and decoding resumes at the
+second byte, which is then read on its own terms.
+(f) The starters 0xF5 through 0xFF never start a sequence and
+yield one U+FFFD per byte.
+The decoder is written for this contract in the crate and is
+not String::from_utf8_lossy. The two agree on well formed
+text, and where their grouping of a broken run is ever found
+to differ, this contract and its recordings govern, and the
+difference is a defect in whichever side departs from the
+recorded cases. The recordings are generated from the Python
+through its own read_text path and carry the byte cases named
+in the groundwork (lone continuations singly and in runs, a
+truncated sequence at the end of a token and at the end of
+the file, a sequence broken by a plain byte, an overlong
+form, 0xFF singly and in a pair, an 0xF5 starter, and a valid
+sequence followed by a lone continuation), each case read
+through read_set_from_log_file so the recorded read set pins
+the decoding the parse downstream actually saw.
+
+PORT3-3, the file entry's error wording. When the file cannot
+be read, the entry refuses with a BlindgateError whose
+message is the Python's wording, "cannot read trace log
+{path} ({inner})", where {inner} is CPython's own spelling of
+the operating system error, of the form "[Errno N] (words)
+followed by the path in single quotes". The port maps the raw
+error number from its own read to that form itself. The Rust
+io error spelling "(os error N)" never reaches a caller. The
+mappings the port's own read can produce on this platform are
+stated and pinned. 2 reads "[Errno 2] No such file or
+directory", 21 reads "[Errno 21] Is a directory", 13 reads
+"[Errno 13] Permission denied", and each then carries the
+path in the Python's form, a colon, a space, and the path in
+single quotes, with the path as
+spelled. The 2 and 21 spellings are probed against the Python
+(groundwork, 2026-11-07). The 13 spelling stands as the
+platform's strerror text for EACCES in CPython's bracket
+form. It is pinned in the recordings through a case its
+generator produces, and if the generator's own run cannot
+produce a permission denial (a capture running as root reads
+through mode bits), the case is generated by requesting the
+wording from the Python's error construction for errno 13
+directly and the recording names that provenance, rather than
+the case being dropped. A read error outside the stated map
+refuses with the same outer wording and the number carried
+in the bracket form with the port's best words for it. No
+such case is recorded, and claiming one would be inventing a
+probe. Directory handed over as the file follows the 21
+mapping on this platform, probed. A platform where a
+directory read fails differently is outside the stated
+surface.
+
+PORT3-4, the live capture's refusals. run_traced takes a
+command (a list of argument strings, the counterpart of the
+Python's list) and a root, and returns Result<TraceRead,
+BlindgateError>. Two refusals precede any work, in the
+Python's order. When no strace stands on the path, judged by
+the same lookup the Python's shutil.which performs (an
+executable file named strace on a PATH directory), the
+refusal is "strace is not available on this machine, so no
+read set can be captured". When the command is empty, the
+refusal is "no command was given to run". Both wordings are
+probed (groundwork, 2026-11-07 and the source read of
+2026-11-08).
+
+PORT3-5, the capture's orchestration. With the refusals
+passed, the entry resolves the root, creates a temp file
+inside the resolved root with the prefix .blindgate-trace-,
+closes it, and runs strace with the argument list stated in
+the groundwork (-f, -e with the _TRACED_CALLS list verbatim,
+-o naming the temp file, then --, then the command's
+arguments in order), waiting for it to finish and ignoring
+the traced command's own exit status exactly as check False
+does. The temp file is then read as bytes, decoded under
+PORT3-2, and removed in all paths, success and refusal
+alike, matching the Python's finally. The decoded text is
+parsed with the shape check off through
+parse_trace_with_switch at false, on the ground the crate's
+own doc comment already states, that strace itself produced
+the text. Observable consequences are part of the obligation.
+a root that cannot be written fails the capture at the temp
+file's creation (that failure's wording is the operating
+system's refusal surfaced as the port's error, and it is not
+one of the pinned wordings, because the Python lets the
+OSError from mkstemp escape unwrapped, a stated asymmetry
+with PORT3-3 that the port keeps by returning the refusal as
+a BlindgateError carrying the io error's own words). The
+traced command inherits the caller's standard streams, as a
+subprocess run without redirection does. And a capture
+leaves no .blindgate-trace- file behind in the root.
+
+PORT3-6, the binary and crate boundary. These entries are
+library surface only. The binary gains no flag, no argument,
+and no output in this slice, and its recorded behaviour from
+slices 1 and 2 stands untouched. No existing public name
+changes meaning. The Python package is not retired in this
+slice. Retirement is the closing slice's work, and the
+Python suite keeps standing as the specification the
+recordings are generated from.
+
+PORT3-7, equivalence method and the live pair. The file
+entries are judged by conformance recordings generated from
+the Python, never hand edited. Byte case files read through
+read_set_from_log_file (PORT3-2), the two probed error
+wordings read from real calls (PORT3-3), and shaped and
+unshaped texts read from files so the shape check's place in
+the composition is pinned. The capture is judged per the
+PORT2-7 doctrine. It is orchestration over the ported parse,
+so its proof is parse conformance plus one recorded live
+pair. One real capture of a small synthetic program runs
+once on this machine, and both implementations read its
+result. The Python's run_traced result on the live capture and the
+port's run_traced result on an equivalent live capture must
+agree on the read set and the outside reads, and the
+recording carries the distilled pair (the command, the
+agreed read set, the agreed outside reads), with the capture
+itself staying in scratch. Because a live capture's trace
+carries process numbers and timing the parse discards, the
+pair is recorded from runs whose only nondeterminism is what
+the parse erases. If the two runs' results differ, the pair
+is not recorded and the difference is a finding against the
+capture, not a case to edit into agreement. The strace on
+this machine (6.8, /usr/bin/strace, verified present
+2026-11-08) is the same binary both sides shell to.
+
+PORT3-8, the standalone checks, realistic data, and the
+round's own gates. The round carries the five standalone
+checks from the 2026-11-08 standing record in its review
+readiness block, with one slice scoped reading. Install and
+test alone are judged on the crate as it stands after this
+slice (the Python suite still stands, so test alone means
+each suite passes from a fresh clone with no fleet sibling
+present, as both do today). Examples alone and the
+first-screen items stand where Round 16 left them and are
+re-verified, not rebuilt. The realistic data rule is served
+by the live pair itself, a real strace capture at a real
+shape, beside the recorded byte cases. Gating for the round
+is the program standard of 2026-11-08. Hosted green on the
+exact head on GitHub Actions plus the three reviews, with
+the owner's own gate run locally when a window allows and
+never as a hostage condition. The conformance names this
+section pins are port_file_reading_cases_match_the_python_record,
+port_replacement_decoding_cases_match_the_python_record,
+port_file_error_wording_cases_match_the_python_record, and
+port_live_capture_pair_matches_the_python_record.
+
+Amendment to PORT3-2 (owner, 2026-11-08, on the probe record
+at scratch/bg-rust3/probe-results.md). Rule (c) as first
+stated covered only a starter broken at once. The probed
+behaviour is wider, and rule (c) is restated to read as
+follows. A starter byte together with the continuation bytes
+that validly follow it, fewer than the sequence needs,
+yields one U+FFFD for that whole prefix when the sequence is
+then broken by a byte that is not a continuation, and
+decoding resumes at the breaking byte. Cases B4 and B10 of
+the probe record pin the widened form (a three byte starter
+and a four byte starter, each with one valid continuation,
+each broken by a plain byte, each yielding one U+FFFD). The
+earlier text stands as the record of what was first stated.
+
+Amendment (owner, 2026-11-08, on the Round 17 reviews).
+Three stated limits stand on this slice. First, an error
+wording for a path whose name is not valid UTF-8 renders
+the undecodable bytes as U+FFFD in the port's message,
+because the port's error message is a Rust String and
+cannot carry the Python's surrogate spellings; the read
+itself takes the path as bytes and is unaffected.
+Second, PORT3-2's sentence that each rule is pinned by a
+recorded case holds with one named exception: case B11's
+sequence is truncated by the end of the file, its decoded
+line never reaches a return, and through the file entries
+it records the shape refusal rather than a read set; its
+grouping is pinned by the decoder unit tests instead.
+Third, the PORT3-5 spawn and read back failures and a
+PORT3-3 error carrying no raw operating system error
+both surface as a BlindgateError carrying the io error's
+own words; the contract stated no wording for them and
+this note states the port's treatment as the standing
+one.
