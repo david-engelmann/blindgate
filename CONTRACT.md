@@ -847,3 +847,16 @@ both surface as a BlindgateError carrying the io error's
 own words; the contract stated no wording for them and
 this note states the port's treatment as the standing
 one.
+
+Amendment (owner, 2026-11-08, on the Round 17 landing
+review). PORT-6 stated the boundary of slice 1: "Live
+capture stays Python only, and the file reading entry
+points read_trace_from_log_file and
+read_set_from_log_file stay Python only with it."
+PORT2-7 repeated the same boundary for slice 2. This
+slice retires that statement for the three entries it
+names and for nothing else: the file reading entries
+and the live capture stand ported under PORT3, and the
+judgement stack and the command line whole stay Python
+only until their own slices name them. The earlier
+texts stand as the record of what was first stated.
