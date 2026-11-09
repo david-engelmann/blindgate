@@ -23,9 +23,9 @@
 //! those documents into checks and job ids, the judgements in
 //! `analysis` pair checks with read sets and decide verdicts,
 //! and the renderings in `report` produce the report and the
-//! blindgate-evidence/1 document. The command line module
-//! stays with the Python in this slice and keeps composing
-//! the Python stack.
+//! blindgate-evidence/1 document. The command line stands
+//! in the binary shell since PORT5, composing this library
+//! whole, and the Python package it replaces is retired.
 
 pub mod analysis;
 pub mod classify;
@@ -35,6 +35,7 @@ pub mod errors;
 pub mod model;
 pub mod parse;
 pub mod report;
+mod repr_table;
 pub mod scope;
 pub mod value;
 pub mod workflow;
@@ -46,7 +47,9 @@ pub use crate::analysis::{
 };
 pub use crate::classify::{looks_like_strace, refuse_unshaped_trace};
 pub use crate::config::{load_config, unknown_jobs};
-pub use crate::entries::{read_set_from_log_file, read_trace_from_log_file, run_traced};
+pub use crate::entries::{
+    read_set_from_log_file, read_trace_from_log_file, resolve_root, run_traced,
+};
 pub use crate::errors::BlindgateError;
 pub use crate::model::{
     Check, CheckResult, TraceRead, TraceSource, VERDICT_EMPTY, VERDICT_PROVEN, VERDICT_UNPROVEN,

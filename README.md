@@ -29,29 +29,39 @@ reads in surface
 
 ## Install
 
-From a checkout of this repo, the Python tool installs with pip and the Rust crate builds with cargo. Both commands run as written from the repo root.
+The tool is the Rust binary alone, built with cargo. From a checkout of this repo, the build runs as written from the repo root and leaves the binary at target/debug/blindgate.
 
 ```
-python -m pip install -e .
 cargo build
 ```
 
 ## Quickstart
 
-The crate carries a thin binary over the trace parse. Build it and run it over the example trace that ships in this repo, with the repo root as the root the read set is scoped to.
+The example run judges the example trace against the checks the example config declares, with the examples folder as the root the read set is scoped to. Build the tool and run it over the files that ship under examples.
 
 ```
 cargo build
-./target/debug/blindgate examples/trace.log .
+./target/debug/blindgate --workflow examples/workflow.yml --config examples/blindgate.yml --trace examples/trace.log --root examples
 ```
 
-It prints the read set the trace holds, one path per line.
+It prints the report that stands in examples/report.txt, and its first check reads as follows.
 
 ```
-notes.txt
-src/app.py
-src/util.py
-tests/test_app.py
+check            unit tests
+job              unit-tests
+verdict          proven
+claimed surface
+    src/**
+    tests/**
+read set
+    notes.txt
+    src/app.py
+    src/util.py
+    tests/test_app.py
+reads in surface
+    src/app.py
+    src/util.py
+    tests/test_app.py
 ```
 
 ## Usage
@@ -59,7 +69,7 @@ tests/test_app.py
 The full report pairs every check a config declares with the read set its job produced. This run uses the workflow, the config, and the trace that ship under examples, and its output is the report that stands in examples/report.txt.
 
 ```
-python -m blindgate --workflow examples/workflow.yml --config examples/blindgate.yml --trace examples/trace.log --root examples
+./target/debug/blindgate --workflow examples/workflow.yml --config examples/blindgate.yml --trace examples/trace.log --root examples
 ```
 
 The first check is the captured block on the first screen of this README. The second check in the same report reads as follows.
@@ -85,9 +95,9 @@ A check can carry its own trace in the config, and a command line override can r
 
 The local seed is done and the repo stands on GitHub. The 403 refusals the seed week recorded no longer hold, and work lands through pull requests. The contract in CONTRACT.md holds the obligations for this repo. AGENTS.md stands in this repo, the canonical template of the program with this repo's annex below its marked line.
 
-The Python tool is the complete tool today. It judges a handed over trace or a live capture against the checks a config declares, and the example reports under examples regenerate byte identical on every head. The Rust port stands beside it as a library crate with a thin binary. The crate opened as port slice 1 with the reader model, the line classification, the canonical scoping, and the openat reading, and it now carries the parse entry whole, so the Rust parse answers any trace the Python parse answers, proven against recordings the Python package itself produced over the inputs its own tests use. The crate now carries the file reading entries and the live capture beside the parse, and the config and workflow and analysis and report modules beside those, and it publishes the evidence format those results imply. What stays Python only is the command line whole. Later port slices take that in the order the contract names.
+The tool is the Rust crate alone, and the Python package it replaces is retired. The crate opened as slice 1 with the reader model, the line classification, the canonical scoping, and the openat reading, and the port slices that followed carried the parse entry whole, the file reading entries and the live capture, the config and workflow and analysis and report modules, and the evidence format those results imply. The command line stands in the crate's binary shell, scanning its arguments under the model the contract states, and the example reports under examples regenerate byte identical on every head. The gate is cargo test, and the suite carries the conformance batteries the Python package produced over its own recordings beside the crate's own tests.
 
-Closed rounds stand at 18 of 100. Pinned formats stand at blindgate-evidence/1.
+Closed rounds stand at 19 of 100. Pinned formats stand at blindgate-evidence/1.
 
 ## Licence
 

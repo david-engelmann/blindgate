@@ -777,12 +777,12 @@ fn port_live_capture_pair_matches_the_python_record() {
     for case in &cases {
         let name = case.get("name").unwrap().as_text();
         let stood = stand_file_case(case);
-        let command: Vec<String> = case
+        let command: Vec<std::ffi::OsString> = case
             .get("command")
             .expect("case command")
             .text_list()
             .iter()
-            .map(|part| substitute(part, &stood.base, &stood.root))
+            .map(|part| std::ffi::OsString::from(substitute(part, &stood.base, &stood.root)))
             .collect();
         let read = match run_traced(&command, &stood.root) {
             Ok(read) => read,

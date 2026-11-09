@@ -88,8 +88,13 @@ pub fn read_set_from_log_file(path: &Path, root: &Path) -> Result<Vec<String>, B
 /// command's own exit status is ignored, the trace temp file
 /// stands inside the resolved root while the capture runs and
 /// is removed in all paths, and the traced command inherits
-/// the caller's standard streams.
-pub fn run_traced(command: &[String], root: &Path) -> Result<TraceRead, BlindgateError> {
+/// the caller's standard streams. The command words are
+/// OsString since PORT5, so a word reaches the subprocess as
+/// the bytes typed rather than as a text conversion.
+pub fn run_traced(
+    command: &[std::ffi::OsString],
+    root: &Path,
+) -> Result<TraceRead, BlindgateError> {
     let strace = which_strace().ok_or_else(|| {
         BlindgateError::new(
             "strace is not available on this machine, so no read set can be captured",
@@ -108,7 +113,7 @@ pub fn run_traced(command: &[String], root: &Path) -> Result<TraceRead, Blindgat
 fn run_capture(
     strace: &Path,
     trace_file: &Path,
-    command: &[String],
+    command: &[std::ffi::OsString],
     root_path: &Path,
 ) -> Result<TraceRead, BlindgateError> {
     let status = Command::new(strace)
@@ -135,7 +140,7 @@ fn run_capture(
 /// absolute form, so the capture's temp file creation meets
 /// the missing directory itself and surfaces its refusal, as
 /// the Python's unwrapped error does.
-pub(crate) fn resolve_root(root: &Path) -> PathBuf {
+pub fn resolve_root(root: &Path) -> PathBuf {
     if let Ok(resolved) = fs::canonicalize(root) {
         return resolved;
     }
@@ -344,9 +349,13 @@ pub(crate) fn os_error_inner(err: &io::Error, spelled: &str) -> String {
 /// double quote. The chosen quote and backslashes stand
 /// escaped with a backslash. A newline, a carriage return,
 /// and a tab stand as their escape spellings. Any other
-/// control character stands as a hexadecimal escape with
-/// two digits. Every other character, including non ASCII
-/// printable characters, stands as itself.
+/// character CPython counts as nonprintable stands as an
+/// escape under the generated table in repr_table, a
+/// hexadecimal escape with two digits below U+0100, a
+/// unicode escape with four digits below U+10000, and a
+/// long unicode escape with eight digits above that. Every
+/// printable character, including non ASCII ones, stands
+/// as itself.
 fn cpython_repr(name: &str) -> String {
     let quote = if name.contains('\'') && !name.contains('"') {
         '"'
@@ -365,7 +374,16 @@ fn cpython_repr(name: &str) -> String {
                 out.push('\\');
                 out.push(ch);
             }
-            ch if ch.is_control() => out.push_str(&format!("\\x{:02x}", ch as u32)),
+            ch if !crate::repr_table::cpython_printable(ch) => {
+                let code = ch as u32;
+                if code < 0x100 {
+                    out.push_str(&format!("\\x{code:02x}"));
+                } else if code < 0x10000 {
+                    out.push_str(&format!("\\u{code:04x}"));
+                } else {
+                    out.push_str(&format!("\\U{code:08x}"));
+                }
+            }
             ch => out.push(ch),
         }
     }
@@ -661,7 +679,7 @@ mod tests {
         }
         let root =
             std::env::temp_dir().join(format!("blindgate-entries-missing-{}", std::process::id()));
-        let command = vec!["/bin/true".to_string()];
+        let command = vec![std::ffi::OsString::from("/bin/true")];
         let err = run_traced(&command, &root)
             .expect_err("a root that does not stand fails the capture at the temp file");
         assert!(
@@ -794,6 +812,11 @@ mod tests {
         assert_eq!(cpython_repr("a\u{1}b.log"), "'a\\x01b.log'");
         assert_eq!(cpython_repr("Ünïcode.log"), "'Ünïcode.log'");
         assert_eq!(cpython_repr("plain.log"), "'plain.log'");
+        assert_eq!(cpython_repr("a\u{200B}b.log"), "'a\\u200bb.log'");
+        assert_eq!(cpython_repr("a\u{85}b.log"), "'a\\x85b.log'");
+        assert_eq!(cpython_repr("a\u{7F}b.log"), "'a\\x7fb.log'");
+        assert_eq!(cpython_repr("a\u{2028}b.log"), "'a\\u2028b.log'");
+        assert_eq!(cpython_repr("a\u{1F600}b.log"), "'a\u{1F600}b.log'");
     }
 
     #[test]
