@@ -641,15 +641,49 @@ fn is_negative_number(bytes: &[u8]) -> bool {
     false
 }
 
+/// Whether a dash led word segments into an option.
+///
+/// A long word segments when the part before its first
+/// equals sign, or the whole word when no equals sign
+/// stands, is a prefix of a long flag's name, the whole
+/// name included. A single dash word segments when its
+/// second byte is h, the only short flag, whatever follows
+/// it. A word that segments is read by argparse as an
+/// option standing in the value's place, never as a value.
+fn segments_into_option(bytes: &[u8]) -> bool {
+    if bytes.len() > 2 && bytes.starts_with(b"--") {
+        let body = &bytes[2..];
+        let name = match body.iter().position(|byte| *byte == b'=') {
+            Some(position) => &body[..position],
+            None => body,
+        };
+        LONGS
+            .iter()
+            .any(|(spelled, _)| spelled.as_bytes().starts_with(name))
+    } else if bytes.len() > 1 {
+        bytes[1] == b'h'
+    } else {
+        false
+    }
+}
+
 /// Whether a word standing after a valued flag counts as its value.
 ///
 /// A word that opens with a dash is no value, unless it is
-/// the lone dash or a negative number, and the empty word
-/// counts as a value, as argparse reads them.
+/// the lone dash, or it segments into no option and reads
+/// as a negative number, or it segments into no option and
+/// holds a space, the one byte U+0020, anywhere inside it,
+/// and the empty word counts as a value, as argparse reads
+/// them. A tab or any other whitespace inside a dash led
+/// word does not make it a value.
 fn is_value_like(bytes: &[u8]) -> bool {
     match bytes.first() {
         None => true,
-        Some(b'-') => bytes.len() == 1 || is_negative_number(bytes),
+        Some(b'-') => {
+            bytes.len() == 1
+                || (!segments_into_option(bytes)
+                    && (is_negative_number(bytes) || bytes.contains(&b' ')))
+        }
         Some(_) => true,
     }
 }

@@ -256,7 +256,7 @@ fn battery_census_by_family() {
     let (list, _) = cases();
     let census = family_census(&list);
     let expected: BTreeMap<String, usize> = [
-        ("arguments".to_string(), 47),
+        ("arguments".to_string(), 61),
         ("bytes".to_string(), 29),
         ("examples".to_string(), 6),
         ("refusals".to_string(), 19),
@@ -266,7 +266,7 @@ fn battery_census_by_family() {
     .into_iter()
     .collect();
     assert_eq!(census, expected, "the battery census by family");
-    assert_eq!(list.len(), 123, "the battery holds 123 cases");
+    assert_eq!(list.len(), 137, "the battery holds 137 cases");
 }
 
 #[test]

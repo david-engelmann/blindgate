@@ -4734,6 +4734,654 @@
         "stdout_b64": "",
         "stderr_b64": "ZXJyb3IsIGNhbm5vdCByZWFkIHdvcmtmbG93IGZpbGUgd1x1ZGNmZuKAi2YueW1sIChbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJ3dcdWRjZmZcdTIwMGJmLnltbCcpCg=="
       }
+    },
+    {
+      "name": "a dash led word holding a space reads as a workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "- x"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIGNhbm5vdCByZWFkIHdvcmtmbG93IGZpbGUgLSB4IChbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy0geCcpCg=="
+      }
+    },
+    {
+      "name": "a dash and a number holding a space reads as a workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "- 5"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIGNhbm5vdCByZWFkIHdvcmtmbG93IGZpbGUgLSA1IChbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy0gNScpCg=="
+      }
+    },
+    {
+      "name": "an unknown long word holding a space reads as a workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "--foo bar"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIGNhbm5vdCByZWFkIHdvcmtmbG93IGZpbGUgLS1mb28gYmFyIChbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy0tZm9vIGJhcicpCg=="
+      }
+    },
+    {
+      "name": "the ambiguous prefix holding a space reads as a workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "--tr x"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIGNhbm5vdCByZWFkIHdvcmtmbG93IGZpbGUgLS10ciB4IChbRXJybm8gMl0gTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeTogJy0tdHIgeCcpCg=="
+      }
+    },
+    {
+      "name": "a dash led word holding a space reads as a config value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "wf.yml"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "- x"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIGNhbm5vdCByZWFkIGNvbmZpZyBmaWxlIC0geCAoW0Vycm5vIDJdIE5vIHN1Y2ggZmlsZSBvciBkaXJlY3Rvcnk6ICctIHgnKQo="
+      }
+    },
+    {
+      "name": "a dash led word holding a space reads as a trace value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "wf.yml"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "- x"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIGNhbm5vdCByZWFkIHRyYWNlIGxvZyAtIHggKFtFcnJubyAyXSBObyBzdWNoIGZpbGUgb3IgZGlyZWN0b3J5OiAnLSB4JykK"
+      }
+    },
+    {
+      "name": "a dash led word holding a space reads as a trace-for value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "wf.yml"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        },
+        {
+          "text": "--trace-for"
+        },
+        {
+          "text": "- x"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIHRyYWNlLWZvciB2YWx1ZSAtIHggaXMgbm90IHdyaXR0ZW4gYXMgYSBqb2IgaWQsIGFuIGVxdWFscyBzaWduLCBhbmQgYSBwYXRoCg=="
+      }
+    },
+    {
+      "name": "a trace-for word holding a space partitions on its equals sign",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "wf.yml"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        },
+        {
+          "text": "--trace-for"
+        },
+        {
+          "text": "- x=y"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": "ZXJyb3IsIHRyYWNlLWZvciBuYW1lcyBqb2IgLSB4LCB3aGljaCBubyBjaGVjayBpbiB0aGUgY29uZmlnIHJ1bnMK"
+      }
+    },
+    {
+      "name": "a dash led word holding a space reads as a root value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "wf.yml"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        },
+        {
+          "text": "--root"
+        },
+        {
+          "text": "- x"
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "stdout_b64": "YmxpbmRnYXRlIHJlcG9ydAo9PT09PT09PT09PT09PT09CgpjaGVjayAgICAgICAgICAgIHVuaXQgdGVzdHMKam9iICAgICAgICAgICAgICB1bml0LXRlc3RzCnZlcmRpY3QgICAgICAgICAgcHJvdmVuCmNsYWltZWQgc3VyZmFjZQogICAgc3JjLyoqCiAgICB0ZXN0cy8qKgpyZWFkIHNldAogICAgbm90ZXMudHh0CiAgICBzcmMvYXBwLnB5CiAgICBzcmMvdXRpbC5weQogICAgdGVzdHMvdGVzdF9hcHAucHkKcmVhZHMgaW4gc3VyZmFjZQogICAgc3JjL2FwcC5weQogICAgc3JjL3V0aWwucHkKICAgIHRlc3RzL3Rlc3RfYXBwLnB5CgpjaGVjayAgICAgICAgICAgIGRvY3MgY2hlY2sKam9iICAgICAgICAgICAgICBkb2NzLWNoZWNrCnZlcmRpY3QgICAgICAgICAgdW5wcm92ZW4KY2xhaW1lZCBzdXJmYWNlCiAgICBkb2NzLyoubWQKcmVhZCBzZXQKICAgIG5vdGVzLnR4dAogICAgc3JjL2FwcC5weQogICAgc3JjL3V0aWwucHkKICAgIHRlc3RzL3Rlc3RfYXBwLnB5CnJlYWRzIGluIHN1cmZhY2UKICAgIG5vbmUKCg==",
+        "stderr_b64": ""
+      }
+    },
+    {
+      "name": "a dash led word with no space refuses for the workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "-x"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": null
+      }
+    },
+    {
+      "name": "a suffixed negative number refuses for the workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "-5x"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": null
+      }
+    },
+    {
+      "name": "a tab inside a dash led word does not make it a value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "-\tx"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": null
+      }
+    },
+    {
+      "name": "a spaced word segmenting into a flag refuses for the workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "--trace= x"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": null
+      }
+    },
+    {
+      "name": "a help word holding a space refuses for the workflow value",
+      "family": "arguments",
+      "files": {
+        "wf.yml": {
+          "b64": "bmFtZTogc3ludGhldGljIGdhdGUgcnVucwoKb246CiAgcHVzaDoKICBwdWxsX3JlcXVlc3Q6Cgpqb2JzOgogIHVuaXQtdGVzdHM6CiAgICBydW5zLW9uOiB1YnVudHUtbGF0ZXN0CiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgIC0gcnVuOiBweXRob24gLW0gcHl0ZXN0CiAgZG9jcy1jaGVjazoKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSBydW46IHB5dGhvbiB0b29scy9jaGVja19kb2NzLnB5Cg=="
+        },
+        "cfg.yml": {
+          "b64": "Y2hlY2tzOgogIC0gbmFtZTogdW5pdCB0ZXN0cwogICAgam9iOiB1bml0LXRlc3RzCiAgICBzdXJmYWNlOgogICAgICAtICJzcmMvKioiCiAgICAgIC0gInRlc3RzLyoqIgogIC0gbmFtZTogZG9jcyBjaGVjawogICAgam9iOiBkb2NzLWNoZWNrCiAgICBzdXJmYWNlOgogICAgICAtICJkb2NzLyoubWQiCg=="
+        },
+        "t.log": {
+          "b64": "NzEwMSBvcGVuYXQoQVRfRkRDV0QsICIvdXNyL2xpYi9weXRob24zLjEyL2VuY29kaW5ncy9fX2luaXRfXy5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSAzCjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL2FwcC5weSIsIE9fUkRPTkxZfE9fQ0xPRVhFQykgPSA0CjcxMDEgb3BlbmF0KEFUX0ZEQ1dELCAic3JjL3V0aWwucHkiLCBPX1JET05MWXxPX0NMT0VYRUMpID0gNQo3MTAyIG9wZW5hdChBVF9GRENXRCwgInRlc3RzL3Rlc3RfYXBwLnB5IiwgT19SRE9OTFl8T19DTE9FWEVDKSA9IDMKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJub3Rlcy50eHQiLCBPX1JET05MWSkgPSA0CjcxMDIgb3BlbmF0KEFUX0ZEQ1dELCAiZG9jcy9ndWlkZS5tZCIsIE9fUkRPTkxZKSA9IC0xIEVOT0VOVCAoTm8gc3VjaCBmaWxlIG9yIGRpcmVjdG9yeSkKNzEwMiBvcGVuYXQoQVRfRkRDV0QsICJvdXQvY292ZXJhZ2UudHh0IiwgT19XUk9OTFl8T19DUkVBVHxPX1RSVU5DLCAwNjQ0KSA9IDYKNzEwMiBleGl0X2dyb3VwKDApID0gPwo="
+        },
+        "payload.txt": {
+          "b64": "c3ludGhldGljIHBheWxvYWQK"
+        }
+      },
+      "dirs": [],
+      "symlinks": {},
+      "argv": [
+        {
+          "text": "--workflow"
+        },
+        {
+          "text": "-h x"
+        },
+        {
+          "text": "--config"
+        },
+        {
+          "text": "cfg.yml"
+        },
+        {
+          "text": "--trace"
+        },
+        {
+          "text": "t.log"
+        }
+      ],
+      "expect": {
+        "exit": 2,
+        "stdout_b64": "",
+        "stderr_b64": null
+      }
     }
   ]
 }
