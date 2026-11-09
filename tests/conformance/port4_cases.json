@@ -3106,6 +3106,199 @@
       }
     },
     {
+      "name": "yaml_refused_value_ending_in_a_colon",
+      "kind": "yaml",
+      "source": "PORT4-2, a plain value ending in a colon raises in PyYAML's scanner for a mapping value standing inside the scalar, and the port refuses it in its own words",
+      "input": "k: a:\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_value_ending_in_a_colon_before_a_comment",
+      "kind": "yaml",
+      "source": "PORT4-2, a plain value ending in a colon before a comment raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: a: # a comment\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_value_ending_in_a_double_colon",
+      "kind": "yaml",
+      "source": "PORT4-2, a plain value ending in a double colon raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: a::\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_value_ending_in_a_colon_before_a_continuation",
+      "kind": "yaml",
+      "source": "PORT4-2, a plain value ending in a colon before its continuation line raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: a:\n  cont\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_nested_value_ending_in_a_colon",
+      "kind": "yaml",
+      "source": "PORT4-2, a nested plain value ending in a colon raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "outer:\n  k: a:\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_flow_colon_entry_reads_as_a_pair",
+      "kind": "yaml",
+      "source": "PORT4-2, a colon closing a flow sequence entry reads as a single pair with a null value, because that colon never stands inside a plain scalar",
+      "input": "[a:]\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "map",
+            "v": [
+              [
+                {
+                  "t": "text",
+                  "v": "a"
+                },
+                {
+                  "t": "null"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_block_sequence_colon_entry_reads_as_a_pair",
+      "kind": "yaml",
+      "source": "PORT4-2, a colon closing a block sequence entry reads as a single pair with a null value, because that colon never stands inside a plain scalar",
+      "input": "- a:\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "map",
+            "v": [
+              [
+                {
+                  "t": "text",
+                  "v": "a"
+                },
+                {
+                  "t": "null"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_refused_block_entry_inside_a_flow_sequence",
+      "kind": "yaml",
+      "source": "PORT4-2, a block entry dash followed by a blank inside a flow sequence raises in PyYAML's parser, and the port refuses it in its own words",
+      "input": "[- a]\n",
+      "python_error": "ParserError"
+    },
+    {
+      "name": "yaml_refused_block_entry_inside_a_flow_mapping",
+      "kind": "yaml",
+      "source": "PORT4-2, a block entry dash followed by a blank inside a flow mapping raises in PyYAML's parser, and the port refuses it in its own words",
+      "input": "{k: - a}\n",
+      "python_error": "ParserError"
+    },
+    {
+      "name": "yaml_refused_block_entry_after_a_tab_inside_flow",
+      "kind": "yaml",
+      "source": "PORT4-2, a block entry dash followed by a tab inside a flow sequence raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "[-\ta]\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_block_entry_before_a_flow_close",
+      "kind": "yaml",
+      "source": "PORT4-2, a block entry dash standing last inside a flow sequence raises in PyYAML's parser, and the port refuses it in its own words",
+      "input": "[- ]\n",
+      "python_error": "ParserError"
+    },
+    {
+      "name": "yaml_refused_block_entry_before_a_break_inside_flow",
+      "kind": "yaml",
+      "source": "PORT4-2, a block entry dash followed by a line break inside a flow mapping raises in PyYAML's parser, and the port refuses it in its own words",
+      "input": "{k: -\n  a}\n",
+      "python_error": "ParserError"
+    },
+    {
+      "name": "yaml_refused_block_entry_as_a_flow_key",
+      "kind": "yaml",
+      "source": "PORT4-2, a block entry dash followed by a blank in the key position of a flow mapping raises in PyYAML's parser, and the port refuses it in its own words",
+      "input": "{- a: 1}\n",
+      "python_error": "ParserError"
+    },
+    {
+      "name": "yaml_flow_lone_dash_reads_as_text",
+      "kind": "yaml",
+      "source": "PORT4-2, a lone dash closing a flow sequence reads as the text dash, because no blank or break follows it inside the collection",
+      "input": "[-]\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "text",
+            "v": "-"
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_dash_number_reads_as_an_integer",
+      "kind": "yaml",
+      "source": "PORT4-2, a dash joined to a number inside a flow sequence reads as that negative integer",
+      "input": "[-5]\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "int",
+            "v": "-5"
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_dash_word_reads_as_text",
+      "kind": "yaml",
+      "source": "PORT4-2, a dash joined to a word inside a flow sequence reads as that text",
+      "input": "[-a]\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "text",
+            "v": "-a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_dash_key_reads",
+      "kind": "yaml",
+      "source": "PORT4-2, a dash standing as a flow mapping key reads as the text dash key",
+      "input": "{-: 1}\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "-"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ]
+        ]
+      }
+    },
+    {
       "name": "yaml_depth_one_hundred_levels",
       "kind": "yaml_depth",
       "source": "PORT4-2, nesting well inside the bound reads",

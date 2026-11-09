@@ -821,7 +821,11 @@ impl Parser {
             );
         }
         let head = strip_comment(lead).to_string();
-        if head.contains(": ") || head.ends_with(": ") {
+        // The head stands trimmed of trailing blanks, so a
+        // colon at its end is a mapping value standing
+        // inside the scalar, the same rule the continuation
+        // segments below carry.
+        if head.contains(": ") || head.ends_with(':') {
             return Err("a mapping value stands inside a plain scalar".to_string());
         }
         let mut segments: Vec<(usize, Option<char>, String)> = vec![(0, None, head)];
@@ -1439,6 +1443,31 @@ impl FlowSource {
     /// followed by a blank or a flow indicator, or at a
     /// comment. Blanks inside fold to one space.
     fn flow_plain(&mut self) -> Result<String, String> {
+        // A dash followed by a blank, a tab, a line break,
+        // or the end of the text is a block sequence entry
+        // to PyYAML's scanner wherever it stands, and its
+        // flow parser refuses the document. The check
+        // stands at the head, where every caller opens a
+        // fresh plain scalar, so the item, value, and key
+        // positions refuse alike. A dash followed by any
+        // other character opens a plain scalar.
+        if self.peek() == Some('-') {
+            let next = self.chars.get(self.pos + 1).copied();
+            if matches!(
+                next,
+                None | Some(' ')
+                    | Some('\t')
+                    | Some('\n')
+                    | Some('\u{0085}')
+                    | Some('\u{2028}')
+                    | Some('\u{2029}')
+            ) {
+                return Err(
+                    "a block sequence entry stands in a flow collection, which the subset does not carry"
+                        .to_string(),
+                );
+            }
+        }
         let mut out = String::new();
         let mut pending_space = false;
         while let Some(ch) = self.peek() {
@@ -2515,5 +2544,95 @@ mod tests {
             scalar("'a\u{2028}b'"),
             Value::Text("a\u{2028}b".to_string())
         );
+    }
+
+    #[test]
+    fn a_plain_value_ending_in_a_colon_refuses() {
+        // Fix pass 3, the first CodeRabbit finding on
+        // PR 22. strip_comment trims the head's trailing
+        // blanks before fold_plain's first segment check,
+        // so the check's colon and blank arm could never
+        // fire, and a plain value ending in a colon read
+        // as text where PyYAML raises for a mapping value
+        // standing inside the scalar. The continuation
+        // segments already carried the rule in its bare
+        // form, a segment ending in a colon refuses.
+        for text in [
+            "k: a:\n",
+            "k: a: \n",
+            "k: a: # a comment\n",
+            "k: a::\n",
+            "k: a:b:\n",
+            "k: a:\n  cont\n",
+            "outer:\n  k: a:\n",
+            "- k: a:\n",
+        ] {
+            assert!(parse_yaml(text).is_err(), "document {text:?}");
+        }
+        // A colon away from the value's end reads, a
+        // quoted spelling of the same text reads, and a
+        // colon closing a pair on a sequence line or in a
+        // flow sequence still reads as the pair it is,
+        // because those colons never reach fold_plain.
+        assert_eq!(scalar("a:b"), Value::Text("a:b".to_string()));
+        assert_eq!(scalar("'a:'"), Value::Text("a:".to_string()));
+        let block_pair = parse_yaml("- a:\n").expect("the document reads");
+        let items = block_pair.as_list().expect("a sequence stands");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].get("a"), Some(&Value::Null), "document - a:");
+        let flow_pair = parse_yaml("[a:]\n").expect("the document reads");
+        let items = flow_pair.as_list().expect("a sequence stands");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].get("a"), Some(&Value::Null), "document [a:]");
+    }
+
+    #[test]
+    fn a_block_entry_indicator_inside_flow_refuses() {
+        // Fix pass 3, the second CodeRabbit finding on
+        // PR 22. PyYAML's scanner hands back a block entry
+        // token for a dash followed by a blank or a break
+        // wherever it stands, and its flow parser refuses
+        // the document, while flow_plain read the dash and
+        // what followed it as one plain scalar. The check
+        // stands at flow_plain's head, so the item, value,
+        // and key positions refuse alike, as the probes
+        // showed the key position diverging the same way.
+        for text in [
+            "[- a]\n",
+            "{k: - a}\n",
+            "[- a, b]\n",
+            "k: [- a]\n",
+            "[-\ta]\n",
+            "[- ]\n",
+            "{k: - }\n",
+            "{k: -\n  a}\n",
+            "[-\n  a]\n",
+            "[-\u{2028}a]\n",
+            "[-\u{0085}a]\n",
+            "{- a: 1}\n",
+            "[[ - a]]\n",
+            "{k: [- a]}\n",
+        ] {
+            assert!(parse_yaml(text).is_err(), "document {text:?}");
+        }
+        // A dash followed by any other character opens a
+        // plain scalar, as it did before this fix.
+        let lone = parse_yaml("[-]\n").expect("the document reads");
+        assert_eq!(
+            lone.as_list().expect("a sequence stands"),
+            &vec![Value::Text("-".to_string())]
+        );
+        let number = parse_yaml("[-5]\n").expect("the document reads");
+        assert_eq!(
+            number.as_list().expect("a sequence stands"),
+            &vec![Value::Int(IntVal::from_decimal("-5"))]
+        );
+        let word = parse_yaml("[-a]\n").expect("the document reads");
+        assert_eq!(
+            word.as_list().expect("a sequence stands"),
+            &vec![Value::Text("-a".to_string())]
+        );
+        let keyed = parse_yaml("{-: 1}\n").expect("the document reads");
+        assert_eq!(keyed.get("-"), Some(&Value::Int(IntVal::from_decimal("1"))));
     }
 }
