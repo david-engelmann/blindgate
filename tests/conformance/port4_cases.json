@@ -1,0 +1,4117 @@
+{
+  "generated_by": "probe_gen4.py in the Round 18 scratch, run against the landed Python at the round base head; regenerate by running it again, never by editing recordings by hand",
+  "cases": [
+    {
+      "name": "config_fixture_json_reads_whole",
+      "kind": "config",
+      "source": "PORT4-3, the committed JSON fixture reads into its two checks",
+      "setup": [
+        {
+          "write": [
+            "config.json",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "config.json",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": null,
+          "trace_path": null
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_fixture_yaml_reads_whole",
+      "kind": "config",
+      "source": "PORT4-3, the committed YAML fixture reads into its one check",
+      "setup": [
+        {
+          "write": [
+            "config.yaml",
+            "checks:\n  - name: unit tests\n    job: unit-tests\n    surface:\n      - \"src/**\"\n      - \"tests/**\"\n"
+          ]
+        }
+      ],
+      "config_rel": "config.yaml",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_example_reads_whole",
+      "kind": "config",
+      "source": "PORT4-3, the committed example config reads whole",
+      "setup": [
+        {
+          "write": [
+            "blindgate.yml",
+            "checks:\n  - name: unit tests\n    job: unit-tests\n    surface:\n      - \"src/**\"\n      - \"tests/**\"\n  - name: docs check\n    job: docs-check\n    surface:\n      - \"docs/*.md\"\n"
+          ]
+        }
+      ],
+      "config_rel": "blindgate.yml",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": null,
+          "trace_path": null
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_per_job_traces_resolve_against_the_config_folder",
+      "kind": "config",
+      "source": "PORT4-3, a trace field resolves against the config file's resolved parent",
+      "setup": [
+        {
+          "write": [
+            "blindgate.yml",
+            "checks:\n  - name: unit tests\n    job: unit-tests\n    surface:\n      - \"src/**\"\n      - \"tests/**\"\n    trace: trace-unit.log\n  - name: docs check\n    job: docs-check\n    surface:\n      - \"docs/*.md\"\n    trace: trace-docs.log\n"
+          ]
+        }
+      ],
+      "config_rel": "blindgate.yml",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": "trace-unit.log",
+          "trace_path": "{BASE}/trace-unit.log"
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "trace": "trace-docs.log",
+          "trace_path": "{BASE}/trace-docs.log"
+        }
+      ]
+    },
+    {
+      "name": "config_missing_file",
+      "kind": "config",
+      "source": "PORT4-3, the read refusal wording from a real call",
+      "setup": [],
+      "config_rel": "no-such.json",
+      "expected_error": "cannot read config file {BASE}/no-such.json ([Errno 2] No such file or directory: '{BASE}/no-such.json')"
+    },
+    {
+      "name": "config_directory_handed_over_as_the_file",
+      "kind": "config",
+      "source": "PORT4-3, the read refusal wording from a real call against a directory",
+      "setup": [
+        {
+          "mkdir": "confdir"
+        }
+      ],
+      "config_rel": "confdir",
+      "expected_error": "cannot read config file {BASE}/confdir ([Errno 21] Is a directory: '{BASE}/confdir')"
+    },
+    {
+      "name": "config_unsupported_suffix",
+      "kind": "config",
+      "source": "PORT4-3, a suffix outside the three refuses verbatim",
+      "setup": [
+        {
+          "write": [
+            "config.txt",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "config.txt",
+      "expected_error": "config file {BASE}/config.txt has an unsupported suffix, use .json, .yaml, or .yml"
+    },
+    {
+      "name": "config_no_suffix",
+      "kind": "config",
+      "source": "PORT4-3, a name with no suffix has none and refuses",
+      "setup": [
+        {
+          "write": [
+            "config",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "config",
+      "expected_error": "config file {BASE}/config has an unsupported suffix, use .json, .yaml, or .yml"
+    },
+    {
+      "name": "config_leading_dot_name_has_no_suffix",
+      "kind": "config",
+      "source": "PORT4-3, a leading dot name has no suffix under Path's rule, probed 2026-11-08",
+      "setup": [
+        {
+          "write": [
+            ".json",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": ".json",
+      "expected_error": "config file {BASE}/.json has an unsupported suffix, use .json, .yaml, or .yml"
+    },
+    {
+      "name": "config_trailing_dot_name_has_no_suffix",
+      "kind": "config",
+      "source": "PORT4-3, a trailing dot name has no suffix under Path's rule, probed 2026-11-08",
+      "setup": [
+        {
+          "write": [
+            "config.",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "config.",
+      "expected_error": "config file {BASE}/config. has an unsupported suffix, use .json, .yaml, or .yml"
+    },
+    {
+      "name": "config_uppercase_suffix_loads",
+      "kind": "config",
+      "source": "PORT4-3, the suffix is lowercased before it is judged",
+      "setup": [
+        {
+          "write": [
+            "CONFIG.JSON",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "CONFIG.JSON",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": null,
+          "trace_path": null
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_double_suffix_judges_the_last",
+      "kind": "config",
+      "source": "PORT4-3, only the last dot suffix is judged",
+      "setup": [
+        {
+          "write": [
+            "a.tar.yml",
+            "checks:\n  - name: unit tests\n    job: unit-tests\n    surface:\n      - \"src/**\"\n      - \"tests/**\"\n"
+          ]
+        }
+      ],
+      "config_rel": "a.tar.yml",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_double_suffix_refuses_on_the_last",
+      "kind": "config",
+      "source": "PORT4-3, only the last dot suffix is judged, and a .txt tail refuses",
+      "setup": [
+        {
+          "write": [
+            "a.json.txt",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "a.json.txt",
+      "expected_error": "config file {BASE}/a.json.txt has an unsupported suffix, use .json, .yaml, or .yml"
+    },
+    {
+      "name": "config_json_parse_failure",
+      "kind": "config",
+      "source": "PORT4-3, the parse refusal's outer wording is exact and the inner text is the decoder's in the Python and the port's own in the port, a stated limit",
+      "setup": [
+        {
+          "write": [
+            "bad.json",
+            "{\"checks\": [}"
+          ]
+        }
+      ],
+      "config_rel": "bad.json",
+      "python_error": "config file {BASE}/bad.json is not valid JSON (Expecting value: line 1 column 13 (char 12))",
+      "port_prefix": "config file {BASE}/bad.json is not valid JSON ("
+    },
+    {
+      "name": "config_yaml_parse_failure",
+      "kind": "config",
+      "source": "PORT4-3, the parse refusal's outer wording is exact and the inner text is the parser's in the Python and the port's own in the port, a stated limit",
+      "setup": [
+        {
+          "write": [
+            "bad.yml",
+            "checks: [unclosed\n"
+          ]
+        }
+      ],
+      "config_rel": "bad.yml",
+      "python_error": "config file {BASE}/bad.yml is not valid YAML (while parsing a flow sequence\n  in \"<unicode string>\", line 1, column 9:\n    checks: [unclosed\n            ^\nexpected ',' or ']', but got '<stream end>'\n  in \"<unicode string>\", line 2, column 1:\n    \n    ^)",
+      "port_prefix": "config file {BASE}/bad.yml is not valid YAML ("
+    },
+    {
+      "name": "config_invalid_utf8_is_a_crash_family",
+      "kind": "config",
+      "source": "PORT4-3, invalid UTF-8 escapes the Python uncaught and the port refuses it in its own words, provenance stated",
+      "setup": [
+        {
+          "write_bytes_hex": [
+            "bad.json",
+            "ff7b7d"
+          ]
+        }
+      ],
+      "config_rel": "bad.json",
+      "provenance": "the Python's UnicodeDecodeError is uncaught in load_config; the expected port answer is the refusal under the stated prefix",
+      "python_crash": "UnicodeDecodeError",
+      "port_prefix": "config file {BASE}/bad.json does not hold valid UTF-8 text ("
+    },
+    {
+      "name": "config_document_not_a_mapping",
+      "kind": "config",
+      "source": "PORT4-3, a list document holds no checks list",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "[1, 2]"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config file {BASE}/c.json must hold a checks list"
+    },
+    {
+      "name": "config_checks_not_a_list",
+      "kind": "config",
+      "source": "PORT4-3, a checks value that is not a list fails the first check",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": 5}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config file {BASE}/c.json must hold a checks list"
+    },
+    {
+      "name": "config_checks_missing",
+      "kind": "config",
+      "source": "PORT4-3, a mapping without checks fails the first check",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"other\": []}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config file {BASE}/c.json must hold a checks list"
+    },
+    {
+      "name": "config_entry_not_a_mapping",
+      "kind": "config",
+      "source": "PORT4-3, an entry that is not a mapping refuses with its number",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [5]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config check number 0 is not a mapping"
+    },
+    {
+      "name": "config_entry_no_name",
+      "kind": "config",
+      "source": "PORT4-3, a missing name refuses with the entry's number",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"job\": \"j\", \"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config check number 0 has no name"
+    },
+    {
+      "name": "config_entry_empty_name",
+      "kind": "config",
+      "source": "PORT4-3, an empty name refuses the same way",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"\", \"job\": \"j\", \"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config check number 0 has no name"
+    },
+    {
+      "name": "config_entry_numeric_name",
+      "kind": "config",
+      "source": "PORT4-3, a name that is not text refuses the same way",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": 7, \"job\": \"j\", \"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config check number 0 has no name"
+    },
+    {
+      "name": "config_entry_timestamp_name",
+      "kind": "config",
+      "source": "PORT4-3, a timestamp where text is required fails the isinstance check the same way",
+      "setup": [
+        {
+          "write": [
+            "c.yaml",
+            "checks:\n  - name: 2024-01-01\n    job: j\n    surface: [s]\n"
+          ]
+        }
+      ],
+      "config_rel": "c.yaml",
+      "expected_error": "config check number 0 has no name"
+    },
+    {
+      "name": "config_second_entry_no_name",
+      "kind": "config",
+      "source": "PORT4-3, the number in the wording is the failing entry's index counted from zero, the Python's enumerate index",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"ok\", \"job\": \"j\", \"surface\": [\"s\"]}, {\"job\": \"j\", \"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config check number 1 has no name"
+    },
+    {
+      "name": "config_no_job",
+      "kind": "config",
+      "source": "PORT4-3, a missing job id refuses under the check's name",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has no job id"
+    },
+    {
+      "name": "config_empty_job",
+      "kind": "config",
+      "source": "PORT4-3, an empty job id refuses the same way",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"\", \"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has no job id"
+    },
+    {
+      "name": "config_surface_missing",
+      "kind": "config",
+      "source": "PORT4-3, a missing claimed surface refuses",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\"}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine declares no claimed surface"
+    },
+    {
+      "name": "config_surface_not_a_list",
+      "kind": "config",
+      "source": "PORT4-3, a claimed surface that is not a list refuses the same way",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": \"src/**\"}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine declares no claimed surface"
+    },
+    {
+      "name": "config_surface_empty_list",
+      "kind": "config",
+      "source": "PORT4-3, an empty claimed surface refuses the same way",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": []}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine declares no claimed surface"
+    },
+    {
+      "name": "config_surface_entry_not_text",
+      "kind": "config",
+      "source": "PORT4-3, a surface entry that is not text refuses",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"ok\", 7]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has a claimed surface entry that is not text"
+    },
+    {
+      "name": "config_surface_entry_empty",
+      "kind": "config",
+      "source": "PORT4-3, an empty surface entry refuses the same way",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has a claimed surface entry that is not text"
+    },
+    {
+      "name": "config_trace_not_text",
+      "kind": "config",
+      "source": "PORT4-3, a trace field that is not text refuses with the contract's wording",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"s\"], \"trace\": 7}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has a trace field that is not a non empty piece of text"
+    },
+    {
+      "name": "config_trace_empty",
+      "kind": "config",
+      "source": "PORT4-3, an empty trace field refuses the same way",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"s\"], \"trace\": \"\"}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has a trace field that is not a non empty piece of text"
+    },
+    {
+      "name": "config_trace_null_stands",
+      "kind": "config",
+      "source": "PORT4-3, a null trace field is no trace field",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"s\"], \"trace\": null}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_checks": [
+        {
+          "name": "mine",
+          "job": "j",
+          "surface": [
+            "s"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_empty_checks",
+      "kind": "config",
+      "source": "PORT4-3, an empty checks list declares no checks",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": []}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config file {BASE}/c.json declares no checks"
+    },
+    {
+      "name": "config_conjunction_name_before_job",
+      "kind": "config",
+      "source": "PORT4-3, a check failing name and job reports the name wording",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "config check number 0 has no name"
+    },
+    {
+      "name": "config_conjunction_job_before_surface",
+      "kind": "config",
+      "source": "PORT4-3, a check failing job and surface reports the job wording",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\"}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has no job id"
+    },
+    {
+      "name": "config_conjunction_surface_before_trace",
+      "kind": "config",
+      "source": "PORT4-3, a check failing surface and trace reports the surface wording",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [7], \"trace\": 7}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_error": "check mine has a claimed surface entry that is not text"
+    },
+    {
+      "name": "config_json_duplicate_keys_keep_the_last",
+      "kind": "config",
+      "source": "PORT4-1 and probe J1, duplicate keys in a JSON reading keep the last value",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"first\", \"job\": \"j\", \"surface\": [\"s\"]}], \"checks\": [{\"name\": \"second\", \"job\": \"j\", \"surface\": [\"s\"]}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_checks": [
+        {
+          "name": "second",
+          "job": "j",
+          "surface": [
+            "s"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_yaml_duplicate_keys_keep_the_last",
+      "kind": "config",
+      "source": "PORT4-1 and probe D1, duplicate keys in a YAML reading keep the last value",
+      "setup": [
+        {
+          "write": [
+            "c.yaml",
+            "checks:\n  - name: first\n    job: j\n    surface: [s]\nchecks:\n  - name: second\n    job: j\n    surface: [s]\n"
+          ]
+        }
+      ],
+      "config_rel": "c.yaml",
+      "expected_checks": [
+        {
+          "name": "second",
+          "job": "j",
+          "surface": [
+            "s"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_trace_resolved_through_a_symlinked_config_directory",
+      "kind": "config",
+      "source": "PORT4-3, the trace resolves against the config file's resolved parent, through a symlink",
+      "setup": [
+        {
+          "mkdir": "real"
+        },
+        {
+          "write": [
+            "real/c.yml",
+            "checks:\n  - name: mine\n    job: j\n    surface: [s]\n    trace: t.log\n"
+          ]
+        },
+        {
+          "symlink": [
+            "{BASE}/real",
+            "linked"
+          ]
+        }
+      ],
+      "config_rel": "linked/c.yml",
+      "expected_checks": [
+        {
+          "name": "mine",
+          "job": "j",
+          "surface": [
+            "s"
+          ],
+          "trace": "t.log",
+          "trace_path": "{BASE}/real/t.log"
+        }
+      ]
+    },
+    {
+      "name": "config_trace_absolute_stands_as_spelled",
+      "kind": "config",
+      "source": "PORT4-3, an absolute trace field is its own resolved path",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"s\"], \"trace\": \"/elsewhere/t.log\"}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_checks": [
+        {
+          "name": "mine",
+          "job": "j",
+          "surface": [
+            "s"
+          ],
+          "trace": "/elsewhere/t.log",
+          "trace_path": "/elsewhere/t.log"
+        }
+      ]
+    },
+    {
+      "name": "config_unknown_jobs_all_known",
+      "kind": "config",
+      "source": "PORT4-3, unknown_jobs over the fixture pair names nothing",
+      "setup": [
+        {
+          "write": [
+            "config.json",
+            "{\"checks\":[{\"job\":\"unit-tests\",\"name\":\"unit tests\",\"surface\":[\"src/**\",\"tests/**\"]},{\"job\":\"docs-check\",\"name\":\"docs check\",\"surface\":[\"docs/*.md\"]}]}"
+          ]
+        },
+        {
+          "write": [
+            "workflow.yml",
+            "name: synthetic gate runs\n\non:\n  push:\n  pull_request:\n\njobs:\n  unit-tests:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python -m pytest\n  docs-check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python tools/check_docs.py\n"
+          ]
+        }
+      ],
+      "config_rel": "config.json",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": null,
+          "trace_path": null
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ],
+      "workflow_rel": "workflow.yml",
+      "expected_unknown": []
+    },
+    {
+      "name": "config_unknown_jobs_names_the_stranger",
+      "kind": "config",
+      "source": "PORT4-3, unknown_jobs preserves config order and names the checks whose jobs the workflow lacks",
+      "setup": [
+        {
+          "write": [
+            "config.json",
+            "{\"checks\": [{\"name\": \"known\", \"job\": \"unit-tests\", \"surface\": [\"s\"]}, {\"name\": \"stray\", \"job\": \"ghost\", \"surface\": [\"s\"]}, {\"name\": \"stray two\", \"job\": \"phantom\", \"surface\": [\"s\"]}]}"
+          ]
+        },
+        {
+          "write": [
+            "workflow.yml",
+            "name: synthetic gate runs\n\non:\n  push:\n  pull_request:\n\njobs:\n  unit-tests:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python -m pytest\n  docs-check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python tools/check_docs.py\n"
+          ]
+        }
+      ],
+      "config_rel": "config.json",
+      "expected_checks": [
+        {
+          "name": "known",
+          "job": "unit-tests",
+          "surface": [
+            "s"
+          ],
+          "trace": null,
+          "trace_path": null
+        },
+        {
+          "name": "stray",
+          "job": "ghost",
+          "surface": [
+            "s"
+          ],
+          "trace": null,
+          "trace_path": null
+        },
+        {
+          "name": "stray two",
+          "job": "phantom",
+          "surface": [
+            "s"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ],
+      "workflow_rel": "workflow.yml",
+      "expected_unknown": [
+        "stray",
+        "stray two"
+      ]
+    },
+    {
+      "name": "config_marked_yaml_reads",
+      "kind": "config",
+      "source": "PORT4-3, a config whose text opens with a byte order mark loads whole",
+      "setup": [
+        {
+          "write": [
+            "marked.yml",
+            "\ufeffchecks:\n  - name: unit tests\n    job: unit-tests\n    surface:\n      - \"src/**\"\n      - \"tests/**\"\n"
+          ]
+        }
+      ],
+      "config_rel": "marked.yml",
+      "expected_checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "trace": null,
+          "trace_path": null
+        }
+      ]
+    },
+    {
+      "name": "config_trace_dot_spelling_is_carried_normalized",
+      "kind": "config",
+      "source": "PORT4-3, a trace field spelled with a dot component is carried in the normalized form the Python's Path conversion gives it",
+      "setup": [
+        {
+          "write": [
+            "sub/c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"s\"], \"trace\": \"./t.log\"}]}"
+          ]
+        }
+      ],
+      "config_rel": "sub/c.json",
+      "expected_checks": [
+        {
+          "name": "mine",
+          "job": "j",
+          "surface": [
+            "s"
+          ],
+          "trace": "./t.log",
+          "trace_path": "{BASE}/sub/t.log"
+        }
+      ]
+    },
+    {
+      "name": "config_trace_slash_run_is_carried_normalized",
+      "kind": "config",
+      "source": "PORT4-3, a trace field spelled with a slash run is carried in the normalized form the Python's Path conversion gives it",
+      "setup": [
+        {
+          "write": [
+            "c.json",
+            "{\"checks\": [{\"name\": \"mine\", \"job\": \"j\", \"surface\": [\"s\"], \"trace\": \"/elsewhere//t.log\"}]}"
+          ]
+        }
+      ],
+      "config_rel": "c.json",
+      "expected_checks": [
+        {
+          "name": "mine",
+          "job": "j",
+          "surface": [
+            "s"
+          ],
+          "trace": "/elsewhere//t.log",
+          "trace_path": "/elsewhere/t.log"
+        }
+      ]
+    },
+    {
+      "name": "workflow_fixture_reads_whole",
+      "kind": "workflow",
+      "source": "PORT4-4, the committed fixture workflow declares its two jobs",
+      "setup": [
+        {
+          "write": [
+            "workflow.yml",
+            "name: synthetic gate runs\n\non:\n  push:\n  pull_request:\n\njobs:\n  unit-tests:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python -m pytest\n  docs-check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python tools/check_docs.py\n"
+          ]
+        }
+      ],
+      "workflow_rel": "workflow.yml",
+      "expected_jobs": [
+        "docs-check",
+        "unit-tests"
+      ]
+    },
+    {
+      "name": "workflow_missing_file",
+      "kind": "workflow",
+      "source": "PORT4-4, the read refusal wording from a real call",
+      "setup": [],
+      "workflow_rel": "no-such.yml",
+      "expected_error": "cannot read workflow file {BASE}/no-such.yml ([Errno 2] No such file or directory: '{BASE}/no-such.yml')"
+    },
+    {
+      "name": "workflow_directory_handed_over_as_the_file",
+      "kind": "workflow",
+      "source": "PORT4-4, the read refusal wording from a real call against a directory",
+      "setup": [
+        {
+          "mkdir": "wfdir"
+        }
+      ],
+      "workflow_rel": "wfdir",
+      "expected_error": "cannot read workflow file {BASE}/wfdir ([Errno 21] Is a directory: '{BASE}/wfdir')"
+    },
+    {
+      "name": "workflow_document_not_a_mapping",
+      "kind": "workflow",
+      "source": "PORT4-4, a sequence document does not hold a mapping",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "- a\n- b\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "expected_error": "workflow file {BASE}/w.yml does not hold a mapping"
+    },
+    {
+      "name": "workflow_no_jobs_key",
+      "kind": "workflow",
+      "source": "PORT4-4, a mapping without jobs declares no jobs",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "name: only a name\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "expected_error": "workflow file {BASE}/w.yml declares no jobs"
+    },
+    {
+      "name": "workflow_jobs_not_a_mapping",
+      "kind": "workflow",
+      "source": "PORT4-4, a jobs value that is not a mapping declares no jobs",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "jobs: 5\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "expected_error": "workflow file {BASE}/w.yml declares no jobs"
+    },
+    {
+      "name": "workflow_jobs_empty",
+      "kind": "workflow",
+      "source": "PORT4-4, an empty jobs mapping declares no jobs",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "jobs: {}\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "expected_error": "workflow file {BASE}/w.yml declares no jobs"
+    },
+    {
+      "name": "workflow_key_coercions",
+      "kind": "workflow",
+      "source": "PORT4-4 and probe K1, job ids are the keys coerced by CPython str rules",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "jobs:\n  7:\n  true:\n  1.5:\n  2024-01-01:\n  text-job:\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "expected_jobs": [
+        "1.5",
+        "2024-01-01",
+        "7",
+        "True",
+        "text-job"
+      ]
+    },
+    {
+      "name": "workflow_key_collision_int_first",
+      "kind": "workflow",
+      "source": "PORT4-1 and PORT4-4, an int key and a true key collide and the first key object is retained, so the coercion spells the int",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "jobs:\n  1: a\n  true: b\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "expected_jobs": [
+        "1"
+      ]
+    },
+    {
+      "name": "workflow_key_collision_bool_first",
+      "kind": "workflow",
+      "source": "PORT4-1 and PORT4-4, the same collision with the bool first spells True",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "jobs:\n  true: a\n  1: b\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "expected_jobs": [
+        "True"
+      ]
+    },
+    {
+      "name": "workflow_parse_failure",
+      "kind": "workflow",
+      "source": "PORT4-4, the parse refusal's outer wording is exact and the inner text is the parser's in the Python and the port's own in the port, a stated limit",
+      "setup": [
+        {
+          "write": [
+            "w.yml",
+            "jobs: [unclosed\n"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "python_error": "workflow file {BASE}/w.yml is not valid YAML (while parsing a flow sequence\n  in \"<unicode string>\", line 1, column 7:\n    jobs: [unclosed\n          ^\nexpected ',' or ']', but got '<stream end>'\n  in \"<unicode string>\", line 2, column 1:\n    \n    ^)",
+      "port_prefix": "workflow file {BASE}/w.yml is not valid YAML ("
+    },
+    {
+      "name": "workflow_invalid_utf8_is_a_crash_family",
+      "kind": "workflow",
+      "source": "PORT4-4, invalid UTF-8 escapes the Python uncaught and the port refuses it in its own words, provenance stated",
+      "setup": [
+        {
+          "write_bytes_hex": [
+            "w.yml",
+            "ff7b7d"
+          ]
+        }
+      ],
+      "workflow_rel": "w.yml",
+      "provenance": "the Python's UnicodeDecodeError is uncaught in load_workflow_jobs; the expected port answer is the refusal under the stated prefix",
+      "python_crash": "UnicodeDecodeError",
+      "port_prefix": "workflow file {BASE}/w.yml does not hold valid UTF-8 text ("
+    },
+    {
+      "name": "workflow_marked_reads_whole",
+      "kind": "workflow",
+      "source": "PORT4-4, a workflow whose text opens with a byte order mark declares its jobs whole",
+      "setup": [
+        {
+          "write": [
+            "marked.yml",
+            "\ufeffname: synthetic gate runs\n\non:\n  push:\n  pull_request:\n\njobs:\n  unit-tests:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python -m pytest\n  docs-check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python tools/check_docs.py\n"
+          ]
+        }
+      ],
+      "workflow_rel": "marked.yml",
+      "expected_jobs": [
+        "docs-check",
+        "unit-tests"
+      ]
+    },
+    {
+      "name": "yaml_scalar_00",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "y",
+      "expected_value": {
+        "t": "text",
+        "v": "y"
+      }
+    },
+    {
+      "name": "yaml_scalar_01",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "n",
+      "expected_value": {
+        "t": "text",
+        "v": "n"
+      }
+    },
+    {
+      "name": "yaml_scalar_02",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "Yes",
+      "expected_value": {
+        "t": "bool",
+        "v": true
+      }
+    },
+    {
+      "name": "yaml_scalar_03",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "NO",
+      "expected_value": {
+        "t": "bool",
+        "v": false
+      }
+    },
+    {
+      "name": "yaml_scalar_04",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "on",
+      "expected_value": {
+        "t": "bool",
+        "v": true
+      }
+    },
+    {
+      "name": "yaml_scalar_05",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "Off",
+      "expected_value": {
+        "t": "bool",
+        "v": false
+      }
+    },
+    {
+      "name": "yaml_scalar_06",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "true",
+      "expected_value": {
+        "t": "bool",
+        "v": true
+      }
+    },
+    {
+      "name": "yaml_scalar_07",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "False",
+      "expected_value": {
+        "t": "bool",
+        "v": false
+      }
+    },
+    {
+      "name": "yaml_scalar_08",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "null",
+      "expected_value": {
+        "t": "null"
+      }
+    },
+    {
+      "name": "yaml_scalar_09",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "~",
+      "expected_value": {
+        "t": "null"
+      }
+    },
+    {
+      "name": "yaml_scalar_10",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "Null",
+      "expected_value": {
+        "t": "null"
+      }
+    },
+    {
+      "name": "yaml_scalar_11",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "NULL",
+      "expected_value": {
+        "t": "null"
+      }
+    },
+    {
+      "name": "yaml_scalar_12",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "0",
+      "expected_value": {
+        "t": "int",
+        "v": "0"
+      }
+    },
+    {
+      "name": "yaml_scalar_13",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "07",
+      "expected_value": {
+        "t": "int",
+        "v": "7"
+      }
+    },
+    {
+      "name": "yaml_scalar_14",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "0o17",
+      "expected_value": {
+        "t": "text",
+        "v": "0o17"
+      }
+    },
+    {
+      "name": "yaml_scalar_15",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "0x1F",
+      "expected_value": {
+        "t": "int",
+        "v": "31"
+      }
+    },
+    {
+      "name": "yaml_scalar_16",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "0b101",
+      "expected_value": {
+        "t": "int",
+        "v": "5"
+      }
+    },
+    {
+      "name": "yaml_scalar_17",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "-12",
+      "expected_value": {
+        "t": "int",
+        "v": "-12"
+      }
+    },
+    {
+      "name": "yaml_scalar_18",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "+12",
+      "expected_value": {
+        "t": "int",
+        "v": "12"
+      }
+    },
+    {
+      "name": "yaml_scalar_19",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1_000",
+      "expected_value": {
+        "t": "int",
+        "v": "1000"
+      }
+    },
+    {
+      "name": "yaml_scalar_20",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1:30",
+      "expected_value": {
+        "t": "int",
+        "v": "90"
+      }
+    },
+    {
+      "name": "yaml_scalar_21",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1:2:3",
+      "expected_value": {
+        "t": "int",
+        "v": "3723"
+      }
+    },
+    {
+      "name": "yaml_scalar_22",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "12:34:56",
+      "expected_value": {
+        "t": "int",
+        "v": "45296"
+      }
+    },
+    {
+      "name": "yaml_scalar_23",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "0:30",
+      "expected_value": {
+        "t": "text",
+        "v": "0:30"
+      }
+    },
+    {
+      "name": "yaml_scalar_24",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "00:30",
+      "expected_value": {
+        "t": "text",
+        "v": "00:30"
+      }
+    },
+    {
+      "name": "yaml_scalar_25",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "08",
+      "expected_value": {
+        "t": "text",
+        "v": "08"
+      }
+    },
+    {
+      "name": "yaml_scalar_26",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "0x",
+      "expected_value": {
+        "t": "text",
+        "v": "0x"
+      }
+    },
+    {
+      "name": "yaml_scalar_27",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "0b",
+      "expected_value": {
+        "t": "text",
+        "v": "0b"
+      }
+    },
+    {
+      "name": "yaml_scalar_28",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1.5",
+      "expected_value": {
+        "t": "float",
+        "v": "1.5"
+      }
+    },
+    {
+      "name": "yaml_scalar_29",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "-.5",
+      "expected_value": {
+        "t": "text",
+        "v": "-.5"
+      }
+    },
+    {
+      "name": "yaml_scalar_30",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "+.5",
+      "expected_value": {
+        "t": "text",
+        "v": "+.5"
+      }
+    },
+    {
+      "name": "yaml_scalar_31",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": ".5",
+      "expected_value": {
+        "t": "float",
+        "v": "0.5"
+      }
+    },
+    {
+      "name": "yaml_scalar_32",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1.",
+      "expected_value": {
+        "t": "float",
+        "v": "1.0"
+      }
+    },
+    {
+      "name": "yaml_scalar_33",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1e3",
+      "expected_value": {
+        "t": "text",
+        "v": "1e3"
+      }
+    },
+    {
+      "name": "yaml_scalar_34",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1.5e3",
+      "expected_value": {
+        "t": "text",
+        "v": "1.5e3"
+      }
+    },
+    {
+      "name": "yaml_scalar_35",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1.5e+3",
+      "expected_value": {
+        "t": "float",
+        "v": "1500.0"
+      }
+    },
+    {
+      "name": "yaml_scalar_36",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1.2e-3",
+      "expected_value": {
+        "t": "float",
+        "v": "0.0012"
+      }
+    },
+    {
+      "name": "yaml_scalar_37",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1_0.5",
+      "expected_value": {
+        "t": "float",
+        "v": "10.5"
+      }
+    },
+    {
+      "name": "yaml_scalar_38",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": ".5e-2",
+      "expected_value": {
+        "t": "float",
+        "v": "0.005"
+      }
+    },
+    {
+      "name": "yaml_scalar_39",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1:30.5",
+      "expected_value": {
+        "t": "float",
+        "v": "90.5"
+      }
+    },
+    {
+      "name": "yaml_scalar_40",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1:2:3.25",
+      "expected_value": {
+        "t": "float",
+        "v": "3723.25"
+      }
+    },
+    {
+      "name": "yaml_scalar_41",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "1:30.",
+      "expected_value": {
+        "t": "float",
+        "v": "90.0"
+      }
+    },
+    {
+      "name": "yaml_scalar_42",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": ".inf",
+      "expected_value": {
+        "t": "float",
+        "v": "inf"
+      }
+    },
+    {
+      "name": "yaml_scalar_43",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "-.Inf",
+      "expected_value": {
+        "t": "float",
+        "v": "-inf"
+      }
+    },
+    {
+      "name": "yaml_scalar_44",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": ".NaN",
+      "expected_value": {
+        "t": "float",
+        "v": "nan"
+      }
+    },
+    {
+      "name": "yaml_scalar_45",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2024-01-01",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2024-01-01"
+      }
+    },
+    {
+      "name": "yaml_scalar_46",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2001-02-03 04:05:06",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2001-02-03 04:05:06"
+      }
+    },
+    {
+      "name": "yaml_scalar_47",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2001-02-03t04:05:06.78Z",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2001-02-03 04:05:06.780000+00:00"
+      }
+    },
+    {
+      "name": "yaml_scalar_48",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2001-02-03 04:05:06.7",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2001-02-03 04:05:06.700000"
+      }
+    },
+    {
+      "name": "yaml_scalar_49",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2001-02-03T04:05:06+5",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2001-02-03 04:05:06+05:00"
+      }
+    },
+    {
+      "name": "yaml_scalar_50",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2001-02-03 04:05:06+05:30",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2001-02-03 04:05:06+05:30"
+      }
+    },
+    {
+      "name": "yaml_scalar_51",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2001-02-03 04:05:06 -4",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2001-02-03 04:05:06-04:00"
+      }
+    },
+    {
+      "name": "yaml_scalar_52",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "2001-2-3 4:05:06",
+      "expected_value": {
+        "t": "timestamp",
+        "v": "2001-02-03 04:05:06"
+      }
+    },
+    {
+      "name": "yaml_scalar_53",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "'y'",
+      "expected_value": {
+        "t": "text",
+        "v": "y"
+      }
+    },
+    {
+      "name": "yaml_scalar_54",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "\"on\"",
+      "expected_value": {
+        "t": "text",
+        "v": "on"
+      }
+    },
+    {
+      "name": "yaml_scalar_55",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "plain words here",
+      "expected_value": {
+        "t": "text",
+        "v": "plain words here"
+      }
+    },
+    {
+      "name": "yaml_scalar_56",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "a:b",
+      "expected_value": {
+        "t": "text",
+        "v": "a:b"
+      }
+    },
+    {
+      "name": "yaml_scalar_57",
+      "kind": "yaml_scalar",
+      "source": "PORT4-2 and probe record Y, the plain scalar resolution table regenerated through safe_load",
+      "input": "http://example.com/x",
+      "expected_value": {
+        "t": "text",
+        "v": "http://example.com/x"
+      }
+    },
+    {
+      "name": "yaml_sequence_at_the_keys_indent",
+      "kind": "yaml",
+      "source": "PORT4-2, a block sequence may stand at its key's own indentation",
+      "input": "checks:\n- name: a\n  job: j\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "checks"
+            },
+            {
+              "t": "list",
+              "v": [
+                {
+                  "t": "map",
+                  "v": [
+                    [
+                      {
+                        "t": "text",
+                        "v": "name"
+                      },
+                      {
+                        "t": "text",
+                        "v": "a"
+                      }
+                    ],
+                    [
+                      {
+                        "t": "text",
+                        "v": "job"
+                      },
+                      {
+                        "t": "text",
+                        "v": "j"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_sequence_deeper_indent",
+      "kind": "yaml",
+      "source": "PORT4-2, a block sequence may also stand deeper",
+      "input": "checks:\n  - name: a\n    job: j\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "checks"
+            },
+            {
+              "t": "list",
+              "v": [
+                {
+                  "t": "map",
+                  "v": [
+                    [
+                      {
+                        "t": "text",
+                        "v": "name"
+                      },
+                      {
+                        "t": "text",
+                        "v": "a"
+                      }
+                    ],
+                    [
+                      {
+                        "t": "text",
+                        "v": "job"
+                      },
+                      {
+                        "t": "text",
+                        "v": "j"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_plain_scalar_folds_a_continuation",
+      "kind": "yaml",
+      "source": "PORT4-2, a plain scalar folds a deeper continuation line with a space",
+      "input": "k: some long\n  text here\nnext: 1\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "some long text here"
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "next"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_plain_scalar_folds_a_blank_line_to_a_newline",
+      "kind": "yaml",
+      "source": "PORT4-2, a blank line inside a plain scalar folds to one newline",
+      "input": "k: first\n\n  second\nnext: 1\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "first\nsecond"
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "next"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_sequence_of_mappings",
+      "kind": "yaml",
+      "source": "PORT4-2, a mapping opens on a sequence entry line and continues at its column",
+      "input": "- name: a\n  job: j\n- name: b\n  job: k\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "map",
+            "v": [
+              [
+                {
+                  "t": "text",
+                  "v": "name"
+                },
+                {
+                  "t": "text",
+                  "v": "a"
+                }
+              ],
+              [
+                {
+                  "t": "text",
+                  "v": "job"
+                },
+                {
+                  "t": "text",
+                  "v": "j"
+                }
+              ]
+            ]
+          },
+          {
+            "t": "map",
+            "v": [
+              [
+                {
+                  "t": "text",
+                  "v": "name"
+                },
+                {
+                  "t": "text",
+                  "v": "b"
+                }
+              ],
+              [
+                {
+                  "t": "text",
+                  "v": "job"
+                },
+                {
+                  "t": "text",
+                  "v": "k"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_nested_sequences",
+      "kind": "yaml",
+      "source": "PORT4-2, a sequence opens inside a sequence entry",
+      "input": "- - a\n  - b\n- - c\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "list",
+            "v": [
+              {
+                "t": "text",
+                "v": "a"
+              },
+              {
+                "t": "text",
+                "v": "b"
+              }
+            ]
+          },
+          {
+            "t": "list",
+            "v": [
+              {
+                "t": "text",
+                "v": "c"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_single_quoted_folds",
+      "kind": "yaml",
+      "source": "PORT4-2, a single quoted scalar folds across lines",
+      "input": "k: 'one\n  two'\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "one two"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_double_quoted_folds",
+      "kind": "yaml",
+      "source": "PORT4-2, a double quoted scalar folds across lines",
+      "input": "k: \"one\n  two\"\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "one two"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_double_quoted_escapes",
+      "kind": "yaml",
+      "source": "PORT4-2, the double quoted escape set reads",
+      "input": "k: \"tab\\tnul\\x41 uni\\u00e9\"\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "tab\tnulA uni\u00e9"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_spans_lines",
+      "kind": "yaml",
+      "source": "PORT4-2, a flow sequence may span lines",
+      "input": "k: [a,\n  b]\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "list",
+              "v": [
+                {
+                  "t": "text",
+                  "v": "a"
+                },
+                {
+                  "t": "text",
+                  "v": "b"
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_shapes",
+      "kind": "yaml",
+      "source": "PORT4-2 and probe YF, flow collections read as lists and maps",
+      "input": "a: [a, b]\nb: {a: 1}\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "a"
+            },
+            {
+              "t": "list",
+              "v": [
+                {
+                  "t": "text",
+                  "v": "a"
+                },
+                {
+                  "t": "text",
+                  "v": "b"
+                }
+              ]
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "b"
+            },
+            {
+              "t": "map",
+              "v": [
+                [
+                  {
+                    "t": "text",
+                    "v": "a"
+                  },
+                  {
+                    "t": "int",
+                    "v": "1"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_in_a_sequence",
+      "kind": "yaml",
+      "source": "PORT4-2, a flow mapping stands as a sequence entry",
+      "input": "- {a: 1, b: 2}\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "map",
+            "v": [
+              [
+                {
+                  "t": "text",
+                  "v": "a"
+                },
+                {
+                  "t": "int",
+                  "v": "1"
+                }
+              ],
+              [
+                {
+                  "t": "text",
+                  "v": "b"
+                },
+                {
+                  "t": "int",
+                  "v": "2"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_single_pair_in_a_sequence",
+      "kind": "yaml",
+      "source": "PORT4-2, a single pair mapping stands inside a flow sequence as YAML shapes it",
+      "input": "k: [a: 1]\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "list",
+              "v": [
+                {
+                  "t": "map",
+                  "v": [
+                    [
+                      {
+                        "t": "text",
+                        "v": "a"
+                      },
+                      {
+                        "t": "int",
+                        "v": "1"
+                      }
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_comment_ends_a_plain_scalar",
+      "kind": "yaml",
+      "source": "PORT4-2, a blank then a hash ends a plain scalar as a comment",
+      "input": "k: some text # a comment\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "some text"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_hash_without_a_blank_is_text",
+      "kind": "yaml",
+      "source": "PORT4-2, a hash with no blank before it is scalar text",
+      "input": "k: some#text\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "some#text"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_empty_value_is_null",
+      "kind": "yaml",
+      "source": "PORT4-2, a key with nothing after it holds null",
+      "input": "k:\nother: x\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "null"
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "other"
+            },
+            {
+              "t": "text",
+              "v": "x"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_dash_alone_is_a_null_entry",
+      "kind": "yaml",
+      "source": "PORT4-2, a bare dash is a null sequence entry",
+      "input": "-\n- x\n",
+      "expected_value": {
+        "t": "list",
+        "v": [
+          {
+            "t": "null"
+          },
+          {
+            "t": "text",
+            "v": "x"
+          }
+        ]
+      }
+    },
+    {
+      "name": "yaml_document_markers",
+      "kind": "yaml",
+      "source": "PORT4-2, the start and end markers stand around a document",
+      "input": "---\na: 1\n...\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "a"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_crlf_line_endings",
+      "kind": "yaml",
+      "source": "PORT4-2, CRLF line endings read as line endings",
+      "input": "a: 1\r\nb: 2\r\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "a"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "b"
+            },
+            {
+              "t": "int",
+              "v": "2"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_duplicate_keys_keep_the_last",
+      "kind": "yaml",
+      "source": "PORT4-1 and probe D1, duplicate keys keep the last value",
+      "input": "a: 1\na: 2\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "a"
+            },
+            {
+              "t": "int",
+              "v": "2"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_key_collision_keeps_the_first_key",
+      "kind": "yaml",
+      "source": "PORT4-1, the keys 1 and true collide and the first key object is retained with the last value",
+      "input": "1: a\ntrue: b\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "int",
+              "v": "1"
+            },
+            {
+              "t": "text",
+              "v": "b"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_null_key",
+      "kind": "yaml",
+      "source": "PORT4-2, a tilde key resolves to a null key",
+      "input": "~: v\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "null"
+            },
+            {
+              "t": "text",
+              "v": "v"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_top_level_scalar",
+      "kind": "yaml",
+      "source": "PORT4-2, a document may be one plain scalar",
+      "input": "just text\n",
+      "expected_value": {
+        "t": "text",
+        "v": "just text"
+      }
+    },
+    {
+      "name": "yaml_empty_document_is_null",
+      "kind": "yaml",
+      "source": "PORT4-2, a text that parses to no document reads as null",
+      "input": "",
+      "expected_value": {
+        "t": "null"
+      }
+    },
+    {
+      "name": "yaml_comment_only_document_is_null",
+      "kind": "yaml",
+      "source": "PORT4-2, a comments only text reads as null",
+      "input": "# just a comment\n",
+      "expected_value": {
+        "t": "null"
+      }
+    },
+    {
+      "name": "yaml_fixture_workflow_top_level_keys",
+      "kind": "yaml",
+      "source": "PORT4-4 and probe C2, the fixture workflow's on key resolves to bool true among its top level keys",
+      "input": "name: synthetic gate runs\n\non:\n  push:\n  pull_request:\n\njobs:\n  unit-tests:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python -m pytest\n  docs-check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: python tools/check_docs.py\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "name"
+            },
+            {
+              "t": "text",
+              "v": "synthetic gate runs"
+            }
+          ],
+          [
+            {
+              "t": "bool",
+              "v": true
+            },
+            {
+              "t": "map",
+              "v": [
+                [
+                  {
+                    "t": "text",
+                    "v": "push"
+                  },
+                  {
+                    "t": "null"
+                  }
+                ],
+                [
+                  {
+                    "t": "text",
+                    "v": "pull_request"
+                  },
+                  {
+                    "t": "null"
+                  }
+                ]
+              ]
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "jobs"
+            },
+            {
+              "t": "map",
+              "v": [
+                [
+                  {
+                    "t": "text",
+                    "v": "unit-tests"
+                  },
+                  {
+                    "t": "map",
+                    "v": [
+                      [
+                        {
+                          "t": "text",
+                          "v": "runs-on"
+                        },
+                        {
+                          "t": "text",
+                          "v": "ubuntu-latest"
+                        }
+                      ],
+                      [
+                        {
+                          "t": "text",
+                          "v": "steps"
+                        },
+                        {
+                          "t": "list",
+                          "v": [
+                            {
+                              "t": "map",
+                              "v": [
+                                [
+                                  {
+                                    "t": "text",
+                                    "v": "uses"
+                                  },
+                                  {
+                                    "t": "text",
+                                    "v": "actions/checkout@v4"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "t": "map",
+                              "v": [
+                                [
+                                  {
+                                    "t": "text",
+                                    "v": "run"
+                                  },
+                                  {
+                                    "t": "text",
+                                    "v": "python -m pytest"
+                                  }
+                                ]
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                [
+                  {
+                    "t": "text",
+                    "v": "docs-check"
+                  },
+                  {
+                    "t": "map",
+                    "v": [
+                      [
+                        {
+                          "t": "text",
+                          "v": "runs-on"
+                        },
+                        {
+                          "t": "text",
+                          "v": "ubuntu-latest"
+                        }
+                      ],
+                      [
+                        {
+                          "t": "text",
+                          "v": "steps"
+                        },
+                        {
+                          "t": "list",
+                          "v": [
+                            {
+                              "t": "map",
+                              "v": [
+                                [
+                                  {
+                                    "t": "text",
+                                    "v": "uses"
+                                  },
+                                  {
+                                    "t": "text",
+                                    "v": "actions/checkout@v4"
+                                  }
+                                ]
+                              ]
+                            },
+                            {
+                              "t": "map",
+                              "v": [
+                                [
+                                  {
+                                    "t": "text",
+                                    "v": "run"
+                                  },
+                                  {
+                                    "t": "text",
+                                    "v": "python tools/check_docs.py"
+                                  }
+                                ]
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_refused_anchor",
+      "kind": "yaml",
+      "source": "PORT4-2, anchors are in the refused family the contract states",
+      "input": "k: &x v\n",
+      "provenance": "PyYAML accepts an anchor; the port refuses it as the stated limit",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "v"
+            }
+          ]
+        ]
+      },
+      "port_refuses": true
+    },
+    {
+      "name": "yaml_refused_alias",
+      "kind": "yaml",
+      "source": "PORT4-2, aliases are in the refused family the contract states",
+      "input": "a: &x 1\nb: *x\n",
+      "provenance": "PyYAML accepts an alias; the port refuses it as the stated limit",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "a"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "b"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ]
+        ]
+      },
+      "port_refuses": true
+    },
+    {
+      "name": "yaml_refused_merge_key",
+      "kind": "yaml",
+      "source": "PORT4-2, merge keys are in the refused family the contract states",
+      "input": "base: &b {x: 1}\nk:\n  <<: *b\n",
+      "provenance": "PyYAML applies a merge key; the port refuses it as the stated limit",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "base"
+            },
+            {
+              "t": "map",
+              "v": [
+                [
+                  {
+                    "t": "text",
+                    "v": "x"
+                  },
+                  {
+                    "t": "int",
+                    "v": "1"
+                  }
+                ]
+              ]
+            }
+          ],
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "map",
+              "v": [
+                [
+                  {
+                    "t": "text",
+                    "v": "x"
+                  },
+                  {
+                    "t": "int",
+                    "v": "1"
+                  }
+                ]
+              ]
+            }
+          ]
+        ]
+      },
+      "port_refuses": true
+    },
+    {
+      "name": "yaml_refused_tag",
+      "kind": "yaml",
+      "source": "PORT4-2, tags are in the refused family the contract states",
+      "input": "k: !!str v\n",
+      "provenance": "PyYAML accepts a tag; the port refuses it as the stated limit",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "v"
+            }
+          ]
+        ]
+      },
+      "port_refuses": true
+    },
+    {
+      "name": "yaml_refused_block_scalar",
+      "kind": "yaml",
+      "source": "PORT4-2, block scalars are in the refused family the contract states",
+      "input": "k: |\n  text\n",
+      "provenance": "PyYAML accepts a block scalar; the port refuses it as the stated limit",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "text\n"
+            }
+          ]
+        ]
+      },
+      "port_refuses": true
+    },
+    {
+      "name": "yaml_refused_explicit_key",
+      "kind": "yaml",
+      "source": "PORT4-2, explicit keys are in the refused family the contract states",
+      "input": "? k\n: v\n",
+      "provenance": "PyYAML accepts an explicit key; the port refuses it as the stated limit",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "v"
+            }
+          ]
+        ]
+      },
+      "port_refuses": true
+    },
+    {
+      "name": "yaml_refused_directive",
+      "kind": "yaml",
+      "source": "PORT4-2, directives are in the refused family the contract states",
+      "input": "%YAML 1.1\n---\na: 1\n",
+      "provenance": "PyYAML accepts a directive; the port refuses it as the stated limit",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "a"
+            },
+            {
+              "t": "int",
+              "v": "1"
+            }
+          ]
+        ]
+      },
+      "port_refuses": true
+    },
+    {
+      "name": "yaml_refused_second_document",
+      "kind": "yaml",
+      "source": "PORT4-2, multiple documents are in the refused family, and PyYAML refuses them in safe_load too",
+      "input": "---\na: 1\n---\nb: 2\n",
+      "python_error": "ComposerError"
+    },
+    {
+      "name": "yaml_refused_tab_indentation",
+      "kind": "yaml",
+      "source": "PORT4-2, tabs in indentation are in the refused family, and PyYAML refuses them too",
+      "input": "k:\n\ttabbed: 1\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_colon_inside_a_plain_value",
+      "kind": "yaml",
+      "source": "PORT4-2, a mapping value inside a plain scalar is malformed in PyYAML too",
+      "input": "k: a: b\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_flow_collection_as_a_key",
+      "kind": "yaml",
+      "source": "PORT4-2, PyYAML refuses an unhashable flow key while constructing, and the port refuses it in its own words",
+      "input": "- [a, b]: c\n",
+      "python_error": "ConstructorError"
+    },
+    {
+      "name": "yaml_refused_invalid_timestamp",
+      "kind": "yaml",
+      "source": "PORT4-2, a timestamp spelling naming no real date raises in CPython's construction and escapes safe_load, and the port refuses it in its own words",
+      "input": "k: 2024-13-01\n",
+      "python_error": "ValueError"
+    },
+    {
+      "name": "yaml_refused_reserved_at_sign",
+      "kind": "yaml",
+      "source": "PORT4-2, a scalar starting with the at sign raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: @x\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_reserved_backtick",
+      "kind": "yaml",
+      "source": "PORT4-2, a scalar starting with the backtick raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: `x\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_percent_value",
+      "kind": "yaml",
+      "source": "PORT4-2, a value token starting with a percent sign raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: %x\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_bare_dash_value",
+      "kind": "yaml",
+      "source": "PORT4-2, a bare dash standing as a mapping value raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: -\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_after_colon",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab in separation position raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k:\t1\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_empty_key",
+      "kind": "yaml",
+      "source": "PORT4-2, an empty key raises in PyYAML's parser, and the port refuses it in its own words",
+      "input": ": v\n",
+      "python_error": "ParserError"
+    },
+    {
+      "name": "yaml_refused_mapping_on_the_marker_line",
+      "kind": "yaml",
+      "source": "PORT4-2, a block mapping opened on the document start line raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "--- a: 1\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_inside_a_plain_value",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab standing inside a plain scalar raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: a\tb\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_inside_a_plain_key",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab standing inside a plain key raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "a\tb: v\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_inside_a_plain_sequence_value",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab standing inside a plain sequence value raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "- a\tb\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_inside_a_plain_continuation",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab standing inside a plain scalar continuation raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: a\n  b\tc\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_at_a_plain_values_end",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab standing at the end of a plain scalar raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: ab\t\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_inside_a_flow_plain_value",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab standing inside a flow plain scalar raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "{k: a\tb}\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_refused_tab_inside_a_flow_plain_sequence_value",
+      "kind": "yaml",
+      "source": "PORT4-2, a tab standing inside a flow plain sequence value raises in PyYAML's scanner, and the port refuses it in its own words",
+      "input": "k: [a\tb]\n",
+      "python_error": "ScannerError"
+    },
+    {
+      "name": "yaml_single_quoted_wide_break_before_a_narrow_break",
+      "kind": "yaml",
+      "source": "PORT4-2, a line separator at a single quoted line's end, just before a narrow break, stands in the value with one newline after it in PyYAML's reading",
+      "input": "k: 'a\u2028\nb'\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "a\u2028\nb"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_double_quoted_wide_break_before_a_narrow_break",
+      "kind": "yaml",
+      "source": "PORT4-2, a line separator at a double quoted line's end, just before a narrow break, stands in the value with one newline after it in PyYAML's reading",
+      "input": "k: \"a\u2028\nb\"\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "a\u2028\nb"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_single_quoted_paragraph_break_before_a_narrow_break",
+      "kind": "yaml",
+      "source": "PORT4-2, a paragraph separator at a single quoted line's end, just before a narrow break, stands in the value with one newline after it in PyYAML's reading",
+      "input": "k: 'a\u2029\nb'\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "a\u2029\nb"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_single_quoted_wide_break_before_a_blank_line",
+      "kind": "yaml",
+      "source": "PORT4-2, a line separator at a single quoted line's end, before a narrow break and a blank line, stands in the value with two newlines after it in PyYAML's reading",
+      "input": "k: 'a\u2028\n\nb'\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "a\u2028\n\nb"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_flow_single_quoted_wide_break_before_a_narrow_break",
+      "kind": "yaml",
+      "source": "PORT4-2, a line separator at a flow single quoted line's end, just before a narrow break, stands in the value with one newline after it in PyYAML's reading",
+      "input": "k: ['a\u2028\nb']\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "list",
+              "v": [
+                {
+                  "t": "text",
+                  "v": "a\u2028\nb"
+                }
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_single_quoted_nel_before_a_narrow_break",
+      "kind": "yaml",
+      "source": "PORT4-2, a NEL at a single quoted line's end is itself a break in PyYAML's reading, so the two breaks fold to one newline and no NEL stands in the value",
+      "input": "k: 'a\u0085\nb'\n",
+      "expected_value": {
+        "t": "map",
+        "v": [
+          [
+            {
+              "t": "text",
+              "v": "k"
+            },
+            {
+              "t": "text",
+              "v": "a\nb"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "yaml_depth_one_hundred_levels",
+      "kind": "yaml_depth",
+      "source": "PORT4-2, nesting well inside the bound reads",
+      "depth": 100,
+      "python_outcome": "value"
+    },
+    {
+      "name": "yaml_depth_at_the_bound",
+      "kind": "yaml_depth",
+      "source": "PORT4-2, nesting at the stated bound of four thousand reads in the port; the Python's own outcome is recorded as it stood",
+      "depth": 4000,
+      "python_outcome": "RecursionError"
+    },
+    {
+      "name": "yaml_depth_past_the_bound",
+      "kind": "yaml_depth",
+      "source": "PORT4-2, nesting past the stated bound refuses in the port; the Python's own outcome is recorded as it stood",
+      "depth": 4100,
+      "python_outcome": "RecursionError",
+      "port_refuses": true
+    },
+    {
+      "name": "analysis_match_00",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "src/app.py",
+      "pattern": "src/**",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_01",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "src/app.py",
+      "pattern": "src/*",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_02",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "src/app.py",
+      "pattern": "SRC/*",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_03",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "a/b/c",
+      "pattern": "a/*/c",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_04",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "a/b/c/d",
+      "pattern": "a/*/d",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_05",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "file.txt",
+      "pattern": "*.txt",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_06",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "file.txt",
+      "pattern": "file?.txt",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_07",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "file1.txt",
+      "pattern": "file?.txt",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_08",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "ab",
+      "pattern": "a[b]",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_09",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "a[b",
+      "pattern": "a[b",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_10",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "ax",
+      "pattern": "a[!b]",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_11",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "ab",
+      "pattern": "a[!b]",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_12",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "ax",
+      "pattern": "a[^b]",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_13",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "-x",
+      "pattern": "[-]x",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_14",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "docs/guide.md",
+      "pattern": "docs/*.md",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_15",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "docs/a/b.md",
+      "pattern": "docs/*.md",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_16",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "]",
+      "pattern": "[]]",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_17",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "a",
+      "pattern": "[!]",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_18",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "-",
+      "pattern": "[a-]",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_19",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "b",
+      "pattern": "[a-c]",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_20",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "A",
+      "pattern": "[a-z]",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_21",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "docs",
+      "pattern": "docs",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_22",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "docs/guide.md",
+      "pattern": "docs",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_23",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "docs/guide.md",
+      "pattern": "docs/",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_24",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "docs/guide.md",
+      "pattern": "docs//",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_25",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "docsx/guide.md",
+      "pattern": "docs",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_26",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "anything",
+      "pattern": "",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_27",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "a/b",
+      "pattern": "a",
+      "expected": true
+    },
+    {
+      "name": "analysis_match_28",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "a",
+      "pattern": "a/b",
+      "expected": false
+    },
+    {
+      "name": "analysis_match_29",
+      "kind": "match",
+      "source": "PORT4-5 and probe record M, the fnmatch and prefix pairs regenerated through path_matches_surface",
+      "path": "src/app.py",
+      "pattern": "docs",
+      "expected": false
+    },
+    {
+      "name": "analysis_shared_read_set",
+      "kind": "analysis",
+      "source": "PORT4-5, analyse pairs every check with one shared read set",
+      "mode": "analyse",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "expected_results": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "read_set": [
+            "notes.txt",
+            "src/app.py",
+            "src/util.py",
+            "tests/test_app.py"
+          ],
+          "matched": [
+            "src/app.py",
+            "src/util.py",
+            "tests/test_app.py"
+          ],
+          "verdict": "proven",
+          "trace_source": null,
+          "outside_reads": []
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "read_set": [
+            "notes.txt",
+            "src/app.py",
+            "src/util.py",
+            "tests/test_app.py"
+          ],
+          "matched": [],
+          "verdict": "unproven",
+          "trace_source": null,
+          "outside_reads": []
+        }
+      ]
+    },
+    {
+      "name": "analysis_empty_read_set",
+      "kind": "analysis",
+      "source": "PORT4-5, an empty read set reads as the empty verdict for every check",
+      "mode": "analyse",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "read_set": [],
+      "expected_results": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "read_set": [],
+          "matched": [],
+          "verdict": "empty read set",
+          "trace_source": null,
+          "outside_reads": []
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "read_set": [],
+          "matched": [],
+          "verdict": "empty read set",
+          "trace_source": null,
+          "outside_reads": []
+        }
+      ]
+    },
+    {
+      "name": "analysis_with_outside_reads",
+      "kind": "analysis",
+      "source": "PORT4-5, analyse_with_outside adds the shared outside reads untouched",
+      "mode": "analyse_with_outside",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "outside": [
+        "/outside/secret.txt"
+      ],
+      "expected_results": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "read_set": [
+            "notes.txt",
+            "src/app.py",
+            "src/util.py",
+            "tests/test_app.py"
+          ],
+          "matched": [
+            "src/app.py",
+            "src/util.py",
+            "tests/test_app.py"
+          ],
+          "verdict": "proven",
+          "trace_source": null,
+          "outside_reads": [
+            "/outside/secret.txt"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "read_set": [
+            "notes.txt",
+            "src/app.py",
+            "src/util.py",
+            "tests/test_app.py"
+          ],
+          "matched": [],
+          "verdict": "unproven",
+          "trace_source": null,
+          "outside_reads": [
+            "/outside/secret.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "analysis_judged_with_sources_and_outside",
+      "kind": "analysis",
+      "source": "PORT4-5, analyse_judged carries each triple's source and outside reads untouched",
+      "mode": "analyse_judged",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "judgements": [
+        {
+          "read_set": [
+            "src/app.py",
+            "tests/test_app.py"
+          ],
+          "source": {
+            "kind": "own_trace",
+            "detail": "trace-unit.log"
+          },
+          "outside": []
+        },
+        {
+          "read_set": [],
+          "source": null,
+          "outside": [
+            "/outside/secret.txt"
+          ]
+        }
+      ],
+      "expected_results": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ],
+          "read_set": [
+            "src/app.py",
+            "tests/test_app.py"
+          ],
+          "matched": [
+            "src/app.py",
+            "tests/test_app.py"
+          ],
+          "verdict": "proven",
+          "trace_source": {
+            "kind": "own_trace",
+            "detail": "trace-unit.log"
+          },
+          "outside_reads": []
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ],
+          "read_set": [],
+          "matched": [],
+          "verdict": "empty read set",
+          "trace_source": null,
+          "outside_reads": [
+            "/outside/secret.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "analysis_matched_follows_read_set_order",
+      "kind": "analysis",
+      "source": "PORT4-5, matched paths stand in read set order, not surface order",
+      "mode": "analyse",
+      "checks": [
+        {
+          "name": "order",
+          "job": "job",
+          "surface": [
+            "tests/**",
+            "src/**"
+          ]
+        }
+      ],
+      "read_set": [
+        "src/a.py",
+        "tests/b.py",
+        "src/c.py"
+      ],
+      "expected_results": [
+        {
+          "name": "order",
+          "job": "job",
+          "surface": [
+            "tests/**",
+            "src/**"
+          ],
+          "read_set": [
+            "src/a.py",
+            "tests/b.py",
+            "src/c.py"
+          ],
+          "matched": [
+            "src/a.py",
+            "tests/b.py",
+            "src/c.py"
+          ],
+          "verdict": "proven",
+          "trace_source": null,
+          "outside_reads": []
+        }
+      ]
+    },
+    {
+      "name": "analysis_guard_parallel",
+      "kind": "guard",
+      "source": "PORT4-5, the parallel guard is a crash family in the Python and the port returns the same words as an error",
+      "which": "parallel",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "judgements": [
+        {
+          "read_set": [
+            "src/app.py",
+            "tests/test_app.py"
+          ],
+          "source": {
+            "kind": "own_trace",
+            "detail": "trace-unit.log"
+          },
+          "outside": []
+        }
+      ],
+      "expected_error": "judgements must run parallel to checks"
+    },
+    {
+      "name": "analysis_guard_triple",
+      "kind": "guard",
+      "source": "PORT4-5, the triple guard is a crash family in the Python and the port returns the same words as an error, reached through the parts constructor",
+      "which": "triple",
+      "expected_error": "each judgement is a triple of read set, source, and outside reads"
+    },
+    {
+      "name": "report_plain_no_sources_no_outside",
+      "kind": "report",
+      "source": "PORT4-6, the plain shape carries no source and no outside fields",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse",
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "expected_text": "blindgate report\n================\n\ncheck            unit tests\njob              unit-tests\nverdict          proven\nclaimed surface\n    src/**\n    tests/**\nread set\n    notes.txt\n    src/app.py\n    src/util.py\n    tests/test_app.py\nreads in surface\n    src/app.py\n    src/util.py\n    tests/test_app.py\n\ncheck            docs check\njob              docs-check\nverdict          unproven\nclaimed surface\n    docs/*.md\nread set\n    notes.txt\n    src/app.py\n    src/util.py\n    tests/test_app.py\nreads in surface\n    none\n",
+      "expected_json": "{\n  \"checks\": [\n    {\n      \"claimed_surface\": [\n        \"src/**\",\n        \"tests/**\"\n      ],\n      \"job\": \"unit-tests\",\n      \"name\": \"unit tests\",\n      \"read_set\": [\n        \"notes.txt\",\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"verdict\": \"proven\"\n    },\n    {\n      \"claimed_surface\": [\n        \"docs/*.md\"\n      ],\n      \"job\": \"docs-check\",\n      \"name\": \"docs check\",\n      \"read_set\": [\n        \"notes.txt\",\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [],\n      \"verdict\": \"unproven\"\n    }\n  ],\n  \"summary\": {\n    \"proven\": 1,\n    \"unproven\": 1\n  }\n}"
+    },
+    {
+      "name": "report_sources_with_a_missing_source",
+      "kind": "report",
+      "source": "PORT4-6, a source anywhere turns the field on everywhere and a missing source renders not recorded and null",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse_judged",
+      "judgements": [
+        {
+          "read_set": [
+            "src/app.py",
+            "tests/test_app.py"
+          ],
+          "source": {
+            "kind": "own_trace",
+            "detail": "trace-unit.log"
+          },
+          "outside": []
+        },
+        {
+          "read_set": [
+            "docs/guide.md"
+          ],
+          "source": null,
+          "outside": []
+        }
+      ],
+      "expected_text": "blindgate report\n================\n\ncheck            unit tests\njob              unit-tests\ntrace source     own trace file trace-unit.log\nverdict          proven\nclaimed surface\n    src/**\n    tests/**\nread set\n    src/app.py\n    tests/test_app.py\nreads in surface\n    src/app.py\n    tests/test_app.py\n\ncheck            docs check\njob              docs-check\ntrace source     not recorded\nverdict          proven\nclaimed surface\n    docs/*.md\nread set\n    docs/guide.md\nreads in surface\n    docs/guide.md\n",
+      "expected_json": "{\n  \"checks\": [\n    {\n      \"claimed_surface\": [\n        \"src/**\",\n        \"tests/**\"\n      ],\n      \"job\": \"unit-tests\",\n      \"name\": \"unit tests\",\n      \"read_set\": [\n        \"src/app.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [\n        \"src/app.py\",\n        \"tests/test_app.py\"\n      ],\n      \"trace_source\": {\n        \"detail\": \"trace-unit.log\",\n        \"kind\": \"own_trace\",\n        \"text\": \"own trace file trace-unit.log\"\n      },\n      \"verdict\": \"proven\"\n    },\n    {\n      \"claimed_surface\": [\n        \"docs/*.md\"\n      ],\n      \"job\": \"docs-check\",\n      \"name\": \"docs check\",\n      \"read_set\": [\n        \"docs/guide.md\"\n      ],\n      \"reads_in_surface\": [\n        \"docs/guide.md\"\n      ],\n      \"trace_source\": null,\n      \"verdict\": \"proven\"\n    }\n  ],\n  \"summary\": {\n    \"proven\": 2\n  }\n}"
+    },
+    {
+      "name": "report_outside_reads_without_sources",
+      "kind": "report",
+      "source": "PORT4-6, outside reads stand as their own section and field without any source standing",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse_with_outside",
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "outside": [
+        "/outside/secret.txt",
+        "/outside/more.txt"
+      ],
+      "expected_text": "blindgate report\n================\n\ncheck            unit tests\njob              unit-tests\nverdict          proven\nclaimed surface\n    src/**\n    tests/**\nread set\n    notes.txt\n    src/app.py\n    src/util.py\n    tests/test_app.py\nreads in surface\n    src/app.py\n    src/util.py\n    tests/test_app.py\noutside reads\n    /outside/secret.txt\n    /outside/more.txt\n\ncheck            docs check\njob              docs-check\nverdict          unproven\nclaimed surface\n    docs/*.md\nread set\n    notes.txt\n    src/app.py\n    src/util.py\n    tests/test_app.py\nreads in surface\n    none\noutside reads\n    /outside/secret.txt\n    /outside/more.txt\n",
+      "expected_json": "{\n  \"checks\": [\n    {\n      \"claimed_surface\": [\n        \"src/**\",\n        \"tests/**\"\n      ],\n      \"job\": \"unit-tests\",\n      \"name\": \"unit tests\",\n      \"outside_reads\": [\n        \"/outside/secret.txt\",\n        \"/outside/more.txt\"\n      ],\n      \"read_set\": [\n        \"notes.txt\",\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"verdict\": \"proven\"\n    },\n    {\n      \"claimed_surface\": [\n        \"docs/*.md\"\n      ],\n      \"job\": \"docs-check\",\n      \"name\": \"docs check\",\n      \"outside_reads\": [\n        \"/outside/secret.txt\",\n        \"/outside/more.txt\"\n      ],\n      \"read_set\": [\n        \"notes.txt\",\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [],\n      \"verdict\": \"unproven\"\n    }\n  ],\n  \"summary\": {\n    \"proven\": 1,\n    \"unproven\": 1\n  }\n}"
+    },
+    {
+      "name": "report_unknown_source_kind_renders_itself",
+      "kind": "report",
+      "source": "PORT4-6, an unknown source kind renders as the kind itself with its detail after one space",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse_judged",
+      "judgements": [
+        {
+          "read_set": [
+            "src/app.py"
+          ],
+          "source": {
+            "kind": "ledger_scan",
+            "detail": "run 9"
+          },
+          "outside": []
+        },
+        {
+          "read_set": [],
+          "source": {
+            "kind": "shared_run",
+            "detail": "python -m pytest"
+          },
+          "outside": []
+        }
+      ],
+      "expected_text": "blindgate report\n================\n\ncheck            unit tests\njob              unit-tests\ntrace source     ledger_scan run 9\nverdict          proven\nclaimed surface\n    src/**\n    tests/**\nread set\n    src/app.py\nreads in surface\n    src/app.py\n\ncheck            docs check\njob              docs-check\ntrace source     shared run python -m pytest\nverdict          empty read set\nclaimed surface\n    docs/*.md\nread set\n    none\nreads in surface\n    none\n",
+      "expected_json": "{\n  \"checks\": [\n    {\n      \"claimed_surface\": [\n        \"src/**\",\n        \"tests/**\"\n      ],\n      \"job\": \"unit-tests\",\n      \"name\": \"unit tests\",\n      \"read_set\": [\n        \"src/app.py\"\n      ],\n      \"reads_in_surface\": [\n        \"src/app.py\"\n      ],\n      \"trace_source\": {\n        \"detail\": \"run 9\",\n        \"kind\": \"ledger_scan\",\n        \"text\": \"ledger_scan run 9\"\n      },\n      \"verdict\": \"proven\"\n    },\n    {\n      \"claimed_surface\": [\n        \"docs/*.md\"\n      ],\n      \"job\": \"docs-check\",\n      \"name\": \"docs check\",\n      \"read_set\": [],\n      \"reads_in_surface\": [],\n      \"trace_source\": {\n        \"detail\": \"python -m pytest\",\n        \"kind\": \"shared_run\",\n        \"text\": \"shared run python -m pytest\"\n      },\n      \"verdict\": \"empty read set\"\n    }\n  ],\n  \"summary\": {\n    \"empty read set\": 1,\n    \"proven\": 1\n  }\n}"
+    },
+    {
+      "name": "report_empty_read_sets_list_none",
+      "kind": "report",
+      "source": "PORT4-6, empty listings render as the word none and the empty verdict stands",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse",
+      "read_set": [],
+      "expected_text": "blindgate report\n================\n\ncheck            unit tests\njob              unit-tests\nverdict          empty read set\nclaimed surface\n    src/**\n    tests/**\nread set\n    none\nreads in surface\n    none\n\ncheck            docs check\njob              docs-check\nverdict          empty read set\nclaimed surface\n    docs/*.md\nread set\n    none\nreads in surface\n    none\n",
+      "expected_json": "{\n  \"checks\": [\n    {\n      \"claimed_surface\": [\n        \"src/**\",\n        \"tests/**\"\n      ],\n      \"job\": \"unit-tests\",\n      \"name\": \"unit tests\",\n      \"read_set\": [],\n      \"reads_in_surface\": [],\n      \"verdict\": \"empty read set\"\n    },\n    {\n      \"claimed_surface\": [\n        \"docs/*.md\"\n      ],\n      \"job\": \"docs-check\",\n      \"name\": \"docs check\",\n      \"read_set\": [],\n      \"reads_in_surface\": [],\n      \"verdict\": \"empty read set\"\n    }\n  ],\n  \"summary\": {\n    \"empty read set\": 2\n  }\n}"
+    },
+    {
+      "name": "report_no_results_at_all",
+      "kind": "report",
+      "source": "PORT4-6, an empty result list renders the header and rule alone and an empty summary",
+      "checks": [],
+      "mode": "none",
+      "expected_text": "blindgate report\n================\n",
+      "expected_json": "{\n  \"checks\": [],\n  \"summary\": {}\n}"
+    },
+    {
+      "name": "report_example_files_regenerate_byte_identical",
+      "kind": "report",
+      "source": "PORT4-6, the committed example reports regenerate byte identical through the renderers, the files carrying one more trailing newline from the command line's print",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse",
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "expected_text": "blindgate report\n================\n\ncheck            unit tests\njob              unit-tests\nverdict          proven\nclaimed surface\n    src/**\n    tests/**\nread set\n    notes.txt\n    src/app.py\n    src/util.py\n    tests/test_app.py\nreads in surface\n    src/app.py\n    src/util.py\n    tests/test_app.py\n\ncheck            docs check\njob              docs-check\nverdict          unproven\nclaimed surface\n    docs/*.md\nread set\n    notes.txt\n    src/app.py\n    src/util.py\n    tests/test_app.py\nreads in surface\n    none\n",
+      "expected_json": "{\n  \"checks\": [\n    {\n      \"claimed_surface\": [\n        \"src/**\",\n        \"tests/**\"\n      ],\n      \"job\": \"unit-tests\",\n      \"name\": \"unit tests\",\n      \"read_set\": [\n        \"notes.txt\",\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"verdict\": \"proven\"\n    },\n    {\n      \"claimed_surface\": [\n        \"docs/*.md\"\n      ],\n      \"job\": \"docs-check\",\n      \"name\": \"docs check\",\n      \"read_set\": [\n        \"notes.txt\",\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [],\n      \"verdict\": \"unproven\"\n    }\n  ],\n  \"summary\": {\n    \"proven\": 1,\n    \"unproven\": 1\n  }\n}"
+    },
+    {
+      "name": "report_per_job_example_files_regenerate_byte_identical",
+      "kind": "report",
+      "source": "PORT4-6, the committed per job example reports regenerate byte identical over their own traces, the files carrying one more trailing newline from the command line's print",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse_judged",
+      "judgements": [
+        {
+          "read_set": [
+            "src/app.py",
+            "src/util.py",
+            "tests/test_app.py"
+          ],
+          "source": {
+            "kind": "own_trace",
+            "detail": "trace-unit.log"
+          },
+          "outside": []
+        },
+        {
+          "read_set": [],
+          "source": {
+            "kind": "own_trace",
+            "detail": "trace-docs.log"
+          },
+          "outside": []
+        }
+      ],
+      "expected_text": "blindgate report\n================\n\ncheck            unit tests\njob              unit-tests\ntrace source     own trace file trace-unit.log\nverdict          proven\nclaimed surface\n    src/**\n    tests/**\nread set\n    src/app.py\n    src/util.py\n    tests/test_app.py\nreads in surface\n    src/app.py\n    src/util.py\n    tests/test_app.py\n\ncheck            docs check\njob              docs-check\ntrace source     own trace file trace-docs.log\nverdict          empty read set\nclaimed surface\n    docs/*.md\nread set\n    none\nreads in surface\n    none\n",
+      "expected_json": "{\n  \"checks\": [\n    {\n      \"claimed_surface\": [\n        \"src/**\",\n        \"tests/**\"\n      ],\n      \"job\": \"unit-tests\",\n      \"name\": \"unit tests\",\n      \"read_set\": [\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"reads_in_surface\": [\n        \"src/app.py\",\n        \"src/util.py\",\n        \"tests/test_app.py\"\n      ],\n      \"trace_source\": {\n        \"detail\": \"trace-unit.log\",\n        \"kind\": \"own_trace\",\n        \"text\": \"own trace file trace-unit.log\"\n      },\n      \"verdict\": \"proven\"\n    },\n    {\n      \"claimed_surface\": [\n        \"docs/*.md\"\n      ],\n      \"job\": \"docs-check\",\n      \"name\": \"docs check\",\n      \"read_set\": [],\n      \"reads_in_surface\": [],\n      \"trace_source\": {\n        \"detail\": \"trace-docs.log\",\n        \"kind\": \"own_trace\",\n        \"text\": \"own trace file trace-docs.log\"\n      },\n      \"verdict\": \"empty read set\"\n    }\n  ],\n  \"summary\": {\n    \"empty read set\": 1,\n    \"proven\": 1\n  }\n}"
+    },
+    {
+      "name": "evidence_from_plain_results",
+      "kind": "evidence",
+      "source": "PORT4-7, one trace per result per surface entry in order, read judged per entry",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse",
+      "read_set": [
+        "notes.txt",
+        "src/app.py",
+        "src/util.py",
+        "tests/test_app.py"
+      ],
+      "expected_document": "{\n  \"format\": \"blindgate-evidence/1\",\n  \"traces\": [\n    {\n      \"check\": \"unit tests\",\n      \"detail\": \"not recorded\",\n      \"observation\": \"read\",\n      \"surface\": \"src/**\"\n    },\n    {\n      \"check\": \"unit tests\",\n      \"detail\": \"not recorded\",\n      \"observation\": \"read\",\n      \"surface\": \"tests/**\"\n    },\n    {\n      \"check\": \"docs check\",\n      \"detail\": \"not recorded\",\n      \"observation\": \"not read\",\n      \"surface\": \"docs/*.md\"\n    }\n  ]\n}"
+    },
+    {
+      "name": "evidence_detail_from_sources",
+      "kind": "evidence",
+      "source": "PORT4-7, the detail is the result's source text when a source stands and not recorded otherwise",
+      "checks": [
+        {
+          "name": "unit tests",
+          "job": "unit-tests",
+          "surface": [
+            "src/**",
+            "tests/**"
+          ]
+        },
+        {
+          "name": "docs check",
+          "job": "docs-check",
+          "surface": [
+            "docs/*.md"
+          ]
+        }
+      ],
+      "mode": "analyse_judged",
+      "judgements": [
+        {
+          "read_set": [
+            "src/app.py",
+            "tests/test_app.py"
+          ],
+          "source": {
+            "kind": "own_trace",
+            "detail": "trace-unit.log"
+          },
+          "outside": []
+        },
+        {
+          "read_set": [
+            "docs/guide.md"
+          ],
+          "source": null,
+          "outside": []
+        }
+      ],
+      "expected_document": "{\n  \"format\": \"blindgate-evidence/1\",\n  \"traces\": [\n    {\n      \"check\": \"unit tests\",\n      \"detail\": \"own trace file trace-unit.log\",\n      \"observation\": \"read\",\n      \"surface\": \"src/**\"\n    },\n    {\n      \"check\": \"unit tests\",\n      \"detail\": \"own trace file trace-unit.log\",\n      \"observation\": \"read\",\n      \"surface\": \"tests/**\"\n    },\n    {\n      \"check\": \"docs check\",\n      \"detail\": \"not recorded\",\n      \"observation\": \"read\",\n      \"surface\": \"docs/*.md\"\n    }\n  ]\n}"
+    },
+    {
+      "name": "evidence_surface_order_and_mixed_observations",
+      "kind": "evidence",
+      "source": "PORT4-7, traces stand in surface order with mixed read and not read observations",
+      "checks": [
+        {
+          "name": "multi",
+          "job": "job",
+          "surface": [
+            "src/**",
+            "docs/*.md",
+            "tests/**"
+          ]
+        }
+      ],
+      "mode": "analyse",
+      "read_set": [
+        "src/app.py",
+        "README.md"
+      ],
+      "expected_document": "{\n  \"format\": \"blindgate-evidence/1\",\n  \"traces\": [\n    {\n      \"check\": \"multi\",\n      \"detail\": \"not recorded\",\n      \"observation\": \"read\",\n      \"surface\": \"src/**\"\n    },\n    {\n      \"check\": \"multi\",\n      \"detail\": \"not recorded\",\n      \"observation\": \"not read\",\n      \"surface\": \"docs/*.md\"\n    },\n    {\n      \"check\": \"multi\",\n      \"detail\": \"not recorded\",\n      \"observation\": \"not read\",\n      \"surface\": \"tests/**\"\n    }\n  ]\n}"
+    },
+    {
+      "name": "evidence_tameshi_witness_0",
+      "kind": "witness",
+      "source": "PORT4-7, tameshi's recorded example document carried as a shape witness, from its conformance recordings",
+      "document": "{\n  \"format\": \"blindgate-evidence/1\",\n  \"traces\": [\n    {\n      \"check\": \"unit checks\",\n      \"detail\": \"synthetic trace\",\n      \"observation\": \"read\",\n      \"surface\": \"settings file\"\n    }\n  ]\n}\n",
+      "raw_duplicate_format_key": false
+    },
+    {
+      "name": "evidence_tameshi_witness_1",
+      "kind": "witness",
+      "source": "PORT4-7, tameshi's recorded example document carried as a shape witness, from its conformance recordings",
+      "document": "{\n  \"format\": \"blindgate-evidence/1\", \"format\": \"blindgate-evidence/1\",\n  \"traces\": [\n    {\n      \"check\": \"unit checks\",\n      \"detail\": \"synthetic trace\",\n      \"observation\": \"read\",\n      \"surface\": \"settings file\"\n    }\n  ]\n}\n",
+      "raw_duplicate_format_key": true
+    }
+  ]
+}

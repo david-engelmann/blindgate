@@ -748,7 +748,7 @@ parsed with the shape check off through
 parse_trace_with_switch at false, on the ground the crate's
 own doc comment already states, that strace itself produced
 the text. Observable consequences are part of the obligation.
-a root that cannot be written fails the capture at the temp
+A root that cannot be written fails the capture at the temp
 file's creation (that failure's wording is the operating
 system's refusal surfaced as the port's error, and it is not
 one of the pinned wordings, because the Python lets the
@@ -860,3 +860,356 @@ and the live capture stand ported under PORT3, and the
 judgement stack and the command line whole stay Python
 only until their own slices name them. The earlier
 texts stand as the record of what was first stated.
+
+PORT4. The judgement stack and the evidence format
+
+CONTRACT SECTION, owner written 2026-11-08 for the port slice 4
+round (expected Round 18). This section is appended to
+CONTRACT.md as the round's first content commit. Its grounding
+is the groundwork record at scratch/bg-rust4/GROUNDWORK.md, the
+four Python modules read whole firsthand on 2026-11-08
+(config.py, workflow.py, analysis.py, report.py, with cli.py
+and __init__.py read for the seam), and the owner probe record
+at scratch/bg-rust4/probe-results.md, run the same day against
+the Python at the Round 17 merged tree. Probe state is stated
+per obligation, and nothing in this section rests on a probe
+that has not run.
+
+Preamble. Slices 1 to 3 ported the trace reading whole. What
+remains Python only is the judgement stack and the command
+line. This slice ports the stack. The config reading, the
+workflow job reading, the analysis, and the report rendering
+all move, and the slice publishes the evidence format the
+stack's results imply. The command line whole is slice 5 and
+stays Python in this slice, composing the Python stack
+exactly as today. The crate's binary is unchanged. The
+Python modules ported here are not retired in this slice.
+Retirement is the closing slice's work, and the Python suite
+keeps standing as the specification the recordings are
+generated from. New modules carry the work. src/value.rs
+holds the document value model, src/yaml.rs the YAML subset
+reader, and src/config.rs, src/workflow.rs, src/analysis.rs,
+and src/report.rs carry the four ported modules. The Check,
+TraceSource, and CheckResult types and the three verdict
+words move into src/model.rs, and every new entry is
+re-exported from the library root. A small erratum rides
+this round's setup as its own commit after the contract
+commit. The PORT3-5 sentence at the line the PR 21 review
+named begins "A root", capitalized, discharging the one word
+fix forward CodeRabbit recorded on that PR.
+
+PORT4-1, the document value model. Both readers and the
+report renderer share one value model with the variants Null,
+Bool, Int (exact integer digits at any size, read the way
+slice 2's Num reads), Float (an f64 with the Python float
+spellings wherever it is rendered as text), Text, Timestamp
+(a date or datetime the YAML reader resolved, carrying the
+CPython str form of the value and no other behaviour), List,
+and Map. A Map keeps its entries in insertion order. Its
+keys are scalars (Null, Bool, Int, Float, Text, or
+Timestamp). Key equality follows Python's dict (the Bool,
+Int, and Float kinds form one equality family by numeric
+value, so a key of 1 and a key of true collide). On a
+collision the first key object is retained and the last
+value wins. Duplicate keys in
+both the JSON and the YAML readings keep the last value,
+probed for both (probe record J1 and D1).
+
+PORT4-2, the YAML subset reader. The reader produces the
+value model from a YAML text for the two consumers this slice
+ports, and its shape follows the house pattern deadgate set.
+It reads block mappings and block sequences at any nesting
+the bound allows, flow mappings and flow sequences, plain
+scalars, single quoted scalars, double quoted scalars with
+the YAML escape set, comments, an optional document start
+marker, and a document end marker. Plain scalar resolution
+follows PyYAML's YAML 1.1 table as probed (probe record Y).
+The null spellings are null, Null, NULL, the tilde, and the
+empty plain scalar. The bool spellings are yes, Yes, YES,
+no, No, NO, true, True, TRUE, false, False, FALSE, on, On,
+ON, off, Off, and OFF, and the single letters y and n are
+text, probed. Integers cover decimal with an optional sign,
+leading zero octal, 0x hex, 0b binary, underscores between
+digits, and sexagesimal forms with colons. Floats cover
+digits with a point and an optional exponent, a leading
+point only when no sign stands before it (so -.5 is text
+and .5 is a float, probed), the .inf and .nan spellings with
+their signs and cases, and a bare exponent form like 1e3 is
+text, probed. Timestamps
+(a date alone, or a datetime in the ISO forms PyYAML
+resolves) producing the Timestamp variant. The refused
+family is a stated port limit, in the open. Anchors and
+aliases, merge keys, tags, block scalars, explicit keys,
+directives, multiple documents, and tabs in indentation all
+refuse, where PyYAML accepts several of them. Nesting is
+bounded at 4,000, and the reading runs on a spawned thread
+with a large stack (256 MiB, the deadgate discipline), so a
+deeply nested flow document inside the bound cannot abort
+the process. PyYAML's own error message texts are not
+reproduced. A malformed document refuses, and the
+parenthetical the callers add under PORT4-3 and PORT4-4 is
+the port's own short wording naming the failure class, a
+stated port limit in the same family as the refused
+constructs. A YAML text that parses to no document (empty,
+or comments only) reads as Null, as safe_load does.
+
+PORT4-3, the config reading. load_config(path) returns the
+list of Check values or refuses with a BlindgateError, in
+src/config.rs. unknown_jobs(checks, workflow_jobs) returns
+the checks whose job stands outside the given set, order
+preserved. The path is converted the way Path converts it
+(the PORT3 amendment's normalization, which governs every
+file entry in the crate), and the suffix is read from the
+converted path, lowercased, the last dot suffix only (a file
+named with no suffix, or a leading dot name, has none). The
+file is read as UTF-8 text strictly. Invalid UTF-8 is a
+crash family in the Python (UnicodeDecodeError escapes
+uncaught past the OSError wrap), and the port refuses it
+with a BlindgateError naming the file and the decode failure
+in the port's own words, never producing a reading the
+Python cannot produce. A read failure refuses as "cannot
+read config file {path} ({inner})", the inner in the
+CPython OSError form slice 3's wording machinery produces.
+The .json form parses through the value model. The .yaml
+and .yml forms parse through PORT4-2. Any other suffix refuses as
+"config file {path} has an unsupported suffix, use .json,
+.yaml, or .yml", verbatim. A parse failure refuses as
+"config file {path} is not valid JSON ({inner})" or "config
+file {path} is not valid YAML ({inner})", the outer wording
+exact and the inner the port's own under PORT4-2's limit
+(for JSON the inner likewise names the failure and its
+position in the port's own form. CPython's decoder message
+texts are not reproduced, a stated port limit). Validation
+then runs in the Python's order with its wordings verbatim.
+The document must be a mapping holding a checks list, else
+"config file {path} must hold a checks list". Each entry
+must be a mapping, else "config check number {index} is not
+a mapping". A name must be nonempty text, else "config
+check number {index} has no name". A job must be nonempty
+text, else "check {name} has no job id". The surface must be
+a nonempty list, else "check {name} declares no claimed
+surface". Every surface entry must be nonempty text, else
+"check {name} has a claimed surface entry that is not text".
+A trace field, when present and not null, must be nonempty
+text, else "check {name} has a trace field that is not a non
+empty piece of text". An empty checks outcome refuses as
+"config file {path} declares no checks". A Timestamp or any
+other non Text value where text is required fails the same
+check the Python's isinstance fails, with the same wording.
+The trace field resolves against the config file's resolved
+parent (the canonicalized config path's parent, joined with
+the relative trace), exactly as the Python resolves it. The
+Check carries the trace text as spelled and the resolved
+trace path. Recordings pin the validation order at the
+conjunctions (an entry failing two checks names the first),
+the suffix edges, and a trace resolved through a symlinked
+config directory.
+
+PORT4-4, the workflow reading. load_workflow_jobs(path)
+returns the set of job id strings or refuses, in
+src/workflow.rs. The reading discipline matches PORT4-3
+(Path conversion, strict UTF-8 with the same crash family
+treatment, the read refusal "cannot read workflow file
+{path} ({inner})"). The document parses through PORT4-2.
+A parse failure refuses as "workflow file {path} is not
+valid YAML ({inner})" under the same inner limit. A document
+that is not a mapping refuses as "workflow file {path} does
+not hold a mapping". A jobs value that is missing, not a
+mapping, or empty refuses as "workflow file {path} declares
+no jobs". Job ids are the jobs mapping's keys coerced to
+text by the CPython str rules for their kind (probe record
+K1 and C2). Text stands as itself. Bool reads True or
+False. Int reads by its decimal digits. Float reads by the
+Python float spelling. Null reads as None. Timestamp reads
+by its carried CPython str form
+(a date as 2024-01-01, a datetime as 2001-02-03 04:05:06
+with its fraction and offset when present). The standing
+example stands as the warning this obligation exists for.
+A workflow's on key resolves to the bool True and collides
+with a true key under PORT4-1's equality, probed in the
+fixture workflow's top level keys.
+
+PORT4-5, the analysis. src/analysis.rs carries Check,
+TraceSource (kind and detail text), CheckResult, the source
+kind words own_trace, shared_trace, and shared_run,
+path_matches_surface, verdict_for, analyse,
+analyse_with_outside, and analyse_judged. The verdict words
+are proven, unproven, and empty read set, standing as
+constants beside the model. path_matches_surface first
+tries the fnmatchcase translation of the pattern, whose
+rules the port implements as Python's fnmatch translates
+(probe record M). A star crosses separators, a question
+mark takes exactly one character, a bracket class takes one
+character from its set with a leading exclamation negating
+(a caret is not a negation and stands as a set member, so
+a[^b] matches neither a nor b in the probed pair because the
+class holds caret and b), an unclosed bracket is a literal
+bracket, and matching is case sensitive and whole string.
+When the pattern holds no glob character (star, question
+mark, or opening bracket), the prefix rule applies. The
+pattern with every trailing slash stripped is a directory
+prefix, and a path equal to it or standing under it with a
+slash matches. The empty pattern matches nothing a read set
+can hold. verdict_for answers empty read set for an empty
+read set, proven when the matched list is nonempty, else
+unproven. analyse pairs every check with one shared read
+set. analyse_with_outside adds the shared outside reads.
+analyse_judged takes one triple per check (read set, source
+or none, outside reads), computes matched in read set order
+against any of the check's surface entries, and carries the
+source and outside reads into the result untouched. The
+Python's two ValueError guards in analyse_judged are a
+crash family (the CLI builds judgements parallel by
+construction and never triggers them). The port returns a
+BlindgateError carrying the same words ("judgements must
+run parallel to checks" and "each judgement is a triple of
+read set, source, and outside reads"), never a result the
+Python cannot produce.
+
+PORT4-6, the report rendering. src/report.rs carries
+source_text, result_to_dict, report_to_dict, render_text,
+and render_json, reproducing report.py byte for byte.
+source_text renders the label for a known kind (own trace
+file, shared trace, shared run), the kind itself for an
+unknown kind, with the detail appended after one space when
+the detail is nonempty. Whether the source and outside
+fields appear at all is decided over the whole result list
+(the first result carrying a source turns the field on for
+every result, with a missing source rendered as null in
+JSON and as "not recorded" in text, and likewise for
+outside reads). The JSON document holds checks and summary.
+Each check holds name, job, verdict, claimed_surface,
+read_set, reads_in_surface, and conditionally trace_source
+(kind, detail, text) and outside_reads. Summary counts
+results by
+verdict word. render_json spells the document the way
+CPython json.dumps does with indent 2 and sorted keys
+(probe record J). Two space indent, the key colon followed
+by one space, non ASCII escaped as unicode escapes with
+surrogate pairs for astral characters, the standard string
+escapes, integers exact, floats in the Python spelling,
+and no trailing newline of its own. render_text opens with
+the two header lines "blindgate report" and its equals rule
+and a blank line, then per result the label lines with
+labels padded to the standing column (check, job, trace
+source when shown, verdict), the section heads claimed
+surface, read set, reads in surface, and outside reads when
+shown, each listing indented four spaces with the word none
+for an empty list, and a blank line after each result, so
+the text ends with a newline. The committed example reports
+(examples/report.txt and examples/report.json and their per
+job counterparts) regenerate byte identical through the
+port's renderers over the recorded results, pinned in the
+recordings beside the generated cases.
+
+PORT4-7, the evidence format blindgate-evidence/1. This
+slice publishes the format the standalone record names as
+owed. The document is a JSON object holding format (the
+text blindgate-evidence/1) and traces (a list). Each trace
+is an object holding four fields, each nonempty text.
+check is the name of the check the trace concerns. surface
+is one claimed surface entry of that check. observation is
+the word read when at least one path in the check result's
+read set matches that surface entry under
+path_matches_surface, else the word not read. detail is the
+result's trace source
+text under source_text when a source stands, else the words
+not recorded. The emitter evidence_document(results), in
+src/report.rs beside the renderers, emits one trace per
+check result per claimed surface entry, in result order and
+then surface order, and render_evidence spells the document
+with render_json's spelling. This statement is the whole
+contract a stranger needs to produce or consume the format.
+Tameshi's stated acceptance shape (its CONTRACT.md, the
+blindness obligation) requires exactly this format name and
+traces carrying check, surface, observation, and detail as
+nonempty text, and carries traces per check in the order
+supplied. No Python emitter exists or is added in this
+slice, so the format's equivalence is judged against
+tameshi's stated shape as text, against tameshi's recorded
+example documents as shape witnesses, and against this
+section's own rule applied to fixed result sets in the
+round's recordings. That method is stated here so no reader
+mistakes the recordings for Python generated conformance.
+When tameshi's own contract is next amended, its sentence
+saying no published blindgate evidence format stands is
+retired there. That amendment is tameshi's lane's work, and
+this slice's duty is only that the published format and the
+stated shape agree, which the recordings prove.
+
+PORT4-8, the boundary, the standalone checks, and the
+round's own gates. The binary gains no flag, no argument,
+and no output. The Python command line keeps composing the
+Python stack. No CLI behaviour changes, and the ported
+stack is library surface the closing slice's CLI will
+compose. The five standalone checks run in the review
+readiness block, with one slice scoped reading carried from
+PORT3-8. Test alone this round is discharged in its
+stronger form, the closure gate's archive form running from
+a fresh extraction standing outside the fleet tree, which
+also discharges the evidence shape Axis A named in Round 17
+for this round's closure record. The realistic data rule is
+served by the config and workflow recordings carrying the
+repo's own example files and fixture files at their real
+shapes (a real GitHub Actions workflow with its on key, a
+per job config), beside the generated validation cases.
+Gating is the program standard of 2026-11-08. Hosted green
+on the exact head plus the three reviews, with the owner's
+own gate run locally when a window allows. The conformance
+names this section pins are
+port_config_cases_match_the_python_record,
+port_workflow_cases_match_the_python_record,
+port_yaml_value_cases_match_the_python_record,
+port_analysis_cases_match_the_python_record,
+port_report_cases_match_the_python_record, and
+port_evidence_documents_match_the_stated_format.
+
+Amendment (owner, 2026-11-08, on the Round 18 reviews).
+Three statements stand beside PORT4 and govern where they
+reach.
+
+First, the JSON reading states a nesting bound of its own.
+PORT4-2 bounds the YAML subset at 4,000, and the JSON
+reading in src/value.rs bounds its nesting at 10,000 and
+refuses a document nested deeper in the port's own words.
+The Python's JSON reading carries no stated bound and
+dies by its recursion limit, reading a document nested
+8,000 deep and raising at 20,000 in the probes this round
+ran, so the stated bound is a port limit in the
+sanctioned direction, refusing where the Python crashes
+and never producing a reading the Python cannot produce
+inside the bound.
+
+Second, the triple guard of PORT4-5 stands behind
+Judgement::from_parts. The port's analyse_judged takes
+Judgement values, and a malformed triple cannot be
+expressed as one, so the guard fires where a triple is
+taken apart into a Judgement, carrying the Python's exact
+words. The placement is the one the typed surface forces,
+and the words are unchanged.
+
+Third, multiline quoted mapping keys are a stated limit.
+A quoted key in this subset stands on one line only, and
+a document whose quoted key runs over more than one line
+refuses rather than misreading. PORT4-2 stated the
+reader's shape without naming this edge, and this
+amendment names it. A quoted mapping key split by a
+wide line break stands under the same limit and refuses
+in the same way.
+
+The earlier texts stand as the record of what was first
+stated.
+
+Erratum (owner, 2026-11-08, on the Round 18 reviews).
+PORT4-5 as first stated carries the sentence that a[^b]
+matches neither a nor b in the probed pair because the
+class holds caret and b. The sentence contradicts its own
+probe and is restated here. The class holds caret and b,
+so the path ab matches because b stands inside the class,
+the path ax does not match because x stands outside it,
+and the path a^ matches because the caret stands inside
+it. Probe record M and the recordings follow the
+interpreter on all three, and no code changes under this
+erratum. The earlier sentence stands as the record of
+what was first stated.
+
