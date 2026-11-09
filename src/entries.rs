@@ -54,7 +54,7 @@ pub fn read_trace_from_log_file(path: &Path, root: &Path) -> Result<TraceRead, B
 /// components drop, parent components stand as spelled because
 /// Path does not resolve them, a trailing slash drops, and the
 /// empty path reads as a single dot.
-fn normalize_path(path: &Path) -> PathBuf {
+pub(crate) fn normalize_path(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for part in path.components() {
         match part {
@@ -135,7 +135,7 @@ fn run_capture(
 /// absolute form, so the capture's temp file creation meets
 /// the missing directory itself and surfaces its refusal, as
 /// the Python's unwrapped error does.
-fn resolve_root(root: &Path) -> PathBuf {
+pub(crate) fn resolve_root(root: &Path) -> PathBuf {
     if let Ok(resolved) = fs::canonicalize(root) {
         return resolved;
     }
@@ -314,15 +314,26 @@ fn effective_ids() -> Option<(u32, u32, Vec<u32>)> {
 /// never passes the path through that rendering.
 fn cannot_read_wording(path: &Path, err: &io::Error) -> BlindgateError {
     let spelled = path.to_string_lossy().into_owned();
-    let inner = match err.raw_os_error() {
+    let inner = os_error_inner(err, &spelled);
+    BlindgateError::new(format!("cannot read trace log {spelled} ({inner})"))
+}
+
+/// CPython's own spelling of an operating system error.
+///
+/// The bracketed number, the error's words, and the filename
+/// under the repr rules the helper below states. An error
+/// that carries no operating system number spells itself.
+/// Slice 4's config and workflow readers share this spelling
+/// inside their own outer wordings.
+pub(crate) fn os_error_inner(err: &io::Error, spelled: &str) -> String {
+    match err.raw_os_error() {
         Some(errno) => format!(
             "[Errno {errno}] {}: {}",
             errno_words(errno),
-            cpython_repr(&spelled)
+            cpython_repr(spelled)
         ),
         None => err.to_string(),
-    };
-    BlindgateError::new(format!("cannot read trace log {spelled} ({inner})"))
+    }
 }
 
 /// Spell a name the way CPython repr spells a string.
