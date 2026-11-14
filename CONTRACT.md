@@ -1336,3 +1336,7 @@ Tests. tests/test_slice18.py test_split_close_range_forgets_the_entries.
 Obligation S18-5 covers the capture set. The live capture's traced calls gain close_range beside the calls they already name, so a capture the tool makes itself can carry the call this slice reads, on the footing S5-6 states for the descriptor family.
 
 Obligation S18-6 covers the unchanged past. No earlier reading changes, a trace carrying no close_range line reads exactly as the earlier slices read it, and the committed example reports regenerate byte identical on every head. The gap S17-6 recorded stands retired by this slice, and its statement stays standing in that section so the record shows both.
+
+## S18 closing entry, the line share (Round 22)
+
+Entered with the closure commit. Counted the standing way, lines excluding blanks and comment lines, with the recordings excluded. The crate at this head holds 8,710 counted lines under src/ and 1,830 counted lines under tests/, 10,540 counted Rust lines in all, and no Python stands anywhere in the tree. The same counter run over the tree this slice branched from reproduces the S17 closing figures exactly, 8,635 and 1,792, so the slice's growth stands measured against a calibrated base. The crate is the whole tool and the share is total, and no non Rust remainder stands to be named. The battery recordings under tests/conformance/ are data and stand outside the count, as the rule states. The build of this slice landed by PR 31, merged at 817c34d7, on the contract this section states.
