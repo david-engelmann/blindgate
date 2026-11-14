@@ -97,7 +97,7 @@ The local seed is done and the repo stands on GitHub. The 403 refusals the seed 
 
 The tool is the Rust crate alone, and the Python package it replaces is retired. The crate opened as slice 1 with the reader model, the line classification, the canonical scoping, and the openat reading, and the port slices that followed carried the parse entry whole, the file reading entries and the live capture, the config and workflow and analysis and report modules, and the evidence format those results imply. The command line stands in the crate's binary shell, scanning its arguments under the model the contract states, and the example reports under examples regenerate byte identical on every head. The gate is cargo test, and the suite carries the conformance batteries the Python package produced over its own recordings beside the crate's own tests.
 
-Closed rounds stand at 20 of 100. Pinned formats stand at blindgate-evidence/1.
+Closed rounds stand at 21 of 100. Pinned formats stand at blindgate-evidence/1.
 
 ## Licence
 

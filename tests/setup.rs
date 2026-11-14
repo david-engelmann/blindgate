@@ -48,7 +48,7 @@ fn test_readme_status_section_states_the_facts() {
         "403",
         "contract.md",
         "slice 1",
-        "20 of 100",
+        "21 of 100",
         "agents.md",
         "canonical template",
         "pinned formats stand at blindgate-evidence/1",
