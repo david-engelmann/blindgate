@@ -1,0 +1,395 @@
+{
+ "generated_by": "the slice 16 obligations, authored from the contract text and the kernel semantics the earlier slices probed, no implementation read for the expected answers",
+ "cases": [
+  {
+   "name": "exit_line_drops_the_directory_state_of_its_process",
+   "kind": "exit_state",
+   "source": "S16-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "200 chdir(\"sub\") = 0\n200 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 3\n200 +++ exited with 0 +++\n200 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 4",
+   "expected_reads": [
+    "file.txt",
+    "sub/file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "exit_line_drops_the_descriptor_entries_of_its_process",
+   "kind": "exit_state",
+   "source": "S16-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "200 openat(AT_FDCWD, \"sub\", O_RDONLY|O_DIRECTORY) = 5\n200 +++ exited with 0 +++\n200 openat(5, \"secret.txt\", O_RDONLY) = 6",
+   "expected_reads": [
+    "secret.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "killed_line_drops_the_state_of_its_process",
+   "kind": "exit_state",
+   "source": "S16-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "200 chdir(\"sub\") = 0\n200 +++ killed by SIGKILL +++\n200 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 3",
+   "expected_reads": [
+    "file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "bracketed_exit_line_drops_the_state_of_its_process",
+   "kind": "exit_state",
+   "source": "S16-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "[pid   200] chdir(\"sub\") = 0\n[pid   200] +++ exited with 0 +++\n[pid   200] openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 3",
+   "expected_reads": [
+    "file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "exit_of_one_sharer_leaves_the_shared_table_standing",
+   "kind": "exit_state",
+   "source": "S16-2",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "200 clone(child_stack=NULL, flags=CLONE_FILES|SIGCHLD) = 201\n201 openat(AT_FDCWD, \"sub\", O_RDONLY|O_DIRECTORY) = 5\n200 +++ exited with 0 +++\n201 openat(5, \"secret.txt\", O_RDONLY) = 6",
+   "expected_reads": [
+    "sub/secret.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "exit_of_one_sharer_leaves_the_shared_directory_standing",
+   "kind": "exit_state",
+   "source": "S16-2",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "200 clone(child_stack=NULL, flags=CLONE_FS|SIGCHLD) = 201\n201 chdir(\"sub\") = 0\n200 +++ exited with 0 +++\n201 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 3",
+   "expected_reads": [
+    "sub/file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "a_number_reused_with_no_recorded_exit_keeps_its_state",
+   "kind": "exit_state",
+   "source": "S16-3",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "200 chdir(\"sub\") = 0\n200 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 3",
+   "expected_reads": [
+    "sub/file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "fork_seeding_still_replaces_the_child_number_holdings",
+   "kind": "exit_state",
+   "source": "S16-3",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "201 chdir(\"sub\") = 0\n201 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 3\n200 clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID) = 201\n201 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 4",
+   "expected_reads": [
+    "file.txt",
+    "sub/file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "exit_of_an_unrelated_process_changes_nothing",
+   "kind": "exit_state",
+   "source": "S16-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/sub/secret.txt",
+      "sub secret\n"
+     ]
+    },
+    {
+     "write": [
+      "project/secret.txt",
+      "root secret\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "200 chdir(\"sub\") = 0\n300 +++ exited with 0 +++\n200 openat(AT_FDCWD, \"file.txt\", O_RDONLY) = 3",
+   "expected_reads": [
+    "sub/file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "exit_line_inside_an_exec_pair_keeps_the_maps",
+   "kind": "exit_state",
+   "source": "S16 amendment, the exec dance",
+   "setup": [
+    {
+     "mkdir": "project/docs"
+    },
+    {
+     "write": [
+      "project/docs/guide.md",
+      "the guide\n"
+     ]
+    },
+    {
+     "write": [
+      "project/guide.md",
+      "root guide\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat(AT_FDCWD, \"docs\", O_RDONLY|O_DIRECTORY|O_CLOEXEC) = 3\n100 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */ <unfinished ...>\n100 +++ exited with 0 +++\n100 <... execve resumed>)             = 0\n100 openat(3, \"guide.md\", O_RDONLY) = 4",
+   "expected_reads": [
+    "docs/guide.md"
+   ],
+   "expected_outside": []
+  }
+ ]
+}

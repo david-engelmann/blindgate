@@ -1430,7 +1430,15 @@ fn absolute_root(root: &Path) -> String {
 /// The reading is the trace reading whole, the slice 1 reading
 /// as the later fixes amended it and the state machinery this
 /// slice adds. Directory state is tracked while the lines are
-/// read. Every process starts at the root, a chdir line with a
+/// read. An exit line drops the directory state and the
+/// descriptor map standing under its process's key beside the
+/// halves and links it already cleared, so a number the kernel
+/// hands to a later tenant reads with fresh state, while a
+/// holding another process shares stands under that process's
+/// key untouched. An exit line standing while an exec half
+/// is kept under its process is the exec's own dance and drops
+/// no map, as the amendment on the slice 16 obligations
+/// states. Every process starts at the root, a chdir line with a
 /// recorded success moves the directory of its own process from
 /// that line onward, and a fork the trace records seeds the
 /// child with the directory and the descriptor map its parent
@@ -1509,13 +1517,19 @@ pub fn parse_trace_with_switch(
         let line = spend_resumed(&raw_line, &mut pending);
         let pid = pid_key(&line);
         if is_exit_line(&line) {
+            let exec_kept = exec_halves.contains_key(&(pid.clone(), "execve".to_string()))
+                || exec_halves.contains_key(&(pid.clone(), "execveat".to_string()));
             clear_process_links(
-                pid,
+                pid.clone(),
                 &mut pending,
                 &mut clone_halves,
                 &mut exec_halves,
                 &mut exec_links,
             );
+            if !exec_kept {
+                cwd_by_pid.remove(&pid);
+                fds_by_pid.remove(&pid);
+            }
             continue;
         }
         if let Some((survivor, starter)) = superseded_match(&line) {

@@ -388,6 +388,46 @@ fn port_read_cases_match_the_python_record() {
     }
 }
 
+fn slice16_recordings() -> Vec<Json> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("conformance")
+        .join("slice16_cases.json");
+    let text = fs::read_to_string(&path).expect("the slice 16 recordings file stands in the repo");
+    let parsed = JsonParser::new(&text).parse();
+    parsed
+        .get("cases")
+        .expect("the recordings carry cases")
+        .as_list()
+        .to_vec()
+}
+
+#[test]
+fn slice16_exit_state_cases_match_the_contract() {
+    let cases: Vec<Json> = slice16_recordings()
+        .into_iter()
+        .filter(|case| case.get("kind").map(|item| item.as_text()) == Some("exit_state"))
+        .collect();
+    assert!(!cases.is_empty(), "the recordings hold exit state cases");
+    for case in &cases {
+        let name = case.get("name").unwrap().as_text();
+        let run = run_case(case);
+        let read = parse_trace(&run.trace, &run.root)
+            .unwrap_or_else(|err| panic!("case {name} errors: {err}"));
+        assert_eq!(
+            read.reads,
+            expected(case, "expected_reads", &run),
+            "case {name} read set"
+        );
+        assert_eq!(
+            read.outside_reads,
+            expected(case, "expected_outside", &run),
+            "case {name} outside reads"
+        );
+        let _ = fs::remove_dir_all(&run.base);
+    }
+}
+
 #[test]
 fn port_parse_strace_log_cases_match_the_python_record() {
     let cases = cases_of_kind("parse_strace_log");
