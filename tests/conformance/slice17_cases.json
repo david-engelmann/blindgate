@@ -1,0 +1,246 @@
+{
+ "generated_by": "the slice 17 obligations, authored from the contract text and the strace 6.8 captures taken on this machine at the round's scoping, no implementation read for the expected answers",
+ "cases": [
+  {
+   "name": "openat2_read_is_counted",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/src"
+    },
+    {
+     "write": [
+      "project/src/app.py",
+      "x = 1\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"src/app.py\", {flags=O_RDONLY, resolve=0}, 24) = 3",
+   "expected_reads": [
+    "src/app.py"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_read_through_a_recorded_descriptor_is_counted",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat(AT_FDCWD, \"sub\", O_RDONLY|O_DIRECTORY) = 3\n100 openat2(3, \"file.txt\", {flags=O_RDONLY, resolve=0}, 24) = 4",
+   "expected_reads": [
+    "sub/file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_failure_counts_no_read",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/src"
+    },
+    {
+     "write": [
+      "project/src/app.py",
+      "x = 1\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"src/app.py\", {flags=O_RDONLY, resolve=0}, 24) = -1 ENOENT (No such file or directory)",
+   "expected_reads": [],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_without_a_recorded_return_counts_no_read",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/src"
+    },
+    {
+     "write": [
+      "project/src/app.py",
+      "x = 1\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"src/app.py\", {flags=O_RDONLY, resolve=0}, 24) <unfinished ...>",
+   "expected_reads": [],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_directory_open_records_its_descriptor",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"sub\", {flags=O_RDONLY|O_DIRECTORY, resolve=0}, 24) = 3\n100 openat(3, \"file.txt\", O_RDONLY) = 4",
+   "expected_reads": [
+    "sub/file.txt"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_cloexec_entry_closes_at_exec",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/docs"
+    },
+    {
+     "write": [
+      "project/docs/guide.md",
+      "the guide\n"
+     ]
+    },
+    {
+     "write": [
+      "project/guide.md",
+      "root guide\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"docs\", {flags=O_RDONLY|O_DIRECTORY|O_CLOEXEC, resolve=0}, 24) = 3\n100 execve(\"/bin/true\", [\"/bin/true\"], 0x2db19d50 /* 55 vars */) = 0\n100 fchdir(3) = 0\n100 openat(AT_FDCWD, \"guide.md\", O_RDONLY) = 4",
+   "expected_reads": [
+    "guide.md"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_write_open_counts_no_read",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/out"
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"out/made.txt\", {flags=O_WRONLY|O_CREAT|O_TRUNC, mode=0644, resolve=0}, 24) = 3",
+   "expected_reads": [],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_absolute_path_ignores_its_descriptor",
+   "kind": "openat2",
+   "source": "S17-1",
+   "setup": [
+    {
+     "mkdir": "project/sub"
+    },
+    {
+     "write": [
+      "project/sub/file.txt",
+      "sub file\n"
+     ]
+    },
+    {
+     "write": [
+      "project/file.txt",
+      "root file\n"
+     ]
+    },
+    {
+     "mkdir": "project/src"
+    },
+    {
+     "write": [
+      "project/src/app.py",
+      "x = 1\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat(AT_FDCWD, \"sub\", O_RDONLY|O_DIRECTORY) = 3\n100 openat2(3, \"{ROOT}/src/app.py\", {flags=O_RDONLY, resolve=0}, 24) = 4",
+   "expected_reads": [
+    "src/app.py"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "openat2_with_a_resolve_field_reads_its_path",
+   "kind": "openat2",
+   "source": "S17-3",
+   "setup": [
+    {
+     "mkdir": "project/src"
+    },
+    {
+     "write": [
+      "project/src/app.py",
+      "x = 1\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"src/app.py\", {flags=O_RDONLY, resolve=RESOLVE_NO_SYMLINKS|RESOLVE_BENEATH}, 24) = 3",
+   "expected_reads": [
+    "src/app.py"
+   ],
+   "expected_outside": []
+  },
+  {
+   "name": "split_openat2_read_is_counted",
+   "kind": "openat2",
+   "source": "S17-4",
+   "setup": [
+    {
+     "mkdir": "project/src"
+    },
+    {
+     "write": [
+      "project/src/app.py",
+      "x = 1\n"
+     ]
+    }
+   ],
+   "root": "project",
+   "trace": "100 openat2(AT_FDCWD, \"src/app.py\", {flags=O_RDONLY, resolve=0}, 24) <unfinished ...>\n100 <... openat2 resumed>) = 3",
+   "expected_reads": [
+    "src/app.py"
+   ],
+   "expected_outside": []
+  }
+ ]
+}

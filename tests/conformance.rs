@@ -402,6 +402,46 @@ fn slice16_recordings() -> Vec<Json> {
         .to_vec()
 }
 
+fn slice17_recordings() -> Vec<Json> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("conformance")
+        .join("slice17_cases.json");
+    let text = fs::read_to_string(&path).expect("the slice 17 recordings file stands in the repo");
+    let parsed = JsonParser::new(&text).parse();
+    parsed
+        .get("cases")
+        .expect("the recordings carry cases")
+        .as_list()
+        .to_vec()
+}
+
+#[test]
+fn slice17_openat2_cases_match_the_contract() {
+    let cases: Vec<Json> = slice17_recordings()
+        .into_iter()
+        .filter(|case| case.get("kind").map(|item| item.as_text()) == Some("openat2"))
+        .collect();
+    assert!(!cases.is_empty(), "the recordings hold openat2 cases");
+    for case in &cases {
+        let name = case.get("name").unwrap().as_text();
+        let run = run_case(case);
+        let read = parse_trace(&run.trace, &run.root)
+            .unwrap_or_else(|err| panic!("case {name} errors: {err}"));
+        assert_eq!(
+            read.reads,
+            expected(case, "expected_reads", &run),
+            "case {name} read set"
+        );
+        assert_eq!(
+            read.outside_reads,
+            expected(case, "expected_outside", &run),
+            "case {name} outside reads"
+        );
+        let _ = fs::remove_dir_all(&run.base);
+    }
+}
+
 #[test]
 fn slice16_exit_state_cases_match_the_contract() {
     let cases: Vec<Json> = slice16_recordings()

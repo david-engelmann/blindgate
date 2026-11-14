@@ -28,7 +28,7 @@ use crate::parse::{parse_trace, parse_trace_with_switch};
 /// The calls the capture asks strace to trace, the counterpart
 /// of the Python _TRACED_CALLS constant, spelled as one
 /// argument.
-const TRACED_CALLS: &str = "trace=open,openat,chdir,fchdir,close,dup,dup2,dup3,fcntl,clone,fork,vfork,clone3,execve,execveat";
+const TRACED_CALLS: &str = "trace=open,openat,openat2,chdir,fchdir,close,dup,dup2,dup3,fcntl,clone,fork,vfork,clone3,execve,execveat";
 
 /// Return the read set and outside reads from a trace log file.
 ///

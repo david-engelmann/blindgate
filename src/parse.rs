@@ -14,8 +14,8 @@ use crate::scope::{
 const READ_FLAGS: [&str; 2] = ["O_RDONLY", "O_RDWR"];
 const NON_CONTENT_FLAGS: [&str; 2] = ["O_PATH", "O_DIRECTORY"];
 const UNFINISHED_MARKER: &str = "<unfinished ...>";
-const SPLIT_CALLS: [&str; 9] = [
-    "chdir", "fchdir", "open", "openat", "close", "dup", "dup2", "dup3", "fcntl",
+const SPLIT_CALLS: [&str; 10] = [
+    "chdir", "fchdir", "open", "openat", "openat2", "close", "dup", "dup2", "dup3", "fcntl",
 ];
 const EXEC_CALLS: [&str; 2] = ["execve", "execveat"];
 
@@ -663,6 +663,96 @@ fn find_openat(line: &str) -> Option<OpenatMatch<'_>> {
     None
 }
 
+/// Read one openat2 call shape starting just after its name.
+///
+/// The reading stands beside the openat reading and produces
+/// the same match. The descriptor segment and the quoted path
+/// read exactly as openat's do. The open_how struct then stands
+/// in braces, and its flags field is read by name where the
+/// captures print it, first in the struct, its value running
+/// as the same run of flag characters openat carries. The
+/// mode and resolve fields are read past to the closing brace
+/// and never judged, the mode because the judgement has no
+/// use for it and the resolve under the limit S17-3 states,
+/// and the size argument after the struct is read past with
+/// nothing asked of its value. A struct with no readable
+/// flags field fails the shape, under S17-2.
+fn try_openat2_at(line: &str, start: usize) -> Option<OpenatMatch<'_>> {
+    let bytes = line.as_bytes();
+    let comma = line[start..].find(',').map(|at| start + at)?;
+    if comma == start {
+        return None;
+    }
+    let mut index = skip_ws(line, comma + 1);
+    if bytes.get(index) != Some(&b'"') {
+        return None;
+    }
+    let path_start = index + 1;
+    let mut cursor = path_start;
+    let path_end = loop {
+        match bytes.get(cursor) {
+            None => return None,
+            Some(b'\\') => cursor += 2,
+            Some(b'"') => break cursor,
+            Some(_) => cursor += 1,
+        }
+    };
+    index = skip_ws(line, path_end + 1);
+    if bytes.get(index) != Some(&b',') {
+        return None;
+    }
+    index = skip_ws(line, index + 1);
+    if bytes.get(index) != Some(&b'{') {
+        return None;
+    }
+    index = skip_ws(line, index + 1);
+    if !line[index..].starts_with("flags=") {
+        return None;
+    }
+    index += "flags=".len();
+    let flags_start = index;
+    while index < bytes.len()
+        && (bytes[index].is_ascii_alphanumeric() || bytes[index] == b'_' || bytes[index] == b'|')
+    {
+        index += 1;
+    }
+    if index == flags_start {
+        return None;
+    }
+    let flags_end = index;
+    let close = line[index..].find('}').map(|at| index + at)?;
+    index = skip_ws(line, close + 1);
+    if bytes.get(index) != Some(&b',') {
+        return None;
+    }
+    index = skip_ws(line, index + 1);
+    let size_start = index;
+    while index < bytes.len() && bytes[index].is_ascii_digit() {
+        index += 1;
+    }
+    if index == size_start {
+        return None;
+    }
+    Some(OpenatMatch {
+        dirfd: &line[start..comma],
+        raw_path: &line[path_start..path_end],
+        flags: &line[flags_start..flags_end],
+        end: index,
+    })
+}
+
+fn find_openat2(line: &str) -> Option<OpenatMatch<'_>> {
+    let mut start = 0;
+    while let Some(found) = line[start..].find("openat2(") {
+        let at = start + found;
+        if let Some(matched) = try_openat2_at(line, at + "openat2(".len()) {
+            return Some(matched);
+        }
+        start = at + 1;
+    }
+    None
+}
+
 /// Return the call name and text of a kept unfinished line.
 ///
 /// An unfinished line is kept when it ends with the unfinished
@@ -688,6 +778,7 @@ fn kept_unfinished(line: &str) -> Option<(String, String)> {
     let (name, _) = call_name_of(prefix)?;
     let readable = match name {
         "openat" => find_openat(prefix).is_some(),
+        "openat2" => find_openat2(prefix).is_some(),
         "open" => match_open(prefix).is_some(),
         "chdir" => keep_chdir(prefix),
         "fchdir" => keep_number_call(prefix, "fchdir"),
@@ -1751,72 +1842,103 @@ pub fn parse_trace_with_switch(
             }
             continue;
         }
-        let Some(matched) = find_openat(&line) else {
-            continue;
-        };
-        let dirfd_token = matched.dirfd.trim_matches(is_ws);
-        let raw_path = unescape(matched.raw_path);
-        let fds = fds_map(&mut fds_by_pid, pid.clone());
-        let mut entry: Option<FdEntry> = None;
-        let base = if dirfd_token == "AT_FDCWD" {
-            cwd_cell(&mut cwd_by_pid, pid, &root_path).borrow().clone()
-        } else if is_digit_token(dirfd_token)
-            && fds.borrow().contains_key(&parse_number(dirfd_token))
-        {
-            let found = fds
-                .borrow()
-                .get(&parse_number(dirfd_token))
-                .cloned()
-                .expect("the entry stands under the number just checked");
-            let resolved = found.resolved.clone();
-            entry = Some(found);
-            resolved
-        } else {
-            cwd_cell(&mut cwd_by_pid, pid, &root_path).borrow().clone()
-        };
-        let returned = find_return(&line[matched.end..]);
-        if let Some(value) = &returned {
-            if !value.is_negative() {
-                record_opened_descriptor(
-                    &fds,
-                    &raw_path,
-                    &base,
-                    &root_path,
-                    value.clone(),
-                    carries_cloexec(matched.flags),
-                );
-            }
-        }
-        if !is_read(matched.flags) {
-            continue;
-        }
-        let Some(value) = returned else {
-            continue;
-        };
-        if value.is_negative() {
-            continue;
-        }
-        let (relative, outside_path) = canonical_scoped_based(&raw_path, &root_path, Some(&base));
-        if let Some(relative) = relative {
-            reads.insert(relative);
-        } else if let Some(outside_path) = outside_path {
-            outside.insert(outside_path);
-        } else if let Some(entry) = &entry {
-            if entry.inside && !raw_path.is_empty() && !raw_path.starts_with('/') {
-                let spelled = posix_join(&base, &raw_path);
-                let resolved = realpath(&spelled);
-                if resolved != root_path && resolved != realpath(&base) {
-                    if relative_to(&resolved, &root_path).is_none() {
-                        outside.insert(resolved);
-                    }
-                }
-            }
+        if let Some(matched) = find_openat(&line).or_else(|| find_openat2(&line)) {
+            judge_open_call(
+                &matched,
+                &line,
+                pid,
+                &mut fds_by_pid,
+                &mut cwd_by_pid,
+                &root_path,
+                &mut reads,
+                &mut outside,
+            );
         }
     }
     Ok(TraceRead {
         reads: reads.into_iter().collect(),
         outside_reads: outside.into_iter().collect(),
     })
+}
+
+/// Judge one open family call the matcher has read, openat
+/// or openat2 standing in one match under S17-1, so the two
+/// calls share this one judgement and no twin of it stands.
+/// The descriptor the call names resolves against its entry
+/// or against the directory in force, a successful return
+/// records a descriptor where the target stands as a
+/// directory, and a read the flags earn enters the read set
+/// or the outside set under the scoped canonical reading.
+#[allow(clippy::too_many_arguments)]
+fn judge_open_call(
+    matched: &OpenatMatch<'_>,
+    line: &str,
+    pid: PidKey,
+    fds_by_pid: &mut HashMap<PidKey, FdMap>,
+    cwd_by_pid: &mut HashMap<PidKey, CwdCell>,
+    root_path: &str,
+    reads: &mut BTreeSet<String>,
+    outside: &mut BTreeSet<String>,
+) {
+    let dirfd_token = matched.dirfd.trim_matches(is_ws);
+    let raw_path = unescape(matched.raw_path);
+    let fds = fds_map(fds_by_pid, pid.clone());
+    let mut entry: Option<FdEntry> = None;
+    let base = if dirfd_token == "AT_FDCWD" {
+        cwd_cell(cwd_by_pid, pid, root_path).borrow().clone()
+    } else if is_digit_token(dirfd_token) && fds.borrow().contains_key(&parse_number(dirfd_token)) {
+        let found = fds
+            .borrow()
+            .get(&parse_number(dirfd_token))
+            .cloned()
+            .expect("the entry stands under the number just checked");
+        let resolved = found.resolved.clone();
+        entry = Some(found);
+        resolved
+    } else {
+        cwd_cell(cwd_by_pid, pid, root_path).borrow().clone()
+    };
+    let returned = find_return(&line[matched.end..]);
+    if let Some(value) = &returned {
+        if !value.is_negative() {
+            record_opened_descriptor(
+                &fds,
+                &raw_path,
+                &base,
+                root_path,
+                value.clone(),
+                carries_cloexec(matched.flags),
+            );
+        }
+    }
+    if !is_read(matched.flags) {
+        return;
+    }
+    let Some(value) = returned else {
+        return;
+    };
+    if value.is_negative() {
+        return;
+    }
+    let (relative, outside_path) = canonical_scoped_based(&raw_path, root_path, Some(&base));
+    if let Some(relative) = relative {
+        reads.insert(relative);
+    } else if let Some(outside_path) = outside_path {
+        outside.insert(outside_path);
+    } else if let Some(entry) = &entry {
+        let through_inside_entry =
+            entry.inside && !raw_path.is_empty() && !raw_path.starts_with('/');
+        if through_inside_entry {
+            let spelled = posix_join(&base, &raw_path);
+            let resolved = realpath(&spelled);
+            if resolved != root_path
+                && resolved != realpath(&base)
+                && relative_to(&resolved, root_path).is_none()
+            {
+                outside.insert(resolved);
+            }
+        }
+    }
 }
 
 /// Return the sorted read set found in an strace log text.
