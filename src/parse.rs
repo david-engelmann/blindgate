@@ -14,8 +14,18 @@ use crate::scope::{
 const READ_FLAGS: [&str; 2] = ["O_RDONLY", "O_RDWR"];
 const NON_CONTENT_FLAGS: [&str; 2] = ["O_PATH", "O_DIRECTORY"];
 const UNFINISHED_MARKER: &str = "<unfinished ...>";
-const SPLIT_CALLS: [&str; 10] = [
-    "chdir", "fchdir", "open", "openat", "openat2", "close", "dup", "dup2", "dup3", "fcntl",
+const SPLIT_CALLS: [&str; 11] = [
+    "chdir",
+    "fchdir",
+    "open",
+    "openat",
+    "openat2",
+    "close",
+    "close_range",
+    "dup",
+    "dup2",
+    "dup3",
+    "fcntl",
 ];
 const EXEC_CALLS: [&str; 2] = ["execve", "execveat"];
 
@@ -510,6 +520,38 @@ fn match_dup3(line: &str) -> Option<(Num, Num, usize)> {
     args_dup3(line, named_call(line, "dup3")?)
 }
 
+/// Read the argument pattern the close_range call carries.
+///
+/// Two descriptor numbers and the flags text that follows
+/// them, the flags read as the run of flag characters the
+/// dup3 reading already measures, a zero standing as that
+/// run of one digit. One argument pattern serves the whole
+/// line reading and the keep reading alike.
+fn args_close_range(line: &str, index: usize) -> Option<(Num, Num, String, usize)> {
+    let (first, last, end) = args_pair(line, index)?;
+    let at = skip_ws(line, end);
+    if line.as_bytes().get(at) != Some(&b',') {
+        return None;
+    }
+    let flags_start = skip_ws(line, at + 1);
+    let flags_end = flag_run_end(line, flags_start);
+    if flags_end == flags_start {
+        return None;
+    }
+    Some((
+        first,
+        last,
+        line[flags_start..flags_end].to_string(),
+        flags_end,
+    ))
+}
+
+/// The whole line reading of a close_range line.
+fn match_close_range(line: &str) -> Option<(Num, Num, String, usize)> {
+    let (first, last, flags, end) = args_close_range(line, named_call(line, "close_range")?)?;
+    Some((first, last, flags, close_paren(line, end)?))
+}
+
 /// The whole line reading of an fcntl line.
 fn match_fcntl(line: &str) -> Option<(Num, FcntlArgs, usize)> {
     let (fd, args, end) = args_fcntl(line, named_call(line, "fcntl")?)?;
@@ -564,6 +606,17 @@ fn keep_dup2(prefix: &str) -> bool {
     };
     match args_pair(prefix, after) {
         Some((_, _, end)) => skip_ws(prefix, end) == prefix.len(),
+        None => false,
+    }
+}
+
+/// The keep reading of a close_range half.
+fn keep_close_range(prefix: &str) -> bool {
+    let Some(after) = named_call(prefix, "close_range") else {
+        return false;
+    };
+    match args_close_range(prefix, after) {
+        Some((_, _, _, end)) => skip_ws(prefix, end) == prefix.len(),
         None => false,
     }
 }
@@ -783,6 +836,7 @@ fn kept_unfinished(line: &str) -> Option<(String, String)> {
         "chdir" => keep_chdir(prefix),
         "fchdir" => keep_number_call(prefix, "fchdir"),
         "close" => keep_number_call(prefix, "close"),
+        "close_range" => keep_close_range(prefix),
         "dup" => keep_number_call(prefix, "dup"),
         "dup2" => keep_dup2(prefix),
         "dup3" => keep_dup3(prefix),
@@ -1452,6 +1506,40 @@ fn close_flagged_entries(fds: &FdMap) {
     }
 }
 
+/// Forget every entry of a descriptor map in a range.
+///
+/// A successful close_range closes the descriptors from its
+/// first argument to its last, both standings counted, so
+/// the entries whose numbers stand in that range are removed
+/// and every entry outside it stands.
+fn forget_range(fds: &FdMap, first: &Num, last: &Num) {
+    let mut map = fds.borrow_mut();
+    let doomed: Vec<Num> = map
+        .keys()
+        .filter(|number| first <= number && number <= &last)
+        .cloned()
+        .collect();
+    for number in doomed {
+        map.remove(&number);
+    }
+}
+
+/// Flag every entry of a descriptor map in a range.
+///
+/// The cloexec form of close_range closes nothing at the
+/// call itself and sets the close on exec flag on the
+/// descriptors in its range instead, so each entry in the
+/// range gains the flag and stands until a successful exec
+/// closes it under the standing exec rule.
+fn flag_range(fds: &FdMap, first: &Num, last: &Num) {
+    let mut map = fds.borrow_mut();
+    for (number, entry) in map.iter_mut() {
+        if first <= number && number <= last {
+            entry.cloexec = true;
+        }
+    }
+}
+
 /// Move the state of a starting process under a survivor key.
 ///
 /// From the banner onward the state under the survivor number
@@ -1779,6 +1867,20 @@ pub fn parse_trace_with_switch(
                 if !value.is_negative() {
                     if let Some(fds) = fds_by_pid.get(&pid) {
                         fds.borrow_mut().remove(&number);
+                    }
+                }
+            }
+            continue;
+        }
+        if let Some((first, last, flags, end)) = match_close_range(&line) {
+            if let Some(value) = find_return(&line[end..]) {
+                if !value.is_negative() {
+                    if let Some(fds) = fds_by_pid.get(&pid) {
+                        if flags.split('|').any(|token| token == "CLOSE_RANGE_CLOEXEC") {
+                            flag_range(fds, &first, &last);
+                        } else {
+                            forget_range(fds, &first, &last);
+                        }
                     }
                 }
             }
