@@ -398,14 +398,7 @@
    "kind": "block_scalar",
    "name": "block_scalar_workflow_run_step_reads_whole",
    "source": "S19-5"
-  },
-  {
-   "input": "k: &a |\n  x\n",
-   "kind": "block_scalar",
-   "name": "block_scalar_behind_an_anchor_still_refuses",
-   "port_refuses": true,
-   "source": "S19-5"
   }
  ],
- "generated_by": "gen_slice19.py in the Round 23 scratch, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+ "generated_by": "gen_slice19.py, regenerated at slice 20 without the retired anchor case, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
 }

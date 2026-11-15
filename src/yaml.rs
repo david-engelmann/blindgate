@@ -96,10 +96,181 @@ fn before_comment(text: &str) -> &str {
     text
 }
 
+/// The anchors a document has registered, in the order
+/// they registered. A name standing with no value yet is
+/// an anchor whose value is still composing, and an alias
+/// that reaches it stands in the recursive spelling S20-3
+/// states as this port's limit.
+#[derive(Default)]
+struct AnchorTable {
+    entries: Vec<(String, Option<Value>)>,
+}
+
+impl AnchorTable {
+    fn begin(&mut self, name: &str) -> Result<(), String> {
+        if self.entries.iter().any(|(held, _)| held == name) {
+            return Err("the same anchor stands twice in the document".to_string());
+        }
+        self.entries.push((name.to_string(), None));
+        Ok(())
+    }
+
+    fn complete(&mut self, name: &str, value: &Value) {
+        for (held, slot) in self.entries.iter_mut() {
+            if held == name {
+                *slot = Some(value.clone());
+                return;
+            }
+        }
+    }
+
+    fn resolve(&self, name: &str) -> Result<Value, String> {
+        for (held, slot) in &self.entries {
+            if held == name {
+                return match slot {
+                    Some(value) => Ok(value.clone()),
+                    None => Err(
+                        "an alias names the anchor that holds it, which the subset does not carry"
+                            .to_string(),
+                    ),
+                };
+            }
+        }
+        Err("an alias names no anchor in the document".to_string())
+    }
+}
+
+/// Read the name of an anchor or alias spelling whose
+/// first character is its mark. The name is the run of
+/// letters, digits, hyphens, and underscores after the
+/// mark, the character that ends the run standing as a
+/// blank, a flow mark, a colon, or one of the indicator
+/// characters. A spelling with no name, and a name ended
+/// by a character that cannot end one, refuse under
+/// S20-5. Returns the name and the text after it.
+fn read_anchor_name(text: &str) -> Result<(&str, &str), String> {
+    let body = &text[1..];
+    let mut end = 0;
+    for ch in body.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+            end += ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    if end == 0 {
+        return Err(
+            "an anchor or alias stands with no name, which the subset does not carry".to_string(),
+        );
+    }
+    let rest = &body[end..];
+    if let Some(ch) = rest.chars().next() {
+        let can_end = matches!(
+            ch,
+            ' ' | '\t'
+                | '\n'
+                | ','
+                | '['
+                | ']'
+                | '{'
+                | '}'
+                | ':'
+                | '#'
+                | '&'
+                | '*'
+                | '!'
+                | '|'
+                | '>'
+                | '\''
+                | '"'
+                | '%'
+                | '@'
+                | '`'
+                | '?'
+        );
+        if !can_end {
+            return Err(
+                "an anchor or alias name carries a character the subset does not read".to_string(),
+            );
+        }
+    }
+    Ok((&body[..end], rest))
+}
+
+/// The text a routing judgement reads. A line or a
+/// value led by an anchor spelling is judged by the text
+/// the anchor stands before, because the anchor is never
+/// part of the construct it opens: a flow collection
+/// after an anchor is a flow collection, and a key
+/// spelling after an anchor is a key spelling.
+fn route_text(text: &str) -> &str {
+    let trimmed = text.trim_start();
+    if trimmed.starts_with('&') {
+        if let Ok((_, rest)) = read_anchor_name(trimmed) {
+            let rest = rest.trim_start();
+            if !rest.is_empty() && !rest.starts_with('#') {
+                return rest;
+            }
+        }
+    }
+    text
+}
+
+/// The merge groups a merge key's value contributes, in
+/// the order they are laid. A mapping contributes its own
+/// pairs. A sequence contributes its sources in the
+/// reverse of its order, each source a mapping, as S20-4
+/// states. Any other value refuses.
+fn merge_groups_of(value: Value) -> Result<Vec<Vec<(Value, Value)>>, String> {
+    match value {
+        Value::Map(pairs) => Ok(vec![pairs]),
+        Value::List(items) => {
+            let mut groups = Vec::new();
+            for item in items.into_iter().rev() {
+                match item {
+                    Value::Map(pairs) => groups.push(pairs),
+                    _ => {
+                        return Err(
+                            "a merge key's value is not a mapping, which the subset does not carry"
+                                .to_string(),
+                        )
+                    }
+                }
+            }
+            Ok(groups)
+        }
+        _ => {
+            Err("a merge key's value is not a mapping, which the subset does not carry".to_string())
+        }
+    }
+}
+
+/// Assemble a mapping from its merge groups and its
+/// explicit pairs under S20-4. The merged pairs are laid
+/// first, group by group, and the explicit pairs after
+/// them, every laying under the model's standing insert
+/// rule.
+fn assemble_mapping(
+    merge_groups: Vec<Vec<(Value, Value)>>,
+    explicit: Vec<(Value, Value)>,
+) -> Value {
+    let mut entries: Vec<(Value, Value)> = Vec::new();
+    for group in merge_groups {
+        for (key, value) in group {
+            yaml_map_insert(&mut entries, key, value);
+        }
+    }
+    for (key, value) in explicit {
+        yaml_map_insert(&mut entries, key, value);
+    }
+    Value::Map(entries)
+}
+
 struct Parser {
     lines: Vec<RawLine>,
     pos: usize,
     pending: Option<Pend>,
+    anchors: AnchorTable,
 }
 
 impl Parser {
@@ -162,6 +333,7 @@ impl Parser {
             lines,
             pos: 0,
             pending: None,
+            anchors: AnchorTable::default(),
         })
     }
 
@@ -277,10 +449,33 @@ impl Parser {
         };
         let text = cur.text.trim_end().to_string();
         let indent = cur.indent;
-        if is_seq_start(&text) {
+        let trimmed = text.trim_start();
+        if trimmed.starts_with('&') {
+            if let Ok((name, rest)) = read_anchor_name(trimmed) {
+                let rest = rest.trim_start();
+                if rest.is_empty() || rest.starts_with('#') {
+                    // The anchor stands alone on its line.
+                    // The block that follows is its value,
+                    // and a line standing behind the anchor's
+                    // own indentation ends the block before
+                    // it, leaving the value null.
+                    self.anchors.begin(name)?;
+                    self.consume(&cur);
+                    let value = match self.peek() {
+                        Some(next) if next.indent >= indent => {
+                            self.parse_block(parent_indent, depth + 1)?
+                        }
+                        _ => Value::Null,
+                    };
+                    self.anchors.complete(name, &value);
+                    return Ok(value);
+                }
+            }
+        }
+        if is_seq_start(route_text(&text)) {
             return self.parse_sequence(cur.indent, depth);
         }
-        if starts_mapping(&text) {
+        if starts_mapping(route_text(&text)) {
             return self.parse_mapping(cur.indent, depth);
         }
         self.parse_value_from(cur, indent, parent_indent, depth)
@@ -307,6 +502,7 @@ impl Parser {
 
     fn parse_mapping(&mut self, indent: usize, depth: usize) -> Result<Value, String> {
         let mut entries: Vec<(Value, Value)> = Vec::new();
+        let mut merge_groups: Vec<Vec<(Value, Value)>> = Vec::new();
         while let Some(cur) = self.peek() {
             if cur.indent < indent {
                 break;
@@ -324,12 +520,6 @@ impl Parser {
                     return Err("a mapping entry carries no colon".to_string());
                 }
             };
-            if split.merge_key {
-                return Err(
-                    "a merge key stands in the document, which the subset does not carry"
-                        .to_string(),
-                );
-            }
             let value = if strip_comment(&split.rest).trim().is_empty() {
                 self.consume(&cur);
                 self.nested_value(indent, depth)?
@@ -342,9 +532,17 @@ impl Parser {
                 self.pending = Some(rest.clone());
                 self.parse_value_from(rest, indent, indent, depth)?
             };
-            yaml_map_insert(&mut entries, split.key, value);
+            if split.merge_key {
+                merge_groups.extend(merge_groups_of(value)?);
+            } else {
+                yaml_map_insert(&mut entries, split.key, value);
+            }
         }
-        Ok(Value::Map(entries))
+        if merge_groups.is_empty() {
+            Ok(Value::Map(entries))
+        } else {
+            Ok(assemble_mapping(merge_groups, entries))
+        }
     }
 
     fn parse_sequence(&mut self, indent: usize, depth: usize) -> Result<Value, String> {
@@ -378,6 +576,29 @@ impl Parser {
                 items.push(item);
                 continue;
             }
+            if rest.starts_with('&') {
+                if let Ok((name, after)) = read_anchor_name(&rest) {
+                    let after = after.trim_start();
+                    if after.is_empty() || after.starts_with('#') {
+                        // The anchor stands alone on the
+                        // entry's line. A deeper block is
+                        // its value, and a sibling entry
+                        // standing at this indentation is
+                        // not, so the value is null there.
+                        self.anchors.begin(name)?;
+                        self.consume(&cur);
+                        let item = match self.peek() {
+                            Some(next) if next.indent > indent => {
+                                self.parse_block(indent, depth + 1)?
+                            }
+                            _ => Value::Null,
+                        };
+                        self.anchors.complete(name, &item);
+                        items.push(item);
+                        continue;
+                    }
+                }
+            }
             let item_column = cur.indent + (text.len() - rest.len());
             let rest_pend = Pend {
                 indent: item_column,
@@ -386,9 +607,9 @@ impl Parser {
             };
             self.consume(&cur);
             self.pending = Some(rest_pend.clone());
-            let item = if is_seq_start(&rest) {
+            let item = if is_seq_start(route_text(&rest)) {
                 self.parse_sequence(item_column, depth + 1)?
-            } else if starts_mapping(&rest) {
+            } else if starts_mapping(route_text(&rest)) {
                 self.parse_mapping(item_column, depth + 1)?
             } else {
                 self.parse_value_from(rest_pend, indent, indent, depth)?
@@ -591,9 +812,10 @@ fn fold_quoted_segments(segments: &[(String, String)]) -> String {
 ///
 /// PORT4-2 states the refused family, and the family
 /// stands in key position as it stands in value position,
-/// so a plain key whose first character is an anchor,
-/// alias, or tag marker refuses in the same words the
-/// value reading uses. A reserved character or a percent
+/// so a plain key whose first character is a tag marker
+/// refuses in the same words the value reading uses.
+/// Anchors and aliases in key position are read under
+/// slice 20 and never reach this refusal. A reserved character or a percent
 /// sign at the lead refuses with them, as PyYAML's
 /// scanner refuses those token leads. A marker character
 /// away from the lead is plain text, and a quoted key
@@ -621,8 +843,6 @@ fn yaml_map_insert(map: &mut Vec<(Value, Value)>, key: Value, value: Value) {
 
 fn key_marker_refusal(text: &str) -> Option<&'static str> {
     match text.trim_start().as_bytes().first().copied() {
-        Some(b'&') => Some("an anchor stands in the document, which the subset does not carry"),
-        Some(b'*') => Some("an alias stands in the document, which the subset does not carry"),
         Some(b'!') => Some("a tag stands in the document, which the subset does not carry"),
         Some(b'@') | Some(b'`') => {
             Some("a scalar starts with a reserved character, which the subset does not carry")
@@ -633,13 +853,41 @@ fn key_marker_refusal(text: &str) -> Option<&'static str> {
 }
 
 impl Parser {
-    fn split_key(&self, cur: &Pend) -> Result<Option<SplitKey>, String> {
+    fn split_key(&mut self, cur: &Pend) -> Result<Option<SplitKey>, String> {
         // Only trailing spaces trim here. A trailing tab
         // stands inside the value's own text, and trimming
         // it away would hide it from the plain scalar
         // reading that refuses it.
         let text = cur.text.trim_end_matches(' ');
         let first = text.as_bytes().first().copied();
+        if first == Some(b'&') {
+            // An anchored key. The anchor stands before the
+            // key's own spelling, and the key it resolves
+            // registers under the anchor's name.
+            let (name, after) = read_anchor_name(text)?;
+            let after = after.trim_start();
+            if after.starts_with('&') {
+                return Err(
+                    "two anchors stand on one value, which the subset does not carry".to_string(),
+                );
+            }
+            if after.starts_with('*') {
+                return Err(
+                    "an anchor stands on an alias, which the subset does not carry".to_string(),
+                );
+            }
+            let sub = Pend {
+                indent: cur.indent,
+                text: after.to_string(),
+                raw: cur.raw,
+            };
+            let split = self.split_key(&sub)?;
+            if let Some(split) = &split {
+                self.anchors.begin(name)?;
+                self.anchors.complete(name, &split.key);
+            }
+            return Ok(split);
+        }
         match first {
             Some(b'?') => {
                 let second = text.as_bytes().get(1).copied();
@@ -717,7 +965,19 @@ impl Parser {
                         );
                     }
                 }
-                let key = resolve_plain(&key_text)?;
+                let key = if key_text.starts_with('*') {
+                    let (name, _) = read_anchor_name(&key_text)?;
+                    let value = self.anchors.resolve(name)?;
+                    if matches!(value, Value::List(_) | Value::Map(_)) {
+                        return Err(
+                            "an alias names a collection standing as a key, which the subset does not carry"
+                                .to_string(),
+                        );
+                    }
+                    value
+                } else {
+                    resolve_plain(&key_text)?
+                };
                 Ok(Some(SplitKey {
                     key,
                     rest,
@@ -758,10 +1018,44 @@ impl Parser {
                 Ok(Value::Text(value))
             }
             Some(b'&') => {
-                Err("an anchor stands in the document, which the subset does not carry".to_string())
+                let (name, rest) = read_anchor_name(&lead)?;
+                let rest = rest.trim_start();
+                if rest.starts_with('&') {
+                    return Err(
+                        "two anchors stand on one value, which the subset does not carry"
+                            .to_string(),
+                    );
+                }
+                if rest.starts_with('*') {
+                    return Err(
+                        "an anchor stands on an alias, which the subset does not carry".to_string(),
+                    );
+                }
+                if rest.starts_with('!') {
+                    return Err(
+                        "a tag stands in the document, which the subset does not carry".to_string(),
+                    );
+                }
+                self.anchors.begin(name)?;
+                let value = if rest.is_empty() || rest.starts_with('#') {
+                    self.nested_value(block_indent, depth)?
+                } else {
+                    let pend = Pend {
+                        indent: first.indent,
+                        text: rest.to_string(),
+                        raw: first.raw,
+                    };
+                    self.parse_value_from(pend, block_indent, parent_indent, depth)?
+                };
+                self.anchors.complete(name, &value);
+                Ok(value)
             }
             Some(b'*') => {
-                Err("an alias stands in the document, which the subset does not carry".to_string())
+                let (name, rest) = read_anchor_name(&lead)?;
+                if !strip_comment(rest).trim().is_empty() {
+                    return Err("content stands after a value on its line".to_string());
+                }
+                self.anchors.resolve(name)
             }
             Some(b'!') => {
                 Err("a tag stands in the document, which the subset does not carry".to_string())
@@ -1286,20 +1580,26 @@ fn decode_escape(text: &str, at: usize) -> Result<(char, usize), String> {
 /// line it stands on so the reader can hand the parser
 /// back the line the collection closed on and the text
 /// that follows the closing bracket on that line.
-struct FlowSource {
+struct FlowSource<'a> {
     chars: Vec<char>,
     line_of: Vec<usize>,
     col_of: Vec<usize>,
     segs: Vec<(usize, String)>,
     pos: usize,
     prev: Option<char>,
+    anchors: &'a mut AnchorTable,
 }
 
-impl FlowSource {
-    fn build(parser: &Parser, first: &Pend, lead: &str) -> FlowSource {
+impl<'a> FlowSource<'a> {
+    fn build(
+        lines: &[RawLine],
+        first: &Pend,
+        lead: &str,
+        anchors: &'a mut AnchorTable,
+    ) -> FlowSource<'a> {
         let mut segs: Vec<(usize, String)> = vec![(first.raw, lead.to_string())];
-        for raw in (first.raw + 1)..parser.lines.len() {
-            let line = &parser.lines[raw];
+        for (offset, line) in lines[(first.raw + 1)..].iter().enumerate() {
+            let raw = first.raw + 1 + offset;
             let mut text = " ".repeat(line.indent);
             text.push_str(&line.text);
             segs.push((raw, text));
@@ -1312,7 +1612,7 @@ impl FlowSource {
                 // A line a wide break opened joins with that
                 // character, which is data inside a flow
                 // scalar, and with a newline otherwise.
-                chars.push(parser.lines[*raw].wide_before.unwrap_or('\n'));
+                chars.push(lines[*raw].wide_before.unwrap_or('\n'));
                 line_of.push(line_index - 1);
                 col_of.push(segs[line_index - 1].1.chars().count());
             }
@@ -1329,7 +1629,67 @@ impl FlowSource {
             segs,
             pos: 0,
             prev: None,
+            anchors,
         }
+    }
+
+    /// Read the name of the anchor or alias spelling the
+    /// reading stands on, consuming its mark and its name.
+    /// The name is the run of letters, digits, hyphens,
+    /// and underscores after the mark, under the same
+    /// standings read_anchor_name states for a line.
+    fn flow_anchor_name(&mut self) -> Result<String, String> {
+        self.bump();
+        let mut name = String::new();
+        while let Some(ch) = self.peek() {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                name.push(ch);
+                self.bump();
+            } else {
+                break;
+            }
+        }
+        if name.is_empty() {
+            return Err(
+                "an anchor or alias stands with no name, which the subset does not carry"
+                    .to_string(),
+            );
+        }
+        if let Some(ch) = self.peek() {
+            let can_end = matches!(
+                ch,
+                ' ' | '\t'
+                    | '\n'
+                    | '\u{0085}'
+                    | '\u{2028}'
+                    | '\u{2029}'
+                    | ','
+                    | '['
+                    | ']'
+                    | '{'
+                    | '}'
+                    | ':'
+                    | '#'
+                    | '&'
+                    | '*'
+                    | '!'
+                    | '|'
+                    | '>'
+                    | '\''
+                    | '"'
+                    | '%'
+                    | '@'
+                    | '`'
+                    | '?'
+            );
+            if !can_end {
+                return Err(
+                    "an anchor or alias name carries a character the subset does not read"
+                        .to_string(),
+                );
+            }
+        }
+        Ok(name)
     }
 
     fn peek(&self) -> Option<char> {
@@ -1401,10 +1761,34 @@ impl FlowSource {
             Some('{') => self.flow_mapping(depth),
             Some('\'') | Some('"') => Ok(Value::Text(self.flow_quoted()?)),
             Some('&') => {
-                Err("an anchor stands in the document, which the subset does not carry".to_string())
+                let name = self.flow_anchor_name()?;
+                self.anchors.begin(&name)?;
+                self.skip_space();
+                match self.peek() {
+                    Some('*') => Err(
+                        "an anchor stands on an alias, which the subset does not carry".to_string(),
+                    ),
+                    Some('&') => Err(
+                        "two anchors stand on one value, which the subset does not carry"
+                            .to_string(),
+                    ),
+                    Some('!') => Err(
+                        "a tag stands in the document, which the subset does not carry".to_string(),
+                    ),
+                    Some(',') | Some('}') | Some(']') | Some(':') | None => {
+                        self.anchors.complete(&name, &Value::Null);
+                        Ok(Value::Null)
+                    }
+                    _ => {
+                        let value = self.node(depth)?;
+                        self.anchors.complete(&name, &value);
+                        Ok(value)
+                    }
+                }
             }
             Some('*') => {
-                Err("an alias stands in the document, which the subset does not carry".to_string())
+                let name = self.flow_anchor_name()?;
+                self.anchors.resolve(&name)
             }
             Some('!') => {
                 Err("a tag stands in the document, which the subset does not carry".to_string())
@@ -1476,10 +1860,25 @@ impl FlowSource {
                 if item == Value::Text("<<".to_string())
                     && !matches!(item_lead, Some('\'') | Some('"'))
                 {
-                    return Err(
-                        "a merge key stands in the document, which the subset does not carry"
-                            .to_string(),
-                    );
+                    let assembled = assemble_mapping(merge_groups_of(value)?, Vec::new());
+                    items.push(assembled);
+                    self.skip_space();
+                    match self.peek() {
+                        Some(',') => {
+                            self.bump();
+                            self.skip_space();
+                            if self.peek() == Some(']') {
+                                self.bump();
+                                return Ok(Value::List(items));
+                            }
+                        }
+                        Some(']') => {
+                            self.bump();
+                            return Ok(Value::List(items));
+                        }
+                        _ => return Err("a flow entry is not followed by a comma".to_string()),
+                    }
+                    continue;
                 }
                 if let Some(start) = quote_at {
                     if self.chars[start..item_end].contains(&'\n') {
@@ -1513,9 +1912,78 @@ impl FlowSource {
         }
     }
 
+    /// Read one flow mapping key. Returns the key and
+    /// whether it stood as a plain spelling, which the
+    /// merge key reading turns on. Anchors and aliases in
+    /// key position read under slice 20.
+    fn flow_key(&mut self) -> Result<(Value, bool), String> {
+        match self.peek() {
+            Some('\'') | Some('"') => {
+                let start = self.pos;
+                let key = self.flow_quoted()?;
+                if self.chars[start..self.pos].contains(&'\n') {
+                    return Err(
+                        "a quoted key runs over more than one line, which the subset does not carry"
+                            .to_string(),
+                    );
+                }
+                Ok((Value::Text(key), false))
+            }
+            Some('[') | Some('{') => Err(
+                "a flow collection stands as a key, which the subset does not carry".to_string(),
+            ),
+            Some('&') => {
+                let name = self.flow_anchor_name()?;
+                self.skip_space();
+                if self.peek() == Some('&') {
+                    return Err(
+                        "two anchors stand on one value, which the subset does not carry"
+                            .to_string(),
+                    );
+                }
+                if self.peek() == Some('*') {
+                    return Err(
+                        "an anchor stands on an alias, which the subset does not carry".to_string(),
+                    );
+                }
+                let (key, plain) = self.flow_key()?;
+                self.anchors.begin(&name)?;
+                self.anchors.complete(&name, &key);
+                Ok((key, plain))
+            }
+            Some('*') => {
+                let name = self.flow_anchor_name()?;
+                let value = self.anchors.resolve(&name)?;
+                if matches!(value, Value::List(_) | Value::Map(_)) {
+                    return Err(
+                        "an alias names a collection standing as a key, which the subset does not carry"
+                            .to_string(),
+                    );
+                }
+                Ok((value, false))
+            }
+            Some('!') => {
+                Err("a tag stands in the document, which the subset does not carry".to_string())
+            }
+            Some('@') | Some('`') => Err(
+                "a scalar starts with a reserved character, which the subset does not carry"
+                    .to_string(),
+            ),
+            Some('%') => Err(
+                "a directive stands in the document, which the subset does not carry".to_string(),
+            ),
+            Some(_) => {
+                let text = self.flow_plain()?;
+                Ok((resolve_plain(&text)?, true))
+            }
+            None => Err("a flow collection is not closed".to_string()),
+        }
+    }
+
     fn flow_mapping(&mut self, depth: usize) -> Result<Value, String> {
         self.bump();
         let mut entries: Vec<(Value, Value)> = Vec::new();
+        let mut merge_groups: Vec<Vec<(Value, Value)>> = Vec::new();
         self.skip_space();
         if self.peek() == Some('}') {
             self.bump();
@@ -1523,63 +1991,7 @@ impl FlowSource {
         }
         loop {
             self.skip_space();
-            let key = match self.peek() {
-                Some('\'') | Some('"') => {
-                    let start = self.pos;
-                    let key = self.flow_quoted()?;
-                    if self.chars[start..self.pos].contains(&'\n') {
-                        return Err(
-                            "a quoted key runs over more than one line, which the subset does not carry"
-                                .to_string(),
-                        );
-                    }
-                    Value::Text(key)
-                }
-                Some('[') | Some('{') => {
-                    return Err(
-                        "a flow collection stands as a key, which the subset does not carry"
-                            .to_string(),
-                    )
-                }
-                Some('&') => {
-                    return Err(
-                        "an anchor stands in the document, which the subset does not carry"
-                            .to_string(),
-                    )
-                }
-                Some('*') => {
-                    return Err(
-                        "an alias stands in the document, which the subset does not carry"
-                            .to_string(),
-                    )
-                }
-                Some('!') => {
-                    return Err(
-                        "a tag stands in the document, which the subset does not carry".to_string(),
-                    )
-                }
-                Some('@') | Some('`') => return Err(
-                    "a scalar starts with a reserved character, which the subset does not carry"
-                        .to_string(),
-                ),
-                Some('%') => {
-                    return Err(
-                        "a directive stands in the document, which the subset does not carry"
-                            .to_string(),
-                    )
-                }
-                Some(_) => {
-                    let text = self.flow_plain()?;
-                    if text == "<<" {
-                        return Err(
-                            "a merge key stands in the document, which the subset does not carry"
-                                .to_string(),
-                        );
-                    }
-                    resolve_plain(&text)?
-                }
-                None => return Err("a flow collection is not closed".to_string()),
-            };
+            let (key, plain_spelling) = self.flow_key()?;
             self.skip_space();
             let value = if self.peek() == Some(':') {
                 self.bump();
@@ -1613,7 +2025,11 @@ impl FlowSource {
             } else {
                 return Err("a flow mapping entry carries no colon".to_string());
             };
-            yaml_map_insert(&mut entries, key, value);
+            if plain_spelling && key == Value::Text("<<".to_string()) {
+                merge_groups.extend(merge_groups_of(value)?);
+            } else {
+                yaml_map_insert(&mut entries, key, value);
+            }
             self.skip_space();
             match self.peek() {
                 Some(',') => {
@@ -1621,12 +2037,12 @@ impl FlowSource {
                     self.skip_space();
                     if self.peek() == Some('}') {
                         self.bump();
-                        return Ok(Value::Map(entries));
+                        return Ok(assemble_mapping(merge_groups, entries));
                     }
                 }
                 Some('}') => {
                     self.bump();
-                    return Ok(Value::Map(entries));
+                    return Ok(assemble_mapping(merge_groups, entries));
                 }
                 _ => return Err("a flow entry is not followed by a comma".to_string()),
             }
@@ -1886,7 +2302,7 @@ fn decode_escape_chars(chars: &[char], at: usize) -> Result<(char, usize), Strin
 
 impl Parser {
     fn parse_flow(&mut self, first: &Pend, lead: &str, depth: usize) -> Result<Value, String> {
-        let mut source = FlowSource::build(self, first, lead);
+        let mut source = FlowSource::build(&self.lines, first, lead, &mut self.anchors);
         let value = source.node(depth)?;
         let (end_raw, remainder) = source.remainder();
         self.pos = end_raw + 1;
@@ -2451,7 +2867,6 @@ mod tests {
     #[test]
     fn the_refused_family_refuses() {
         for text in [
-            "k: &anchor v\n",
             "k: *alias\n",
             "base: {x: 1}\nk:\n  <<: base\n",
             "k: !!str v\n",
@@ -2486,10 +2901,8 @@ mod tests {
         // by one of its markers is the family standing in
         // key position, in block and flow mappings both.
         for text in [
-            "&a k: v\n",
             "!!str k: v\n",
             "*a: v\n",
-            "{&a k: 1}\n",
             "{!!str k: 1}\n",
             "{*a: 1}\n",
             "{<<: base}\n",
