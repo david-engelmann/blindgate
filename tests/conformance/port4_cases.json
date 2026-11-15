@@ -2777,7 +2777,7 @@
       "kind": "yaml",
       "source": "PORT4-2, block scalars are in the refused family the contract states",
       "input": "k: |\n  text\n",
-      "provenance": "PyYAML accepts a block scalar; the port refuses it as the stated limit",
+      "provenance": "PyYAML accepts a block scalar; the port refused it as the stated limit the slice 19 build retired, and the case now asserts the recorded value",
       "expected_value": {
         "t": "map",
         "v": [
@@ -2792,8 +2792,7 @@
             }
           ]
         ]
-      },
-      "port_refuses": true
+      }
     },
     {
       "name": "yaml_refused_explicit_key",

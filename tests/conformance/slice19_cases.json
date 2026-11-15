@@ -1,0 +1,411 @@
+{
+ "cases": [
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "a\nb\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: |\n  a\n  b\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_literal_keeps_its_line_breaks",
+   "source": "S19-1"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": ""
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "j"
+      },
+      {
+       "t": "text",
+       "v": "x"
+      }
+     ]
+    ]
+   },
+   "input": "k: |\nj: x\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_empty_reads_as_empty_text",
+   "source": "S19-1"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "\na\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: |\n\n  a\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_leading_blank_line_is_a_break",
+   "source": "S19-1"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "# not a comment\na\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: |\n  # not a comment\n  a\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_comment_lines_are_content",
+   "source": "S19-1"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "a b\nc\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: >\n  a\n  b\n\n  c\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_folded_folds_single_breaks_to_spaces",
+   "source": "S19-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "a\n deep\nb\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: >\n  a\n   deep\n  b\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_folded_more_indented_lines_stand_unfolded",
+   "source": "S19-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "a\n\nb\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: >\n  a\n\n\n  b\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_folded_blank_run_yields_its_breaks",
+   "source": "S19-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "a\nb"
+      }
+     ]
+    ]
+   },
+   "input": "k: |-\n  a\n  b\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_strip_drops_the_final_break",
+   "source": "S19-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "a\nb\n\n\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: |+\n  a\n  b\n\n\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_keep_holds_the_trailing_breaks",
+   "source": "S19-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": " a\n b\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: |2\n   a\n   b\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_explicit_indentation_indicator",
+   "source": "S19-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": " a"
+      }
+     ]
+    ]
+   },
+   "input": "k: |2-\n   a\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_header_marks_stand_in_either_order",
+   "source": "S19-4"
+  },
+  {
+   "input": "k: |x\n  a\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_header_carrying_junk_refuses",
+   "python_error": "PyYAML refuses the header",
+   "source": "S19-4"
+  },
+  {
+   "expected_value": {
+    "t": "list",
+    "v": [
+     {
+      "t": "text",
+      "v": "a\n"
+     },
+     {
+      "t": "text",
+      "v": "x"
+     }
+    ]
+   },
+   "input": "- |\n  a\n- x\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_as_a_sequence_entry",
+   "source": "S19-5"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "a\n"
+   },
+   "input": "|\n  a\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_at_the_document_root",
+   "source": "S19-5"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "a\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: | # note\n  a\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_header_comment_is_not_content",
+   "source": "S19-5"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "outer"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "k"
+         },
+         {
+          "t": "text",
+          "v": "deep\n"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "j"
+         },
+         {
+          "t": "text",
+          "v": "x"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "outer:\n  k: |\n    deep\n  j: x\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_nested_value_lets_the_sibling_follow",
+   "source": "S19-5"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "jobs"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "test"
+         },
+         {
+          "t": "map",
+          "v": [
+           [
+            {
+             "t": "text",
+             "v": "steps"
+            },
+            {
+             "t": "list",
+             "v": [
+              {
+               "t": "map",
+               "v": [
+                [
+                 {
+                  "t": "text",
+                  "v": "run"
+                 },
+                 {
+                  "t": "text",
+                  "v": "cargo test\ncargo clippy\n"
+                 }
+                ]
+               ]
+              }
+             ]
+            }
+           ]
+          ]
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "jobs:\n  test:\n    steps:\n      - run: |\n          cargo test\n          cargo clippy\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_workflow_run_step_reads_whole",
+   "source": "S19-5"
+  },
+  {
+   "input": "k: &a |\n  x\n",
+   "kind": "block_scalar",
+   "name": "block_scalar_behind_an_anchor_still_refuses",
+   "port_refuses": true,
+   "source": "S19-5"
+  }
+ ],
+ "generated_by": "gen_slice19.py in the Round 23 scratch, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+}
