@@ -1,0 +1,1341 @@
+{
+ "cases": [
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "5"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "int",
+       "v": "5"
+      }
+     ]
+    ]
+   },
+   "input": "a: &x 5\nb: *x\n",
+   "kind": "anchor",
+   "name": "anchor_on_a_scalar_reads_at_the_alias",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "k"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "k"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &m\n  k: 1\nb: *m\n",
+   "kind": "anchor",
+   "name": "anchor_on_a_block_mapping_reads_at_the_alias",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "1"
+        },
+        {
+         "t": "int",
+         "v": "2"
+        }
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "1"
+        },
+        {
+         "t": "int",
+         "v": "2"
+        }
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "a: &s\n  - 1\n  - 2\nb: *s\n",
+   "kind": "anchor",
+   "name": "anchor_on_a_block_sequence_reads_at_the_alias",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "1"
+        },
+        {
+         "t": "int",
+         "v": "2"
+        }
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "1"
+        },
+        {
+         "t": "int",
+         "v": "2"
+        }
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "a: &s [1, 2]\nb: *s\n",
+   "kind": "anchor",
+   "name": "anchor_on_a_flow_collection_reads_at_the_alias",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "null"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "null"
+      }
+     ]
+    ]
+   },
+   "input": "a: &x\nb: *x\n",
+   "kind": "anchor",
+   "name": "anchor_with_no_value_anchors_the_null",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "x\n"
+      }
+     ]
+    ]
+   },
+   "input": "k: &a |\n  x\n",
+   "kind": "anchor",
+   "name": "anchor_before_a_block_scalar_reads",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "&root\nk: 1\n",
+   "kind": "anchor",
+   "name": "anchor_at_the_document_root_reads",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "name"
+      },
+      {
+       "t": "int",
+       "v": "5"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "text",
+       "v": "name"
+      }
+     ]
+    ]
+   },
+   "input": "&k name: 5\nb: *k\n",
+   "kind": "anchor",
+   "name": "an_anchor_stands_on_a_key",
+   "source": "S20-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "9"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "9"
+        },
+        {
+         "t": "int",
+         "v": "9"
+        }
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "c"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "9"
+        }
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "a: &x 9\nb: [*x, *x]\nc:\n  - *x\n",
+   "kind": "anchor",
+   "name": "an_alias_reads_in_every_value_position",
+   "source": "S20-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "name"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "name"
+      },
+      {
+       "t": "int",
+       "v": "5"
+      }
+     ]
+    ]
+   },
+   "input": "a: &k name\n*k : 5\n",
+   "kind": "anchor",
+   "name": "an_alias_stands_as_a_key",
+   "source": "S20-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "outer"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "a"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "other"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "c"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "outer:\n  a: &x 1\nother:\n  c: *x\n",
+   "kind": "anchor",
+   "name": "an_anchor_defined_inside_a_structure_stands_for_the_document",
+   "source": "S20-3"
+  },
+  {
+   "input": "a: *nope\n",
+   "kind": "anchor",
+   "name": "an_undefined_alias_refuses",
+   "python_error": "PyYAML refuses the document",
+   "source": "S20-3"
+  },
+  {
+   "input": "a: *x\nb: &x 3\n",
+   "kind": "anchor",
+   "name": "a_forward_alias_refuses",
+   "python_error": "PyYAML refuses the document",
+   "source": "S20-3"
+  },
+  {
+   "input": "a: &x 1\nb:\n  c: &x 2\n",
+   "kind": "anchor",
+   "name": "a_duplicate_anchor_refuses",
+   "python_error": "PyYAML refuses the document",
+   "source": "S20-3"
+  },
+  {
+   "input": "a: &r\n  self: *r\n",
+   "kind": "anchor",
+   "name": "a_recursive_alias_refuses",
+   "port_refuses": true,
+   "provenance": "PyYAML reads a structure that holds itself; the port refuses it under S20-3 as its stated limit",
+   "source": "S20-3"
+  },
+  {
+   "input": "a: &x 7\nb: &y *x\n",
+   "kind": "anchor",
+   "name": "an_anchor_on_an_alias_refuses",
+   "python_error": "PyYAML refuses the document",
+   "source": "S20-3"
+  },
+  {
+   "input": "a: &x &y 5\n",
+   "kind": "anchor",
+   "name": "two_anchors_on_one_value_refuse",
+   "python_error": "PyYAML refuses the document",
+   "source": "S20-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "derived"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  x: 1\nderived:\n  <<: *b\n  y: 2\n",
+   "kind": "anchor",
+   "name": "a_merge_key_splices_the_anchored_mapping",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "derived"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "3"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  x: 1\n  y: 2\nderived:\n  <<: *b\n  y: 3\n",
+   "kind": "anchor",
+   "name": "an_explicit_key_wins_over_a_merged_key_standing_after_it",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "derived"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "3"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  x: 1\n  y: 2\nderived:\n  y: 3\n  <<: *b\n",
+   "kind": "anchor",
+   "name": "an_explicit_key_wins_over_a_merged_key_standing_before_it",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "m"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "a"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "m"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "a"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "z"
+         },
+         {
+          "t": "int",
+          "v": "9"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  m: 1\n  a: 2\nd:\n  z: 9\n  <<: *b\n",
+   "kind": "anchor",
+   "name": "merged_pairs_stand_before_the_explicit_pairs",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "b1"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "p"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "q"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b2"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "q"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "r"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "q"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "r"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "p"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "b1: &b1\n  p: 1\n  q: 1\nb2: &b2\n  q: 2\n  r: 2\nd:\n  <<: [*b1, *b2]\n",
+   "kind": "anchor",
+   "name": "a_merge_sequence_takes_the_first_source_for_a_shared_key",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "b1"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "p"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "q"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b2"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "q"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "r"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "p"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "q"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "r"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "b1: &b1\n  p: 1\n  q: 1\nb2: &b2\n  q: 2\n  r: 2\nd:\n  <<: *b1\n  <<: *b2\n",
+   "kind": "anchor",
+   "name": "two_merge_keys_in_one_mapping_both_merge",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "d"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "d:\n  <<:\n    x: 1\n  y: 2\n",
+   "kind": "anchor",
+   "name": "a_merge_of_a_direct_mapping_reads",
+   "source": "S20-4"
+  },
+  {
+   "input": "base: &b 5\nd:\n  <<: *b\n",
+   "kind": "anchor",
+   "name": "a_merge_value_that_is_not_a_mapping_refuses",
+   "python_error": "PyYAML refuses the document",
+   "source": "S20-4"
+  },
+  {
+   "input": "b1: &b1\n  x: 1\nd:\n  <<: [*b1, 5]\n",
+   "kind": "anchor",
+   "name": "a_merge_sequence_holding_a_non_mapping_refuses",
+   "python_error": "PyYAML refuses the document",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "<<"
+         },
+         {
+          "t": "map",
+          "v": [
+           [
+            {
+             "t": "text",
+             "v": "x"
+            },
+            {
+             "t": "int",
+             "v": "1"
+            }
+           ]
+          ]
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  x: 1\nd:\n  '<<': *b\n",
+   "kind": "anchor",
+   "name": "a_quoted_merge_key_is_an_ordinary_key",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d1"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d2"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "y"
+         },
+         {
+          "t": "int",
+          "v": "2"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  x: 1\nd1: &d\n  <<: *b\n  y: 2\nd2: *d\n",
+   "kind": "anchor",
+   "name": "a_merge_inside_an_anchored_mapping_composes_before_the_alias",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "int",
+          "v": "1"
+         },
+         {
+          "t": "text",
+          "v": "merged"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "int",
+          "v": "1"
+         },
+         {
+          "t": "text",
+          "v": "explicit"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  1: merged\nd:\n  true: explicit\n  <<: *b\n",
+   "kind": "anchor",
+   "name": "a_merge_collision_follows_the_key_equality_family",
+   "source": "S20-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "inner"
+         },
+         {
+          "t": "int",
+          "v": "3"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "d"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "inner"
+         },
+         {
+          "t": "int",
+          "v": "3"
+         }
+        ],
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "e"
+      },
+      {
+       "t": "int",
+       "v": "3"
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  inner: &i 3\n  x: 1\nd:\n  <<: *b\ne: *i\n",
+   "kind": "anchor",
+   "name": "an_anchor_inside_a_merged_source_stands_for_the_document",
+   "source": "S20-4"
+  }
+ ],
+ "generated_by": "tools/gen_slice20.py in this repo, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+}

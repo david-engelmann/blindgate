@@ -2643,7 +2643,7 @@
       "kind": "yaml",
       "source": "PORT4-2, anchors are in the refused family the contract states",
       "input": "k: &x v\n",
-      "provenance": "PyYAML accepts an anchor; the port refuses it as the stated limit",
+      "provenance": "PyYAML accepts an anchor; the port refused it as the stated limit PORT4-2 named, and slice 20 retired the limit",
       "expected_value": {
         "t": "map",
         "v": [
@@ -2658,15 +2658,14 @@
             }
           ]
         ]
-      },
-      "port_refuses": true
+      }
     },
     {
       "name": "yaml_refused_alias",
       "kind": "yaml",
       "source": "PORT4-2, aliases are in the refused family the contract states",
       "input": "a: &x 1\nb: *x\n",
-      "provenance": "PyYAML accepts an alias; the port refuses it as the stated limit",
+      "provenance": "PyYAML accepts an alias; the port refused it as the stated limit PORT4-2 named, and slice 20 retired the limit",
       "expected_value": {
         "t": "map",
         "v": [
@@ -2691,15 +2690,14 @@
             }
           ]
         ]
-      },
-      "port_refuses": true
+      }
     },
     {
       "name": "yaml_refused_merge_key",
       "kind": "yaml",
       "source": "PORT4-2, merge keys are in the refused family the contract states",
       "input": "base: &b {x: 1}\nk:\n  <<: *b\n",
-      "provenance": "PyYAML applies a merge key; the port refuses it as the stated limit",
+      "provenance": "PyYAML applies a merge key; the port refused it as the stated limit PORT4-2 named, and slice 20 retired the limit",
       "expected_value": {
         "t": "map",
         "v": [
@@ -2746,8 +2744,7 @@
             }
           ]
         ]
-      },
-      "port_refuses": true
+      }
     },
     {
       "name": "yaml_refused_tag",
