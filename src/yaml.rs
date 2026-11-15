@@ -3,12 +3,13 @@
 //! The subset carries block mappings and sequences at any
 //! nesting the bound allows, flow mappings and sequences,
 //! plain scalars, single quoted scalars, and double quoted
-//! scalars with the YAML escape set, with comments, an
-//! optional document start marker, and a document end
-//! marker. Plain scalar resolution follows PyYAML's YAML
+//! scalars with the YAML escape set, block scalars under
+//! the slice 19 readings, with comments, an optional
+//! document start marker, and a document end marker.
+//! Plain scalar resolution follows PyYAML's YAML
 //! 1.1 table as the round's probes recorded it. The refused
 //! family is the contract's stated port limit. Anchors and
-//! aliases, merge keys, tags, block scalars, explicit keys,
+//! aliases, merge keys, tags, explicit keys,
 //! directives, multiple documents, and tabs in indentation
 //! all refuse. Nesting is bounded at four thousand and the
 //! reading runs on a spawned thread with a 256 MiB stack.
@@ -231,13 +232,13 @@ impl Parser {
                     );
                 }
                 self.pending = Some(pend);
-                self.parse_block(0)?
+                self.parse_block(0, 0)?
             }
             None => {
                 if self.peek().is_none() {
                     Value::Null
                 } else {
-                    self.parse_block(0)?
+                    self.parse_block(0, 0)?
                 }
             }
         };
@@ -266,7 +267,7 @@ impl Parser {
         }
     }
 
-    fn parse_block(&mut self, depth: usize) -> Result<Value, String> {
+    fn parse_block(&mut self, parent_indent: usize, depth: usize) -> Result<Value, String> {
         if depth > YAML_DEPTH_BOUND {
             return Err("the document nests deeper than the subset carries".to_string());
         }
@@ -282,7 +283,7 @@ impl Parser {
         if starts_mapping(&text) {
             return self.parse_mapping(cur.indent, depth);
         }
-        self.parse_value_from(cur, indent, depth)
+        self.parse_value_from(cur, indent, parent_indent, depth)
     }
 
     /// The value standing after a key with nothing on its line.
@@ -296,7 +297,7 @@ impl Parser {
             None => return Ok(Value::Null),
         };
         if next.indent > indent {
-            return self.parse_block(depth + 1);
+            return self.parse_block(indent, depth + 1);
         }
         if next.indent == indent && is_seq_start(next.text.trim_end()) {
             return self.parse_sequence(indent, depth + 1);
@@ -339,7 +340,7 @@ impl Parser {
                     raw: cur.raw,
                 };
                 self.pending = Some(rest.clone());
-                self.parse_value_from(rest, indent, depth)?
+                self.parse_value_from(rest, indent, indent, depth)?
             };
             yaml_map_insert(&mut entries, split.key, value);
         }
@@ -371,7 +372,7 @@ impl Parser {
                 self.consume(&cur);
                 let next = self.peek();
                 let item = match next {
-                    Some(next) if next.indent > indent => self.parse_block(depth + 1)?,
+                    Some(next) if next.indent > indent => self.parse_block(indent, depth + 1)?,
                     _ => Value::Null,
                 };
                 items.push(item);
@@ -390,7 +391,7 @@ impl Parser {
             } else if starts_mapping(&rest) {
                 self.parse_mapping(item_column, depth + 1)?
             } else {
-                self.parse_value_from(rest_pend, indent, depth)?
+                self.parse_value_from(rest_pend, indent, indent, depth)?
             };
             items.push(item);
         }
@@ -736,6 +737,7 @@ impl Parser {
         &mut self,
         first: Pend,
         block_indent: usize,
+        parent_indent: usize,
         depth: usize,
     ) -> Result<Value, String> {
         if self.pending.is_some() {
@@ -764,10 +766,7 @@ impl Parser {
             Some(b'!') => {
                 Err("a tag stands in the document, which the subset does not carry".to_string())
             }
-            Some(b'|') | Some(b'>') => Err(
-                "a block scalar stands in the document, which the subset does not carry"
-                    .to_string(),
-            ),
+            Some(b'|') | Some(b'>') => self.parse_block_scalar(&lead, parent_indent, block_indent),
             Some(b'@') | Some(b'`') => Err(
                 "a scalar starts with a reserved character, which the subset does not carry"
                     .to_string(),
@@ -799,6 +798,204 @@ impl Parser {
                 resolve_plain(&folded)
             }
         }
+    }
+
+    /// Read a block scalar under the slice 19 obligations.
+    ///
+    /// The header stands in the lead as the literal mark or
+    /// the folded mark, carrying at most one chomping mark
+    /// and at most one indentation digit, in either order,
+    /// with nothing after them but a comment. The content
+    /// lines are read raw from the line list, because the
+    /// peek reading skips the blank lines this reading
+    /// counts. The block indentation is the digit's count
+    /// past the parent indentation where a digit stands,
+    /// and the first content line's own indentation where
+    /// none stands, and a first content line standing at or
+    /// behind the header line's indentation leaves the
+    /// block empty.
+    fn parse_block_scalar(
+        &mut self,
+        lead: &str,
+        parent_indent: usize,
+        header_indent: usize,
+    ) -> Result<Value, String> {
+        let junk =
+            || "a block scalar header carries a character the subset does not read".to_string();
+        let bytes = lead.as_bytes();
+        let folded = bytes[0] == b'>';
+        let mut chomping: Option<u8> = None;
+        let mut digit: Option<usize> = None;
+        let mut index = 1usize;
+        while index < bytes.len() {
+            match bytes[index] {
+                b'+' | b'-' => {
+                    if chomping.is_some() {
+                        return Err(junk());
+                    }
+                    chomping = Some(bytes[index]);
+                    index += 1;
+                }
+                b'1'..=b'9' => {
+                    if digit.is_some() {
+                        return Err(junk());
+                    }
+                    digit = Some((bytes[index] - b'0') as usize);
+                    index += 1;
+                }
+                b' ' => {
+                    if !strip_comment(&lead[index..]).trim().is_empty() {
+                        return Err(junk());
+                    }
+                    index = bytes.len();
+                }
+                _ => return Err(junk()),
+            }
+        }
+        // The final piece of a text that ends on a break is
+        // a phantom line holding nothing, the break that
+        // made it being the last real line's closing break.
+        let total = self.lines.len();
+        let phantom = if total > 0
+            && self.lines[total - 1].text.is_empty()
+            && self.lines[total - 1].indent == 0
+        {
+            total - 1
+        } else {
+            total
+        };
+        let closing = |at: usize| -> Option<char> {
+            if at + 1 < total {
+                Some(self.lines[at + 1].wide_before.unwrap_or('\n'))
+            } else {
+                None
+            }
+        };
+        struct BlockLine {
+            text: String,
+            deep: bool,
+            blank: bool,
+            closing: Option<char>,
+        }
+        let mut block_indent: Option<usize> = digit.map(|d| parent_indent + d);
+        let mut items: Vec<BlockLine> = Vec::new();
+        let mut at = self.pos;
+        while at < phantom {
+            let line = &self.lines[at];
+            let blank = line.text.is_empty();
+            if block_indent.is_none() {
+                if blank {
+                    items.push(BlockLine {
+                        text: String::new(),
+                        deep: false,
+                        blank: true,
+                        closing: closing(at),
+                    });
+                    at += 1;
+                    continue;
+                }
+                if line.indent <= header_indent {
+                    items.clear();
+                    break;
+                }
+                block_indent = Some(line.indent);
+            }
+            let bound = block_indent.unwrap_or(0);
+            if blank {
+                if line.indent > bound {
+                    items.push(BlockLine {
+                        text: " ".repeat(line.indent - bound),
+                        deep: true,
+                        blank: false,
+                        closing: closing(at),
+                    });
+                } else {
+                    items.push(BlockLine {
+                        text: String::new(),
+                        deep: false,
+                        blank: true,
+                        closing: closing(at),
+                    });
+                }
+                at += 1;
+                continue;
+            }
+            if line.indent < bound {
+                break;
+            }
+            items.push(BlockLine {
+                text: format!("{}{}", " ".repeat(line.indent - bound), line.text),
+                deep: line.indent > bound,
+                blank: false,
+                closing: closing(at),
+            });
+            at += 1;
+        }
+        self.pos = at;
+        let last_content = match items.iter().rposition(|item| !item.blank) {
+            Some(at) => at,
+            None => return Ok(Value::Text(String::new())),
+        };
+        let mut out = String::new();
+        if !folded {
+            for item in &items[..last_content] {
+                out.push_str(&item.text);
+                if let Some(c) = item.closing {
+                    out.push(c);
+                }
+            }
+            out.push_str(&items[last_content].text);
+        } else {
+            let first_content = items.iter().position(|item| !item.blank).unwrap_or(0);
+            for item in &items[..first_content] {
+                if let Some(c) = item.closing {
+                    out.push(c);
+                }
+            }
+            out.push_str(&items[first_content].text);
+            let mut prev = first_content;
+            for at in (first_content + 1)..=last_content {
+                if items[at].blank {
+                    continue;
+                }
+                let gap: Vec<Option<char>> =
+                    items[prev..at].iter().map(|item| item.closing).collect();
+                let both_at = !items[prev].deep && !items[at].deep;
+                let all_plain = gap.iter().all(|c| *c == Some('\n'));
+                if both_at && all_plain && gap.len() == 1 {
+                    out.push(' ');
+                } else if both_at && all_plain {
+                    for _ in 0..gap.len() - 1 {
+                        out.push('\n');
+                    }
+                } else {
+                    for c in gap.into_iter().flatten() {
+                        out.push(c);
+                    }
+                }
+                out.push_str(&items[at].text);
+                prev = at;
+            }
+        }
+        match chomping {
+            Some(b'-') => {}
+            Some(b'+') => {
+                if let Some(c) = items[last_content].closing {
+                    out.push(c);
+                }
+                for item in &items[last_content + 1..] {
+                    if let Some(c) = item.closing {
+                        out.push(c);
+                    }
+                }
+            }
+            _ => {
+                if let Some(c) = items[last_content].closing {
+                    out.push(c);
+                }
+            }
+        }
+        Ok(Value::Text(out))
     }
 
     /// Fold a plain scalar across its continuation lines.
@@ -1212,10 +1409,9 @@ impl FlowSource {
             Some('!') => {
                 Err("a tag stands in the document, which the subset does not carry".to_string())
             }
-            Some('|') | Some('>') => Err(
-                "a block scalar stands in the document, which the subset does not carry"
-                    .to_string(),
-            ),
+            Some('|') | Some('>') => {
+                Err("a block scalar stands in flow, which the subset does not carry".to_string())
+            }
             Some('@') | Some('`') => Err(
                 "a scalar starts with a reserved character, which the subset does not carry"
                     .to_string(),
@@ -2259,8 +2455,7 @@ mod tests {
             "k: *alias\n",
             "base: {x: 1}\nk:\n  <<: base\n",
             "k: !!str v\n",
-            "k: |\n  a block scalar\n",
-            "k: >\n  a block scalar\n",
+            "k: {j: |}\n",
             "? explicit\n: value\n",
             "%YAML 1.1\n---\na: 1\n",
             "---\na: 1\n---\nb: 2\n",
