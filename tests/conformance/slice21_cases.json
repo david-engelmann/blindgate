@@ -1,0 +1,538 @@
+{
+ "cases": [
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!str 42\n",
+   "kind": "tag",
+   "name": "str_tag_on_an_int_spelling",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!int '42'\n",
+   "kind": "tag",
+   "name": "int_tag_on_a_quoted_number",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!int 0x2A\n",
+   "kind": "tag",
+   "name": "int_tag_reads_the_hex_form",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "15"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!int 0o17\n",
+   "kind": "tag",
+   "name": "int_tag_reads_the_0o_form",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "float",
+       "v": "1000.0"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!float 1e3\n",
+   "kind": "tag",
+   "name": "float_tag_on_a_bare_exponent",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "float",
+       "v": "-1000.0"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!float -1e3\n",
+   "kind": "tag",
+   "name": "float_tag_reads_a_signed_bare_exponent",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "bool",
+       "v": true
+      }
+     ]
+    ]
+   },
+   "input": "a: !!bool yes\n",
+   "kind": "tag",
+   "name": "bool_tag_reads_a_spelling",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "null"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!null x\n",
+   "kind": "tag",
+   "name": "null_tag_reads_a_word_as_null",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "timestamp",
+       "v": "2024-01-02"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!timestamp 2024-01-02\n",
+   "kind": "tag",
+   "name": "timestamp_tag_reads_a_date",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "1"
+        },
+        {
+         "t": "int",
+         "v": "2"
+        }
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "a: !!seq [1, 2]\n",
+   "kind": "tag",
+   "name": "seq_tag_on_a_flow_sequence",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "b"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "a: !!map\n  b: 1\n",
+   "kind": "tag",
+   "name": "map_tag_on_a_block_mapping",
+   "source": "S21-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "42"
+      },
+      {
+       "t": "text",
+       "v": "v"
+      }
+     ]
+    ]
+   },
+   "input": "!!str 42: v\n",
+   "kind": "tag",
+   "name": "tag_stands_on_a_key",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "{a: !!str 42}\n",
+   "kind": "tag",
+   "name": "tag_stands_in_flow",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42\n"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!str |\n  42\n",
+   "kind": "tag",
+   "name": "tag_before_a_block_scalar",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: &x !!str 42\nb: *x\n",
+   "kind": "tag",
+   "name": "tag_and_anchor_in_one_order",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!str &x 42\nb: *x\n",
+   "kind": "tag",
+   "name": "anchor_and_tag_in_the_other_order",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !<tag:yaml.org,2002:str> 42\n",
+   "kind": "tag",
+   "name": "verbatim_tag_reads",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": ""
+      }
+     ]
+    ]
+   },
+   "input": "a: !!str\n",
+   "kind": "tag",
+   "name": "tag_with_no_value_reads_the_empty_scalar",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: ! 42\n",
+   "kind": "tag",
+   "name": "bare_non_specific_tag_reads_as_no_tag",
+   "source": "S21-2"
+  },
+  {
+   "expected_value": {
+    "t": "list",
+    "v": [
+     {
+      "t": "text",
+      "v": "42"
+     }
+    ]
+   },
+   "input": "- !!str 42\n",
+   "kind": "tag",
+   "name": "tag_on_a_sequence_entry",
+   "source": "S21-2"
+  },
+  {
+   "input": "a: !!unknown x\n",
+   "kind": "tag",
+   "name": "an_unknown_tag_refuses_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-4"
+  },
+  {
+   "input": "a: !custom x\n",
+   "kind": "tag",
+   "name": "a_local_tag_refuses_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-4"
+  },
+  {
+   "input": "a: !!str [1]\n",
+   "kind": "tag",
+   "name": "a_scalar_tag_on_a_sequence_refuses_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-5"
+  },
+  {
+   "input": "a: !!seq hello\n",
+   "kind": "tag",
+   "name": "a_seq_tag_on_a_scalar_refuses_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-5"
+  },
+  {
+   "input": "a: !!int hello\n",
+   "kind": "tag",
+   "name": "an_int_tag_on_a_word_refuses_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-5"
+  },
+  {
+   "input": "a: !!bool maybe\n",
+   "kind": "tag",
+   "name": "a_bool_tag_outside_the_spellings_refuses_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-5"
+  },
+  {
+   "input": "a: !!str !!int 5\n",
+   "kind": "tag",
+   "name": "two_tags_refuse_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-5"
+  },
+  {
+   "input": "a: &x 42\nb: !!str *x\n",
+   "kind": "tag",
+   "name": "a_tag_on_an_alias_refuses_in_both",
+   "python_error": "PyYAML refuses the document",
+   "source": "S21-5"
+  },
+  {
+   "input": "a: !!binary aGk=\n",
+   "kind": "tag",
+   "name": "a_binary_tag_stands_as_a_stated_limit",
+   "port_refuses": true,
+   "provenance": "PyYAML reads a shape the value model does not carry; the port refuses it under S21-4 as its stated limit",
+   "source": "S21-4"
+  },
+  {
+   "input": "a: !!set {x: null, y: null}\n",
+   "kind": "tag",
+   "name": "a_set_tag_stands_as_a_stated_limit",
+   "port_refuses": true,
+   "provenance": "PyYAML reads a shape the value model does not carry; the port refuses it under S21-4 as its stated limit",
+   "source": "S21-4"
+  },
+  {
+   "input": "a: !!omap [x: 1]\n",
+   "kind": "tag",
+   "name": "an_omap_tag_stands_as_a_stated_limit",
+   "port_refuses": true,
+   "provenance": "PyYAML reads a shape the value model does not carry; the port refuses it under S21-4 as its stated limit",
+   "source": "S21-4"
+  }
+ ],
+ "generated_by": "tools/gen_slice21.py in this repo, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+}

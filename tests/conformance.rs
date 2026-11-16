@@ -484,6 +484,55 @@ fn slice20_recordings() -> Vec<Json> {
         .to_vec()
 }
 
+fn slice21_recordings() -> Vec<Json> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("conformance")
+        .join("slice21_cases.json");
+    let text = fs::read_to_string(&path).expect("the slice 21 recordings file stands in the repo");
+    let parsed = JsonParser::new(&text).parse();
+    parsed
+        .get("cases")
+        .expect("the recordings carry cases")
+        .as_list()
+        .to_vec()
+}
+
+#[test]
+fn slice21_tag_cases_match_the_contract() {
+    let cases: Vec<Json> = slice21_recordings()
+        .into_iter()
+        .filter(|case| case.get("kind").map(|item| item.as_text()) == Some("tag"))
+        .collect();
+    assert!(!cases.is_empty(), "the recordings hold tag cases");
+    assert_eq!(
+        cases.len(),
+        31,
+        "the slice 21 battery holds its thirty one cases"
+    );
+    for case in &cases {
+        let name = case.get("name").unwrap().as_text().to_string();
+        let input = case.get("input").unwrap().as_text();
+        let result = parse_yaml(input);
+        if case.get("python_error").is_some() {
+            assert!(result.is_err(), "case {name} refuses in the port too");
+        } else if case
+            .get("port_refuses")
+            .map(|item| item.as_bool())
+            .unwrap_or(false)
+        {
+            assert!(result.is_err(), "case {name} refuses in the port");
+        } else {
+            let value = result.unwrap_or_else(|err| panic!("case {name} errors: {err}"));
+            assert_eq!(
+                encode_port_value(&value),
+                *case.get("expected_value").unwrap(),
+                "case {name} value differs"
+            );
+        }
+    }
+}
+
 #[test]
 fn slice20_anchor_cases_match_the_contract() {
     let cases: Vec<Json> = slice20_recordings()
