@@ -2795,7 +2795,7 @@
       "kind": "yaml",
       "source": "PORT4-2, explicit keys are in the refused family the contract states",
       "input": "? k\n: v\n",
-      "provenance": "PyYAML accepts an explicit key; the port refuses it as the stated limit",
+      "provenance": "PyYAML accepts an explicit key; the port refused it as the stated limit the slice 22 build retired, and the case now asserts the recorded value",
       "expected_value": {
         "t": "map",
         "v": [
@@ -2810,8 +2810,7 @@
             }
           ]
         ]
-      },
-      "port_refuses": true
+      }
     },
     {
       "name": "yaml_refused_directive",

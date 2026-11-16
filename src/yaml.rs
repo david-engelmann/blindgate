@@ -4,13 +4,14 @@
 //! nesting the bound allows, flow mappings and sequences,
 //! plain scalars, single quoted scalars, and double quoted
 //! scalars with the YAML escape set, block scalars under
-//! the slice 19 readings, with comments, an optional
+//! the slice 19 readings, explicit keys under the slice 22
+//! readings, with comments, an optional
 //! document start marker, and a document end marker.
 //! Plain scalar resolution follows PyYAML's YAML
 //! 1.1 table as the round's probes recorded it. The refused
 //! family is the contract's stated port limit. Anchors and
 //! aliases, merge keys, and the carried tags read under
-//! their slices, and explicit keys,
+//! their slices, and
 //! directives, multiple documents, and tabs in indentation
 //! all refuse. Nesting is bounded at four thousand and the
 //! reading runs on a spawned thread with a 256 MiB stack.
@@ -741,6 +742,22 @@ impl Parser {
             if indent == 0 && (text == "..." || is_doc_start(text)) {
                 break;
             }
+            if is_value_line(text) {
+                // A value indicator standing alone closes
+                // the mapping. The structure that opened it
+                // reads the line, an explicit entry's value
+                // under slice 22 or a refusal above.
+                break;
+            }
+            if is_explicit_entry(text) {
+                let (key, value, merge_key) = self.parse_explicit_entry(&cur, indent, depth)?;
+                if merge_key {
+                    merge_groups.extend(merge_groups_of(value)?);
+                } else {
+                    yaml_map_insert(&mut entries, key, value);
+                }
+                continue;
+            }
             let split = match self.split_key(&cur)? {
                 Some(split) => split,
                 None => {
@@ -770,6 +787,80 @@ impl Parser {
         } else {
             Ok(assemble_mapping(merge_groups, entries))
         }
+    }
+
+    /// Parse one explicit entry of a block mapping, the
+    /// entry whose key stands behind the key indicator of
+    /// slice 22. The entry's own line stands consumed on
+    /// return, and its value line where one stands.
+    ///
+    /// The key node stands after the indicator on the same
+    /// line or on the lines following at a deeper
+    /// indentation, read by the one block reading, and a
+    /// collection composing as the key refuses under
+    /// S22-5, the arbiter's constructor refusing it as a
+    /// key its mappings cannot hold. No key node standing
+    /// after the indicator reads as the null key. The value
+    /// stands behind a value line at the entry's own
+    /// indentation, and no value line leaves the value
+    /// null.
+    fn parse_explicit_entry(
+        &mut self,
+        cur: &Pend,
+        indent: usize,
+        depth: usize,
+    ) -> Result<(Value, Value, bool), String> {
+        let text = cur.text.trim_end().to_string();
+        let rest = text[1..].trim_start_matches(' ').to_string();
+        self.consume(cur);
+        let key = if strip_comment(&rest).trim().is_empty() {
+            match self.peek() {
+                Some(next) if next.indent > indent => self.parse_block(indent, depth + 1)?,
+                _ => Value::Null,
+            }
+        } else {
+            let key_pend = Pend {
+                indent,
+                text: rest,
+                raw: cur.raw,
+            };
+            self.pending = Some(key_pend.clone());
+            self.parse_block(indent, depth + 1)?
+        };
+        if matches!(key, Value::List(_) | Value::Map(_)) {
+            return Err(
+                "a collection stands as an explicit key, which the subset does not carry"
+                    .to_string(),
+            );
+        }
+        let merge_key = key == Value::Text("<<".to_string());
+        let value = match self.peek() {
+            Some(next) if next.indent == indent && is_value_line(next.text.trim_end()) => {
+                let next_text = next.text.trim_end().to_string();
+                let after = &next_text[1..];
+                if after.starts_with('\t') {
+                    return Err(
+                        "a tab stands in separation position, which the subset does not carry"
+                            .to_string(),
+                    );
+                }
+                let after = after.trim_start_matches(' ').to_string();
+                self.consume(&next);
+                if strip_comment(&after).trim().is_empty() {
+                    self.nested_value(indent, depth)?
+                } else {
+                    let rest_pend = Pend {
+                        indent: next.indent,
+                        text: after,
+                        raw: next.raw,
+                    };
+                    self.pending = Some(rest_pend.clone());
+                    self.parse_value_from(rest_pend, indent, indent, depth)?
+                }
+            }
+            _ => Value::Null,
+        };
+        Ok((key, value, merge_key))
     }
 
     fn parse_sequence(&mut self, indent: usize, depth: usize) -> Result<Value, String> {
@@ -847,6 +938,20 @@ impl Parser {
     }
 }
 
+/// Whether a line is an explicit entry's value line, a
+/// colon standing alone or opening the value's text.
+fn is_value_line(text: &str) -> bool {
+    text == ":" || text.starts_with(": ") || text.starts_with(":\t")
+}
+
+/// Whether a line opens an explicit entry under slice
+/// 22, the key indicator followed by a space or standing
+/// alone. A question mark against other content is plain
+/// scalar content and opens nothing.
+fn is_explicit_entry(text: &str) -> bool {
+    text == "?" || text.starts_with("? ")
+}
+
 fn is_doc_start(text: &str) -> bool {
     text == "---"
         || text.starts_with("--- ")
@@ -871,6 +976,11 @@ fn starts_mapping(text: &str) -> bool {
     }
     if trimmed.starts_with('\'') || trimmed.starts_with('"') {
         return quoted_key_split(trimmed).is_some();
+    }
+    if trimmed == "?" || trimmed.starts_with("? ") {
+        // An explicit key opens a block mapping, under
+        // slice 22.
+        return true;
     }
     if trimmed.starts_with('?') {
         return false;
@@ -1127,10 +1237,15 @@ impl Parser {
         }
         match first {
             Some(b'?') => {
+                // An explicit entry never reaches this
+                // split, the mapping reading taking it
+                // under slice 22. A tab after the indicator
+                // refuses in the tab family, as the
+                // arbiter's scanner refuses it.
                 let second = text.as_bytes().get(1).copied();
-                if text.len() == 1 || second == Some(b' ') || second == Some(b'\t') {
+                if second == Some(b'\t') {
                     return Err(
-                        "an explicit key stands in the document, which the subset does not carry"
+                        "a tab stands in separation position, which the subset does not carry"
                             .to_string(),
                     );
                 }
@@ -1385,7 +1500,7 @@ impl Parser {
                 }
                 if head == "?" || head.starts_with("? ") {
                     return Err(
-                        "an explicit key stands in the document, which the subset does not carry"
+                        "a mapping entry stands in place of a value, which the subset does not carry"
                             .to_string(),
                     );
                 }
@@ -2219,7 +2334,7 @@ impl<'a> FlowSource<'a> {
                 let text = self.flow_plain()?;
                 if text == "?" {
                     return Err(
-                        "an explicit key stands in the document, which the subset does not carry"
+                        "an explicit key indicator stands without a key, which the subset does not carry"
                             .to_string(),
                     );
                 }
@@ -2246,6 +2361,24 @@ impl<'a> FlowSource<'a> {
             return Ok(Value::List(items));
         }
         loop {
+            // The explicit key indicator of slice 22 opens
+            // a pair entry here as it opens one in a flow
+            // mapping, standing against the key with or
+            // without a space after it.
+            let lead_offset = self
+                .chars
+                .iter()
+                .skip(self.pos)
+                .position(|ch| !matches!(ch, ' ' | '\t' | '\n'));
+            let explicit = match lead_offset {
+                Some(offset) if self.chars.get(self.pos + offset) == Some(&'?') => {
+                    self.pos += offset;
+                    self.bump();
+                    self.skip_space();
+                    true
+                }
+                _ => false,
+            };
             let item_lead = self
                 .chars
                 .iter()
@@ -2264,13 +2397,19 @@ impl<'a> FlowSource<'a> {
             let mut item = self.node(depth + 1)?;
             let item_end = self.pos;
             self.skip_space();
-            if self.peek() == Some(':') && !matches!(item, Value::List(_) | Value::Map(_)) {
+            if (self.peek() == Some(':') && !matches!(item, Value::List(_) | Value::Map(_)))
+                || explicit
+            {
                 // A single pair mapping standing in a sequence.
-                self.bump();
-                self.skip_space();
-                let value = match self.peek() {
-                    Some(',') | Some(']') => Value::Null,
-                    _ => self.node(depth + 1)?,
+                let value = if self.peek() == Some(':') {
+                    self.bump();
+                    self.skip_space();
+                    match self.peek() {
+                        Some(',') | Some(']') => Value::Null,
+                        _ => self.node(depth + 1)?,
+                    }
+                } else {
+                    Value::Null
                 };
                 if item == Value::Text("<<".to_string())
                     && !matches!(item_lead, Some('\'') | Some('"'))
@@ -2441,6 +2580,13 @@ impl<'a> FlowSource<'a> {
         }
         loop {
             self.skip_space();
+            if self.peek() == Some('?') {
+                // The explicit key indicator of slice 22.
+                // In flow it stands against the key it
+                // opens, with or without a space after it.
+                self.bump();
+                self.skip_space();
+            }
             let (key, plain_spelling) = self.flow_key()?;
             self.skip_space();
             let value = if self.peek() == Some(':') {
@@ -3320,7 +3466,6 @@ mod tests {
             "k: *alias\n",
             "base: {x: 1}\nk:\n  <<: base\n",
             "k: {j: |}\n",
-            "? explicit\n: value\n",
             "%YAML 1.1\n---\na: 1\n",
             "---\na: 1\n---\nb: 2\n",
             "k:\n\ttabbed: 1\n",
