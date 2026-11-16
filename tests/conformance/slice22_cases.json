@@ -1,0 +1,562 @@
+{
+ "cases": [
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "key"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ]
+    ]
+   },
+   "input": "? key\n: value\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_over_a_plain_scalar",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "quoted key"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ]
+    ]
+   },
+   "input": "? 'quoted key'\n: value\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_over_a_quoted_scalar",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "int",
+       "v": "1"
+      },
+      {
+       "t": "text",
+       "v": "a"
+      }
+     ]
+    ]
+   },
+   "input": "? 1\n: a\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_over_an_int_spelling",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "bool",
+       "v": true
+      },
+      {
+       "t": "text",
+       "v": "a"
+      }
+     ]
+    ]
+   },
+   "input": "? yes\n: a\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_over_a_bool_spelling",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "key"
+      },
+      {
+       "t": "null"
+      }
+     ]
+    ]
+   },
+   "input": "? key\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_with_no_value",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "null"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ]
+    ]
+   },
+   "input": "?\n: value\n",
+   "kind": "explicit_key",
+   "name": "empty_explicit_key",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "outer"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "k"
+         },
+         {
+          "t": "text",
+          "v": "v"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "outer:\n  ? k\n  : v\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_in_a_nested_mapping",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "list",
+    "v": [
+     {
+      "t": "map",
+      "v": [
+       [
+        {
+         "t": "text",
+         "v": "a"
+        },
+        {
+         "t": "int",
+         "v": "1"
+        }
+       ]
+      ]
+     },
+     {
+      "t": "text",
+      "v": "b"
+     }
+    ]
+   },
+   "input": "- ? a\n  : 1\n- b\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_in_a_sequence_entry_mapping",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "int",
+       "v": "2"
+      }
+     ]
+    ]
+   },
+   "input": "{? a : 1, b: 2}\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_in_a_flow_mapping",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "{?a: 1}\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_abutting_in_flow",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "list",
+    "v": [
+     {
+      "t": "map",
+      "v": [
+       [
+        {
+         "t": "text",
+         "v": "a"
+        },
+        {
+         "t": "null"
+        }
+       ]
+      ]
+     },
+     {
+      "t": "text",
+      "v": "b"
+     }
+    ]
+   },
+   "input": "[? a, b]\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_in_a_flow_sequence_pair",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "text\n"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ]
+    ]
+   },
+   "input": "? |\n  text\n: value\n",
+   "kind": "explicit_key",
+   "name": "block_scalar_explicit_key",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "this is a long plain key"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ]
+    ]
+   },
+   "input": "? this is a long\n  plain key\n: value\n",
+   "kind": "explicit_key",
+   "name": "folded_plain_explicit_key",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "key"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "1"
+        },
+        {
+         "t": "int",
+         "v": "2"
+        }
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "? key\n: \n  - 1\n  - 2\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_with_a_block_sequence_value",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "base"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "foo"
+      },
+      {
+       "t": "map",
+       "v": [
+        [
+         {
+          "t": "text",
+          "v": "x"
+         },
+         {
+          "t": "int",
+          "v": "1"
+         }
+        ]
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "base: &b\n  x: 1\nfoo:\n  ? <<\n  : *b\n",
+   "kind": "explicit_key",
+   "name": "explicit_merge_key",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "key"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "other"
+      },
+      {
+       "t": "text",
+       "v": "key"
+      }
+     ]
+    ]
+   },
+   "input": "? &a key\n: value\nother: *a\n",
+   "kind": "explicit_key",
+   "name": "anchored_explicit_key",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "42"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ]
+    ]
+   },
+   "input": "? !!str 42\n: value\n",
+   "kind": "explicit_key",
+   "name": "tagged_explicit_key",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ],
+     [
+      {
+       "t": "text",
+       "v": "b"
+      },
+      {
+       "t": "int",
+       "v": "2"
+      }
+     ]
+    ]
+   },
+   "input": "a: 1\n? b\n: 2\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_after_a_plain_entry",
+   "source": "S22-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "2"
+      }
+     ]
+    ]
+   },
+   "input": "? a\n: 1\n? a\n: 2\n",
+   "kind": "explicit_key",
+   "name": "duplicate_explicit_keys_collapse",
+   "source": "S22-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "key"
+      },
+      {
+       "t": "text",
+       "v": "value"
+      }
+     ]
+    ]
+   },
+   "input": "? key # note\n: value\n",
+   "kind": "explicit_key",
+   "name": "explicit_key_with_a_comment",
+   "source": "S22-2"
+  },
+  {
+   "input": "? [a, b]\n: value\n",
+   "kind": "explicit_key",
+   "name": "a_sequence_explicit_key",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 22 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S22-4"
+  },
+  {
+   "input": "? {a: 1}\n: value\n",
+   "kind": "explicit_key",
+   "name": "a_mapping_explicit_key",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 22 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S22-4"
+  },
+  {
+   "input": "? key : value\n",
+   "kind": "explicit_key",
+   "name": "a_one_line_explicit_entry",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 22 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S22-4"
+  },
+  {
+   "input": "{? [x] : 1}\n",
+   "kind": "explicit_key",
+   "name": "a_flow_sequence_explicit_key",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 22 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S22-4"
+  },
+  {
+   "input": "key: ? a\n  : 1\n",
+   "kind": "explicit_key",
+   "name": "an_explicit_entry_in_place_of_a_value",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 22 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S22-5"
+  }
+ ],
+ "generated_by": "tools/gen_slice22.py in this repo, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+}
