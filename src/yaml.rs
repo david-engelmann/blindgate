@@ -9,7 +9,8 @@
 //! Plain scalar resolution follows PyYAML's YAML
 //! 1.1 table as the round's probes recorded it. The refused
 //! family is the contract's stated port limit. Anchors and
-//! aliases, merge keys, tags, explicit keys,
+//! aliases, merge keys, and the carried tags read under
+//! their slices, and explicit keys,
 //! directives, multiple documents, and tabs in indentation
 //! all refuse. Nesting is bounded at four thousand and the
 //! reading runs on a spawned thread with a 256 MiB stack.
@@ -197,17 +198,219 @@ fn read_anchor_name(text: &str) -> Result<(&str, &str), String> {
     Ok((&body[..end], rest))
 }
 
+/// The type a tag names, one of the carried types of
+/// S21-3. A tag resolves the value it stands on as the
+/// type it names, a scalar by its text and a collection
+/// by its kind.
+#[derive(Clone, Copy, PartialEq)]
+enum Tag {
+    Str,
+    Int,
+    Float,
+    Bool,
+    Null,
+    Timestamp,
+    Seq,
+    Map,
+}
+
+/// The carried type a shorthand tag's name names, or
+/// nothing where the name stands outside the carried set.
+fn tag_for_name(name: &str) -> Option<Tag> {
+    match name {
+        "str" => Some(Tag::Str),
+        "int" => Some(Tag::Int),
+        "float" => Some(Tag::Float),
+        "bool" => Some(Tag::Bool),
+        "null" => Some(Tag::Null),
+        "timestamp" => Some(Tag::Timestamp),
+        "seq" => Some(Tag::Seq),
+        "map" => Some(Tag::Map),
+        _ => None,
+    }
+}
+
+/// Read a tag spelling whose first character is its mark.
+/// Returns the type it names and the text after it, the
+/// type standing as nothing for the bare mark, the
+/// non-specific tag the arbiter reads as no tag. A
+/// spelling outside the carried set refuses under S21-5,
+/// an unknown shorthand name, a local tag, a verbatim tag
+/// naming an unread type, and the unread registry names
+/// of S21-4 among them.
+fn read_tag(text: &str) -> Result<(Option<Tag>, &str), String> {
+    let unread = || "a tag the subset does not read stands in the document".to_string();
+    if let Some(inner) = text.strip_prefix("!<") {
+        let close = inner.find('>').ok_or_else(unread)?;
+        let name = &inner[..close];
+        let kind = name
+            .strip_prefix("tag:yaml.org,2002:")
+            .and_then(tag_for_name)
+            .ok_or_else(unread)?;
+        return Ok((Some(kind), &inner[close + 1..]));
+    }
+    if let Some(body) = text.strip_prefix("!!") {
+        let mut end = 0;
+        for ch in body.chars() {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                end += ch.len_utf8();
+            } else {
+                break;
+            }
+        }
+        if end == 0 {
+            return Err(unread());
+        }
+        let kind = tag_for_name(&body[..end]).ok_or_else(unread)?;
+        return Ok((Some(kind), &body[end..]));
+    }
+    let body = &text[1..];
+    match body.chars().next() {
+        None => Ok((None, body)),
+        Some(ch) if ch == ' ' || ch == '\t' || ch == '#' => Ok((None, body)),
+        Some(_) => Err(unread()),
+    }
+}
+
+/// Read the properties standing at the head of a value's
+/// text, an anchor and a tag in either order, each at most
+/// once. Returns the anchor's name where one stands, the
+/// tag's type where one stands, and the text after the
+/// properties. The refusals are S21-5's and S20-5's own.
+fn parse_properties(text: &str) -> Result<(Option<&str>, Option<Tag>, &str), String> {
+    let mut anchor = None;
+    let mut tag = None;
+    let mut rest = text.trim_start();
+    loop {
+        if rest.starts_with('&') {
+            if anchor.is_some() {
+                return Err(
+                    "two anchors stand on one value, which the subset does not carry".to_string(),
+                );
+            }
+            let (name, after) = read_anchor_name(rest)?;
+            anchor = Some(name);
+            rest = after.trim_start();
+        } else if rest.starts_with('!') {
+            let (found, after) = read_tag(rest)?;
+            if let Some(found) = found {
+                if tag.is_some() {
+                    return Err(
+                        "two tags stand on one value, which the subset does not carry".to_string(),
+                    );
+                }
+                tag = Some(found);
+            }
+            rest = after.trim_start();
+        } else {
+            break;
+        }
+    }
+    Ok((anchor, tag, rest))
+}
+
+/// Resolve a scalar's text under the type its tag names,
+/// under S21-3. The int grammar is PORT4-2's whole with
+/// the 0o octal form standing in it, the form the tag's
+/// own grammar carries and the plain grammar does not.
+/// The float grammar is PORT4-2's with the bare exponent
+/// form standing as a float under this tag alone. A text
+/// that does not resolve under its tag refuses under
+/// S21-5, and a collection tag standing on a scalar
+/// refuses there as a value of another kind.
+fn resolve_tagged_scalar(tag: Tag, text: &str) -> Result<Value, String> {
+    let unresolved = || {
+        "a tagged scalar does not resolve as its tag names, which the subset does not carry"
+            .to_string()
+    };
+    match tag {
+        Tag::Str => Ok(Value::Text(text.to_string())),
+        Tag::Null => Ok(Value::Null),
+        Tag::Bool => match text {
+            "yes" | "Yes" | "YES" | "true" | "True" | "TRUE" | "on" | "On" | "ON" => {
+                Ok(Value::Bool(true))
+            }
+            "no" | "No" | "NO" | "false" | "False" | "FALSE" | "off" | "Off" | "OFF" => {
+                Ok(Value::Bool(false))
+            }
+            _ => Err(unresolved()),
+        },
+        Tag::Int => {
+            if let Some(value) = yaml_int(text) {
+                return Ok(Value::Int(value));
+            }
+            let (negative, rest) = strip_sign(text);
+            if let Some(tail) = rest.strip_prefix("0o") {
+                if !tail.is_empty() && tail.chars().all(|ch| matches!(ch, '0'..='7' | '_')) {
+                    let digits: String = tail.chars().filter(|ch| *ch != '_').collect();
+                    return Ok(Value::Int(
+                        IntVal::from_radix(&digits, 8).with_sign(negative),
+                    ));
+                }
+            }
+            Err(unresolved())
+        }
+        Tag::Float => tagged_float(text).map(Value::Float).ok_or_else(unresolved),
+        Tag::Timestamp => match yaml_timestamp(text)? {
+            Some(stamp) => Ok(Value::Timestamp(stamp)),
+            None => Err(unresolved()),
+        },
+        Tag::Seq | Tag::Map => Err(
+            "a tag stands on a value of another kind, which the subset does not carry".to_string(),
+        ),
+    }
+}
+
+/// The float readings of a tagged scalar, PORT4-2's
+/// grammar with the bare exponent form standing in it.
+fn tagged_float(text: &str) -> Option<f64> {
+    if let Some(value) = yaml_float(text) {
+        return Some(value);
+    }
+    let (_, rest) = strip_sign(text);
+    let (mantissa, exponent) = rest.split_once(['e', 'E'])?;
+    let exponent_digits = exponent.strip_prefix(['-', '+']).unwrap_or(exponent);
+    if exponent_digits.is_empty() || !exponent_digits.chars().all(|ch| ch.is_ascii_digit()) {
+        return None;
+    }
+    if mantissa.is_empty()
+        || !mantissa
+            .chars()
+            .all(|ch| ch.is_ascii_digit() || ch == '.' || ch == '_')
+        || mantissa.chars().filter(|ch| *ch == '.').count() > 1
+        || !mantissa.chars().any(|ch| ch.is_ascii_digit())
+    {
+        return None;
+    }
+    text.replace('_', "").parse::<f64>().ok()
+}
+
+/// Hold a composed value against the kind its tag names,
+/// under S21-3. A collection tag on its own kind reads
+/// the value whole, and any other standing refuses under
+/// S21-5 as a value of another kind.
+fn tag_kind_check(tag: Tag, value: Value) -> Result<Value, String> {
+    match (tag, &value) {
+        (Tag::Seq, Value::List(_)) | (Tag::Map, Value::Map(_)) => Ok(value),
+        _ => Err(
+            "a tag stands on a value of another kind, which the subset does not carry".to_string(),
+        ),
+    }
+}
+
 /// The text a routing judgement reads. A line or a
 /// value led by an anchor spelling is judged by the text
 /// the anchor stands before, because the anchor is never
 /// part of the construct it opens: a flow collection
 /// after an anchor is a flow collection, and a key
-/// spelling after an anchor is a key spelling.
+/// spelling after an anchor is a key spelling. A tag
+/// standing in the same place is stripped the same way,
+/// the properties never opening the construct they stand
+/// before.
 fn route_text(text: &str) -> &str {
     let trimmed = text.trim_start();
-    if trimmed.starts_with('&') {
-        if let Ok((_, rest)) = read_anchor_name(trimmed) {
-            let rest = rest.trim_start();
+    if trimmed.starts_with('&') || trimmed.starts_with('!') {
+        if let Ok((_, _, rest)) = parse_properties(trimmed) {
             if !rest.is_empty() && !rest.starts_with('#') {
                 return rest;
             }
@@ -271,6 +474,7 @@ struct Parser {
     pos: usize,
     pending: Option<Pend>,
     anchors: AnchorTable,
+    pending_tag: Option<Tag>,
 }
 
 impl Parser {
@@ -334,6 +538,7 @@ impl Parser {
             pos: 0,
             pending: None,
             anchors: AnchorTable::default(),
+            pending_tag: None,
         })
     }
 
@@ -450,24 +655,46 @@ impl Parser {
         let text = cur.text.trim_end().to_string();
         let indent = cur.indent;
         let trimmed = text.trim_start();
-        if trimmed.starts_with('&') {
-            if let Ok((name, rest)) = read_anchor_name(trimmed) {
-                let rest = rest.trim_start();
+        if trimmed.starts_with('&') || trimmed.starts_with('!') {
+            if let Ok((anchor, tag, rest)) = parse_properties(trimmed) {
                 if rest.is_empty() || rest.starts_with('#') {
-                    // The anchor stands alone on its line.
-                    // The block that follows is its value,
-                    // and a line standing behind the anchor's
-                    // own indentation ends the block before
-                    // it, leaving the value null.
-                    self.anchors.begin(name)?;
+                    // The properties stand alone on their
+                    // line. The block that follows is their
+                    // value, and a line standing behind the
+                    // line's own indentation ends the block
+                    // before it, leaving the value null.
+                    if let Some(name) = anchor {
+                        self.anchors.begin(name)?;
+                    }
                     self.consume(&cur);
-                    let value = match self.peek() {
-                        Some(next) if next.indent >= indent => {
-                            self.parse_block(parent_indent, depth + 1)?
-                        }
-                        _ => Value::Null,
+                    let followed = match self.peek() {
+                        Some(next) if next.indent >= indent => Some(next),
+                        _ => None,
                     };
-                    self.anchors.complete(name, &value);
+                    let value = match (tag, followed) {
+                        (Some(tag), None) => resolve_tagged_scalar(tag, "")?,
+                        (Some(tag), Some(next)) => {
+                            let next_text = next.text.trim_end().to_string();
+                            if is_seq_start(route_text(&next_text))
+                                || starts_mapping(route_text(&next_text))
+                            {
+                                let value = self.parse_block(parent_indent, depth + 1)?;
+                                tag_kind_check(tag, value)?
+                            } else {
+                                self.pending_tag = Some(tag);
+                                let value = self.parse_block(parent_indent, depth + 1)?;
+                                match self.pending_tag.take() {
+                                    Some(tag) => tag_kind_check(tag, value)?,
+                                    None => value,
+                                }
+                            }
+                        }
+                        (None, Some(_)) => self.parse_block(parent_indent, depth + 1)?,
+                        (None, None) => Value::Null,
+                    };
+                    if let Some(name) = anchor {
+                        self.anchors.complete(name, &value);
+                    }
                     return Ok(value);
                 }
             }
@@ -843,7 +1070,6 @@ fn yaml_map_insert(map: &mut Vec<(Value, Value)>, key: Value, value: Value) {
 
 fn key_marker_refusal(text: &str) -> Option<&'static str> {
     match text.trim_start().as_bytes().first().copied() {
-        Some(b'!') => Some("a tag stands in the document, which the subset does not carry"),
         Some(b'@') | Some(b'`') => {
             Some("a scalar starts with a reserved character, which the subset does not carry")
         }
@@ -860,31 +1086,42 @@ impl Parser {
         // reading that refuses it.
         let text = cur.text.trim_end_matches(' ');
         let first = text.as_bytes().first().copied();
-        if first == Some(b'&') {
-            // An anchored key. The anchor stands before the
-            // key's own spelling, and the key it resolves
-            // registers under the anchor's name.
-            let (name, after) = read_anchor_name(text)?;
-            let after = after.trim_start();
-            if after.starts_with('&') {
-                return Err(
-                    "two anchors stand on one value, which the subset does not carry".to_string(),
-                );
-            }
+        if first == Some(b'&') || first == Some(b'!') {
+            // A key standing behind properties. The anchor
+            // and the tag stand before the key's own
+            // spelling in either order, the anchor
+            // registering the key it resolves and the tag
+            // resolving the key under the type it names.
+            let (anchor, tag, after) = parse_properties(text)?;
             if after.starts_with('*') {
-                return Err(
-                    "an anchor stands on an alias, which the subset does not carry".to_string(),
-                );
+                return Err(if anchor.is_some() {
+                    "an anchor stands on an alias, which the subset does not carry".to_string()
+                } else {
+                    "a tag stands on an alias, which the subset does not carry".to_string()
+                });
             }
             let sub = Pend {
                 indent: cur.indent,
                 text: after.to_string(),
                 raw: cur.raw,
             };
+            self.pending_tag = tag;
             let split = self.split_key(&sub)?;
-            if let Some(split) = &split {
-                self.anchors.begin(name)?;
-                self.anchors.complete(name, &split.key);
+            let mut split = split;
+            if self.pending_tag.take().is_some() {
+                return Err(
+                    "a tag stands on a value of another kind, which the subset does not carry"
+                        .to_string(),
+                );
+            }
+            if let Some(found) = &mut split {
+                if tag.is_some() {
+                    found.merge_key = false;
+                }
+                if let Some(name) = anchor {
+                    self.anchors.begin(name)?;
+                    self.anchors.complete(name, &found.key);
+                }
             }
             return Ok(split);
         }
@@ -929,11 +1166,17 @@ impl Parser {
                     }
                 }
                 return match quoted_key_split(text) {
-                    Some((key, rest)) => Ok(Some(SplitKey {
-                        key: Value::Text(key),
-                        rest,
-                        merge_key: false,
-                    })),
+                    Some((key, rest)) => {
+                        let key = match self.pending_tag.take() {
+                            Some(tag) => resolve_tagged_scalar(tag, &key)?,
+                            None => Value::Text(key),
+                        };
+                        Ok(Some(SplitKey {
+                            key,
+                            rest,
+                            merge_key: false,
+                        }))
+                    }
                     None => Ok(None),
                 };
             }
@@ -966,6 +1209,11 @@ impl Parser {
                     }
                 }
                 let key = if key_text.starts_with('*') {
+                    if self.pending_tag.is_some() {
+                        return Err(
+                            "a tag stands on an alias, which the subset does not carry".to_string()
+                        );
+                    }
                     let (name, _) = read_anchor_name(&key_text)?;
                     let value = self.anchors.resolve(name)?;
                     if matches!(value, Value::List(_) | Value::Map(_)) {
@@ -976,7 +1224,10 @@ impl Parser {
                     }
                     value
                 } else {
-                    resolve_plain(&key_text)?
+                    match self.pending_tag.take() {
+                        Some(tag) => resolve_tagged_scalar(tag, &key_text)?,
+                        None => resolve_plain(&key_text)?,
+                    }
                 };
                 Ok(Some(SplitKey {
                     key,
@@ -1015,39 +1266,87 @@ impl Parser {
                 if !strip_comment(&remainder).trim().is_empty() {
                     return Err("content stands after a value on its line".to_string());
                 }
-                Ok(Value::Text(value))
+                match self.pending_tag.take() {
+                    Some(tag) => resolve_tagged_scalar(tag, &value),
+                    None => Ok(Value::Text(value)),
+                }
             }
-            Some(b'&') => {
-                let (name, rest) = read_anchor_name(&lead)?;
-                let rest = rest.trim_start();
-                if rest.starts_with('&') {
-                    return Err(
-                        "two anchors stand on one value, which the subset does not carry"
-                            .to_string(),
-                    );
-                }
+            Some(b'&') | Some(b'!') => {
+                let (anchor, tag, rest) = parse_properties(&lead)?;
                 if rest.starts_with('*') {
-                    return Err(
-                        "an anchor stands on an alias, which the subset does not carry".to_string(),
-                    );
+                    return Err(if anchor.is_some() {
+                        "an anchor stands on an alias, which the subset does not carry".to_string()
+                    } else {
+                        "a tag stands on an alias, which the subset does not carry".to_string()
+                    });
                 }
-                if rest.starts_with('!') {
-                    return Err(
-                        "a tag stands in the document, which the subset does not carry".to_string(),
-                    );
+                if let Some(name) = anchor {
+                    self.anchors.begin(name)?;
                 }
-                self.anchors.begin(name)?;
                 let value = if rest.is_empty() || rest.starts_with('#') {
-                    self.nested_value(block_indent, depth)?
+                    // The value stands on the lines after.
+                    // A following collection composes whole
+                    // and the tag judges its kind, a
+                    // following scalar composes under the
+                    // tag through the pending reading, and
+                    // no following block leaves the empty
+                    // plain scalar standing under the tag.
+                    let following = match self.peek() {
+                        Some(next) if next.indent > block_indent => {
+                            let next_text = next.text.trim_end().to_string();
+                            if is_seq_start(route_text(&next_text))
+                                || starts_mapping(route_text(&next_text))
+                            {
+                                Some(true)
+                            } else {
+                                Some(false)
+                            }
+                        }
+                        Some(next)
+                            if next.indent == block_indent
+                                && is_seq_start(next.text.trim_end()) =>
+                        {
+                            Some(true)
+                        }
+                        _ => None,
+                    };
+                    match (tag, following) {
+                        (Some(tag), Some(true)) => {
+                            let value = self.nested_value(block_indent, depth)?;
+                            tag_kind_check(tag, value)?
+                        }
+                        (Some(tag), Some(false)) => {
+                            self.pending_tag = Some(tag);
+                            let value = self.nested_value(block_indent, depth)?;
+                            match self.pending_tag.take() {
+                                Some(tag) => tag_kind_check(tag, value)?,
+                                None => value,
+                            }
+                        }
+                        (Some(tag), None) => match tag {
+                            Tag::Seq | Tag::Map => {
+                                return Err("a tag stands on a value of another kind, which the subset does not carry".to_string());
+                            }
+                            _ => resolve_tagged_scalar(tag, "")?,
+                        },
+                        (None, _) => self.nested_value(block_indent, depth)?,
+                    }
                 } else {
+                    self.pending_tag = tag;
                     let pend = Pend {
                         indent: first.indent,
                         text: rest.to_string(),
                         raw: first.raw,
                     };
-                    self.parse_value_from(pend, block_indent, parent_indent, depth)?
+                    let value = self.parse_value_from(pend, block_indent, parent_indent, depth)?;
+                    match self.pending_tag.take() {
+                        Some(tag) => tag_kind_check(tag, value)?,
+                        None => value,
+                    }
                 };
-                self.anchors.complete(name, &value);
+                if let Some(name) = anchor {
+                    self.anchors.complete(name, &value);
+                }
                 Ok(value)
             }
             Some(b'*') => {
@@ -1055,12 +1354,20 @@ impl Parser {
                 if !strip_comment(rest).trim().is_empty() {
                     return Err("content stands after a value on its line".to_string());
                 }
+                if self.pending_tag.is_some() {
+                    return Err(
+                        "a tag stands on an alias, which the subset does not carry".to_string()
+                    );
+                }
                 self.anchors.resolve(name)
             }
-            Some(b'!') => {
-                Err("a tag stands in the document, which the subset does not carry".to_string())
+            Some(b'|') | Some(b'>') => {
+                let value = self.parse_block_scalar(&lead, parent_indent, block_indent)?;
+                match (self.pending_tag.take(), value) {
+                    (Some(tag), Value::Text(text)) => resolve_tagged_scalar(tag, &text),
+                    (_, value) => Ok(value),
+                }
             }
-            Some(b'|') | Some(b'>') => self.parse_block_scalar(&lead, parent_indent, block_indent),
             Some(b'@') | Some(b'`') => Err(
                 "a scalar starts with a reserved character, which the subset does not carry"
                     .to_string(),
@@ -1089,7 +1396,10 @@ impl Parser {
                     );
                 }
                 let folded = self.fold_plain(&first, &lead, block_indent)?;
-                resolve_plain(&folded)
+                match self.pending_tag.take() {
+                    Some(tag) => resolve_tagged_scalar(tag, &folded),
+                    None => resolve_plain(&folded),
+                }
             }
         }
     }
@@ -1588,6 +1898,7 @@ struct FlowSource<'a> {
     pos: usize,
     prev: Option<char>,
     anchors: &'a mut AnchorTable,
+    pending_tag: Option<Tag>,
 }
 
 impl<'a> FlowSource<'a> {
@@ -1630,6 +1941,54 @@ impl<'a> FlowSource<'a> {
             pos: 0,
             prev: None,
             anchors,
+            pending_tag: None,
+        }
+    }
+
+    /// Read a tag spelling the reading stands on,
+    /// consuming its mark and its name, under the same
+    /// standings read_tag states for a line. Returns the
+    /// type it names, standing as nothing for the bare
+    /// mark.
+    fn flow_tag(&mut self) -> Result<Option<Tag>, String> {
+        let unread = || "a tag the subset does not read stands in the document".to_string();
+        self.bump();
+        if self.peek() == Some('<') {
+            self.bump();
+            let mut name = String::new();
+            loop {
+                match self.bump() {
+                    Some('>') => break,
+                    Some(ch) => name.push(ch),
+                    None => return Err(unread()),
+                }
+            }
+            let kind = name
+                .strip_prefix("tag:yaml.org,2002:")
+                .and_then(tag_for_name)
+                .ok_or_else(unread)?;
+            return Ok(Some(kind));
+        }
+        if self.peek() == Some('!') {
+            self.bump();
+            let mut name = String::new();
+            while let Some(ch) = self.peek() {
+                if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                    name.push(ch);
+                    self.bump();
+                } else {
+                    break;
+                }
+            }
+            if name.is_empty() {
+                return Err(unread());
+            }
+            return tag_for_name(&name).map(Some).ok_or_else(unread);
+        }
+        match self.peek() {
+            None | Some(' ') | Some('\t') | Some('\n') | Some(',') | Some(']') | Some('}')
+            | Some(':') | Some('#') => Ok(None),
+            Some(_) => Err(unread()),
         }
     }
 
@@ -1759,39 +2118,92 @@ impl<'a> FlowSource<'a> {
             None => Err("a flow collection is not closed".to_string()),
             Some('[') => self.flow_sequence(depth),
             Some('{') => self.flow_mapping(depth),
-            Some('\'') | Some('"') => Ok(Value::Text(self.flow_quoted()?)),
-            Some('&') => {
-                let name = self.flow_anchor_name()?;
-                self.anchors.begin(&name)?;
-                self.skip_space();
+            Some('\'') | Some('"') => {
+                let text = self.flow_quoted()?;
+                match self.pending_tag.take() {
+                    Some(tag) => resolve_tagged_scalar(tag, &text),
+                    None => Ok(Value::Text(text)),
+                }
+            }
+            Some('&') | Some('!') => {
+                let mut anchor: Option<String> = None;
+                let mut tag: Option<Tag> = None;
+                loop {
+                    match self.peek() {
+                        Some('&') => {
+                            if anchor.is_some() {
+                                return Err("two anchors stand on one value, which the subset does not carry".to_string());
+                            }
+                            anchor = Some(self.flow_anchor_name()?);
+                        }
+                        Some('!') => {
+                            if let Some(found) = self.flow_tag()? {
+                                if tag.is_some() {
+                                    return Err("two tags stand on one value, which the subset does not carry".to_string());
+                                }
+                                tag = Some(found);
+                            }
+                        }
+                        _ => break,
+                    }
+                    self.skip_space();
+                }
                 match self.peek() {
-                    Some('*') => Err(
-                        "an anchor stands on an alias, which the subset does not carry".to_string(),
-                    ),
-                    Some('&') => Err(
-                        "two anchors stand on one value, which the subset does not carry"
-                            .to_string(),
-                    ),
-                    Some('!') => Err(
-                        "a tag stands in the document, which the subset does not carry".to_string(),
-                    ),
+                    Some('*') => Err(if anchor.is_some() {
+                        "an anchor stands on an alias, which the subset does not carry".to_string()
+                    } else {
+                        "a tag stands on an alias, which the subset does not carry".to_string()
+                    }),
                     Some(',') | Some('}') | Some(']') | Some(':') | None => {
-                        self.anchors.complete(&name, &Value::Null);
-                        Ok(Value::Null)
+                        let value = match tag {
+                            Some(tag) => resolve_tagged_scalar(tag, "")?,
+                            None => Value::Null,
+                        };
+                        if let Some(name) = &anchor {
+                            self.anchors.begin(name)?;
+                            self.anchors.complete(name, &value);
+                        }
+                        Ok(value)
+                    }
+                    Some('[') | Some('{') => {
+                        if let Some(name) = &anchor {
+                            self.anchors.begin(name)?;
+                        }
+                        let value = self.node(depth)?;
+                        let value = match tag {
+                            Some(tag) => tag_kind_check(tag, value)?,
+                            None => value,
+                        };
+                        if let Some(name) = &anchor {
+                            self.anchors.complete(name, &value);
+                        }
+                        Ok(value)
                     }
                     _ => {
+                        if let Some(name) = &anchor {
+                            self.anchors.begin(name)?;
+                        }
+                        self.pending_tag = tag;
                         let value = self.node(depth)?;
-                        self.anchors.complete(&name, &value);
+                        let value = match self.pending_tag.take() {
+                            Some(tag) => tag_kind_check(tag, value)?,
+                            None => value,
+                        };
+                        if let Some(name) = &anchor {
+                            self.anchors.complete(name, &value);
+                        }
                         Ok(value)
                     }
                 }
             }
             Some('*') => {
                 let name = self.flow_anchor_name()?;
+                if self.pending_tag.is_some() {
+                    return Err(
+                        "a tag stands on an alias, which the subset does not carry".to_string()
+                    );
+                }
                 self.anchors.resolve(&name)
-            }
-            Some('!') => {
-                Err("a tag stands in the document, which the subset does not carry".to_string())
             }
             Some('|') | Some('>') => {
                 Err("a block scalar stands in flow, which the subset does not carry".to_string())
@@ -1817,7 +2229,10 @@ impl<'a> FlowSource<'a> {
                             .to_string(),
                     );
                 }
-                resolve_plain(&text)
+                match self.pending_tag.take() {
+                    Some(tag) => resolve_tagged_scalar(tag, &text),
+                    None => resolve_plain(&text),
+                }
             }
         }
     }
@@ -1927,32 +2342,66 @@ impl<'a> FlowSource<'a> {
                             .to_string(),
                     );
                 }
-                Ok((Value::Text(key), false))
+                let key = match self.pending_tag.take() {
+                    Some(tag) => resolve_tagged_scalar(tag, &key)?,
+                    None => Value::Text(key),
+                };
+                Ok((key, false))
             }
             Some('[') | Some('{') => Err(
                 "a flow collection stands as a key, which the subset does not carry".to_string(),
             ),
-            Some('&') => {
-                let name = self.flow_anchor_name()?;
-                self.skip_space();
-                if self.peek() == Some('&') {
+            Some('&') | Some('!') => {
+                let mut anchor: Option<String> = None;
+                let mut tag: Option<Tag> = None;
+                loop {
+                    match self.peek() {
+                        Some('&') => {
+                            if anchor.is_some() {
+                                return Err("two anchors stand on one value, which the subset does not carry".to_string());
+                            }
+                            anchor = Some(self.flow_anchor_name()?);
+                        }
+                        Some('!') => {
+                            if let Some(found) = self.flow_tag()? {
+                                if tag.is_some() {
+                                    return Err("two tags stand on one value, which the subset does not carry".to_string());
+                                }
+                                tag = Some(found);
+                            }
+                        }
+                        _ => break,
+                    }
+                    self.skip_space();
+                }
+                if self.peek() == Some('*') {
+                    return Err(if anchor.is_some() {
+                        "an anchor stands on an alias, which the subset does not carry".to_string()
+                    } else {
+                        "a tag stands on an alias, which the subset does not carry".to_string()
+                    });
+                }
+                self.pending_tag = tag;
+                let (key, plain) = self.flow_key()?;
+                if self.pending_tag.take().is_some() {
                     return Err(
-                        "two anchors stand on one value, which the subset does not carry"
+                        "a tag stands on a value of another kind, which the subset does not carry"
                             .to_string(),
                     );
                 }
-                if self.peek() == Some('*') {
-                    return Err(
-                        "an anchor stands on an alias, which the subset does not carry".to_string(),
-                    );
+                if let Some(name) = &anchor {
+                    self.anchors.begin(name)?;
+                    self.anchors.complete(name, &key);
                 }
-                let (key, plain) = self.flow_key()?;
-                self.anchors.begin(&name)?;
-                self.anchors.complete(&name, &key);
                 Ok((key, plain))
             }
             Some('*') => {
                 let name = self.flow_anchor_name()?;
+                if self.pending_tag.is_some() {
+                    return Err(
+                        "a tag stands on an alias, which the subset does not carry".to_string()
+                    );
+                }
                 let value = self.anchors.resolve(&name)?;
                 if matches!(value, Value::List(_) | Value::Map(_)) {
                     return Err(
@@ -1961,9 +2410,6 @@ impl<'a> FlowSource<'a> {
                     );
                 }
                 Ok((value, false))
-            }
-            Some('!') => {
-                Err("a tag stands in the document, which the subset does not carry".to_string())
             }
             Some('@') | Some('`') => Err(
                 "a scalar starts with a reserved character, which the subset does not carry"
@@ -1974,7 +2420,11 @@ impl<'a> FlowSource<'a> {
             ),
             Some(_) => {
                 let text = self.flow_plain()?;
-                Ok((resolve_plain(&text)?, true))
+                let key = match self.pending_tag.take() {
+                    Some(tag) => resolve_tagged_scalar(tag, &text)?,
+                    None => resolve_plain(&text)?,
+                };
+                Ok((key, true))
             }
             None => Err("a flow collection is not closed".to_string()),
         }
@@ -2869,7 +3319,6 @@ mod tests {
         for text in [
             "k: *alias\n",
             "base: {x: 1}\nk:\n  <<: base\n",
-            "k: !!str v\n",
             "k: {j: |}\n",
             "? explicit\n: value\n",
             "%YAML 1.1\n---\na: 1\n",
@@ -2900,14 +3349,7 @@ mod tests {
         // PORT4-2 states the family refuses, and a key led
         // by one of its markers is the family standing in
         // key position, in block and flow mappings both.
-        for text in [
-            "!!str k: v\n",
-            "*a: v\n",
-            "{!!str k: 1}\n",
-            "{*a: 1}\n",
-            "{<<: base}\n",
-            "[<<: base]\n",
-        ] {
+        for text in ["*a: v\n", "{*a: 1}\n", "{<<: base}\n", "[<<: base]\n"] {
             assert!(parse_yaml(text).is_err(), "document {text:?}");
         }
         // A marker character away from the lead is plain
