@@ -1,5 +1,3 @@
-/home/hatch/workspace/gate-truth-line/scratch/bg-r28/work-contract/tests/slice24.rs:
-
 //! The slice 24 pins the contract names: a value opening
 //! in compact form on an explicit entry's value line reads
 //! as S24-2 and S24-3 state, and the standings of S24-4
