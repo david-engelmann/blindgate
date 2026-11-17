@@ -1,0 +1,576 @@
+{
+ "cases": [
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%YAML 1.1\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_directive_reads",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%YAML 1.2\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_1_2_directive_reads",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%YAML 1.3\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_1_3_directive_reads",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%YAML 01.2\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_with_leading_zeros_reads",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "bool",
+    "v": true
+   },
+   "input": "%YAML 1.2\n---\non\n",
+   "kind": "directive",
+   "name": "a_version_directive_changes_no_bool_resolution",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "int",
+    "v": "80"
+   },
+   "input": "%YAML 1.1\n---\n1:20\n",
+   "kind": "directive",
+   "name": "a_version_directive_changes_no_sexagesimal_resolution",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%YAML 1.2 # note\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_directive_with_a_comment",
+   "source": "S23-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "# note\n\n%YAML 1.2\n---\na: 1\n",
+   "kind": "directive",
+   "name": "directives_after_a_comment_and_a_blank_line",
+   "source": "S23-2"
+  },
+  {
+   "expected_value": {
+    "t": "null"
+   },
+   "input": "%YAML 1.2\n---\n",
+   "kind": "directive",
+   "name": "an_empty_document_after_directives",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%YAML 1.2\n---\na: 1\n...\n",
+   "kind": "directive",
+   "name": "a_document_end_after_directives",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%YAML 1.2\n--- {a: 1}\n",
+   "kind": "directive",
+   "name": "directives_before_a_flow_document",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "5"
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n---\n!e!str 5\n",
+   "kind": "directive",
+   "name": "a_tag_directive_reads_a_carried_type",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n---\na: !e!int '42'\n",
+   "kind": "directive",
+   "name": "a_tag_directive_on_a_value",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "5"
+      }
+     ]
+    ]
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n---\n{a: !e!str 5}\n",
+   "kind": "directive",
+   "name": "a_tag_directive_on_a_flow_value",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "42"
+      },
+      {
+       "t": "text",
+       "v": "v"
+      }
+     ]
+    ]
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n---\n? !e!str 42\n: v\n",
+   "kind": "directive",
+   "name": "a_tag_directive_on_an_explicit_key",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "text\n"
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n---\n!e!str |\n  text\n",
+   "kind": "directive",
+   "name": "a_tag_directive_on_a_block_scalar",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "5"
+   },
+   "input": "%TAG ! tag:yaml.org,2002:\n---\n!str 5\n",
+   "kind": "directive",
+   "name": "the_primary_handle_redefined",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "5"
+   },
+   "input": "%TAG !! tag:yaml.org,2002:\n---\n!!str 5\n",
+   "kind": "directive",
+   "name": "the_secondary_handle_restated",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "5"
+   },
+   "input": "%TAG !e! tag:yaml.org%2C2002:\n---\n!e!str 5\n",
+   "kind": "directive",
+   "name": "a_percent_decoded_prefix",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "bool",
+    "v": true
+   },
+   "input": "%TAG !e-x_y! tag:yaml.org,2002:\n---\n!e-x_y!bool yes\n",
+   "kind": "directive",
+   "name": "a_handle_with_digits_and_dashes",
+   "source": "S23-2"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "hi"
+   },
+   "input": "%YAML 1.2\n%TAG !e! tag:yaml.org,2002:\n---\n!e!str hi\n",
+   "kind": "directive",
+   "name": "a_yaml_and_a_tag_directive_together",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "int",
+    "v": "7"
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n%YAML 1.1\n---\n!e!int '7'\n",
+   "kind": "directive",
+   "name": "a_tag_directive_before_a_yaml_directive",
+   "source": "S23-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%FOO bar\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_reserved_directive_is_skipped",
+   "source": "S23-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%FOO\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_reserved_directive_without_arguments",
+   "source": "S23-2"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "1"
+      }
+     ]
+    ]
+   },
+   "input": "%yaml 1.2\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_lowercase_reserved_directive_is_skipped",
+   "source": "S23-2"
+  },
+  {
+   "input": "%YAML 2.0\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_2_0_directive",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-3"
+  },
+  {
+   "input": "%YAML 0.9\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_0_9_directive",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-3"
+  },
+  {
+   "input": "%YAML\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_directive_with_no_version",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML x.y\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_directive_with_a_bad_version",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML 1.2 extra\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_directive_with_an_extra_token",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML\t1.2\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_version_directive_with_a_tab_separator",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML 1.1\n%YAML 1.2\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_duplicate_version_directive",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%TAG !e! tag:x/\n%TAG !e! tag:y/\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_duplicate_tag_handle",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%TAG !e!\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_tag_directive_with_no_prefix",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%TAG e! tag:x/\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_tag_directive_with_an_unmarked_handle",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%TAG !e! tag:x/ extra\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_tag_directive_with_an_extra_token",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%TAG !e! tag:x#y/\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_tag_directive_with_a_hash_in_its_prefix",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%\n---\na: 1\n",
+   "kind": "directive",
+   "name": "a_bare_percent_sign",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML 1.2\na: 1\n",
+   "kind": "directive",
+   "name": "a_directive_with_no_document_start",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML 1.2\n",
+   "kind": "directive",
+   "name": "a_directive_alone",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML 1.2\n...\n",
+   "kind": "directive",
+   "name": "a_directive_before_an_end_marker",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-5"
+  },
+  {
+   "input": "%YAML 1.2\n---\na: 1\n...\n%YAML 1.1\n---\nb: 2\n",
+   "kind": "directive",
+   "name": "a_second_document_with_directives",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-3"
+  },
+  {
+   "input": "a: 1\n%YAML 1.2\n",
+   "kind": "directive",
+   "name": "a_directive_after_content",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-3"
+  },
+  {
+   "input": "%TAG !f! tag:yaml.org,2002:\n---\n!e!str 5\n",
+   "kind": "directive",
+   "name": "an_undeclared_handle",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-3"
+  },
+  {
+   "input": "%TAG !e! tag:example.com,2000:app/\n---\n!e!foo bar\n",
+   "kind": "directive",
+   "name": "a_tag_expanding_to_an_unread_tag",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-4"
+  },
+  {
+   "input": "%TAG !! tag:x/\n---\n!!str 5\n",
+   "kind": "directive",
+   "name": "the_secondary_handle_redefined_away",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 23 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S23-4"
+  }
+ ],
+ "generated_by": "tools/gen_slice23.py in this repo, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+}

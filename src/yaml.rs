@@ -10,10 +10,10 @@
 //! Plain scalar resolution follows PyYAML's YAML
 //! 1.1 table as the round's probes recorded it. The refused
 //! family is the contract's stated port limit. Anchors and
-//! aliases, merge keys, and the carried tags read under
-//! their slices, and
-//! directives, multiple documents, and tabs in indentation
-//! all refuse. Nesting is bounded at four thousand and the
+//! aliases, merge keys, the carried tags, and directives
+//! read under their slices, and multiple documents and
+//! tabs in indentation refuse. Nesting is bounded at four
+//! thousand and the
 //! reading runs on a spawned thread with a 256 MiB stack.
 //! PyYAML's error texts are not reproduced, so a refusal
 //! here names the failure class in the port's own words.
@@ -231,6 +231,168 @@ fn tag_for_name(name: &str) -> Option<Tag> {
     }
 }
 
+/// The tag handles a document's tag spellings resolve
+/// through, under S23-3. The primary handle spells the
+/// local tags, the secondary handle the standard
+/// shorthand, and a named handle the tags of its own
+/// family. With no directive standing, the handles stand
+/// at the defaults the earlier slices read under. A tag
+/// directive redeclares one handle for the one document
+/// that follows its block, and a spelling through a
+/// handle expands as the handle's declared prefix
+/// standing before the spelling's suffix.
+#[derive(Debug, Clone)]
+struct TagHandles {
+    primary: String,
+    secondary: String,
+    named: Vec<(String, String)>,
+    declared: Vec<String>,
+}
+
+impl Default for TagHandles {
+    fn default() -> TagHandles {
+        TagHandles {
+            primary: "!".to_string(),
+            secondary: "tag:yaml.org,2002:".to_string(),
+            named: Vec::new(),
+            declared: Vec::new(),
+        }
+    }
+}
+
+impl TagHandles {
+    /// The carried type a handle and suffix expand to,
+    /// where the expansion is the full name of a carried
+    /// type, and nothing where the handle stands
+    /// undeclared or the expansion names no carried type.
+    fn resolve(&self, handle: &str, suffix: &str) -> Option<Tag> {
+        let prefix: &str = match handle {
+            "!" => &self.primary,
+            "!!" => &self.secondary,
+            _ => &self.named.iter().find(|(held, _)| held == handle)?.1,
+        };
+        let full = format!("{prefix}{suffix}");
+        full.strip_prefix("tag:yaml.org,2002:")
+            .and_then(tag_for_name)
+    }
+
+    /// Declare a handle for the document under its
+    /// directive, refusing where the handle stands
+    /// declared already, under S23-5.
+    fn declare(&mut self, handle: &str, prefix: String) -> Result<(), String> {
+        if self.declared.iter().any(|held| held == handle) {
+            return Err(
+                "a tag handle stands twice in the document, which the subset does not carry"
+                    .to_string(),
+            );
+        }
+        self.declared.push(handle.to_string());
+        match handle {
+            "!" => self.primary = prefix,
+            "!!" => self.secondary = prefix,
+            _ => self.named.push((handle.to_string(), prefix)),
+        }
+        Ok(())
+    }
+}
+
+/// The carried type a whole tag spelling names under the
+/// handles in standing, the spelling standing as nothing
+/// for the bare mark, under S21-3 and S23-3. A spelling
+/// whose handle is undeclared, whose suffix stands
+/// empty, or whose expansion names no carried type
+/// refuses under S21-5.
+fn tag_spelling_kind(spelling: &str, handles: &TagHandles) -> Result<Option<Tag>, String> {
+    let unread = || "a tag the subset does not read stands in the document".to_string();
+    if spelling == "!" {
+        return Ok(None);
+    }
+    let rest = &spelling[1..];
+    let (handle, suffix): (&str, &str) = if let Some(after) = rest.strip_prefix('!') {
+        ("!!", after)
+    } else if let Some(close) = rest.find('!') {
+        (&spelling[..close + 2], &rest[close + 1..])
+    } else {
+        ("!", rest)
+    };
+    if suffix.is_empty() {
+        return Err(unread());
+    }
+    handles.resolve(handle, suffix).map(Some).ok_or_else(unread)
+}
+
+/// Whether a tag directive's handle stands in one of
+/// the forms S23-2 states, the primary mark, the mark
+/// doubled, or a mark, a word of letters and digits and
+/// hyphens and underscores, and a closing mark.
+fn handle_is_well_formed(handle: &str) -> bool {
+    if handle == "!" || handle == "!!" {
+        return true;
+    }
+    match handle
+        .strip_prefix('!')
+        .and_then(|rest| rest.strip_suffix('!'))
+    {
+        Some(word) => {
+            !word.is_empty()
+                && word
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        }
+        None => false,
+    }
+}
+
+/// Read a tag directive's prefix in the form S23-2
+/// states, its percent escapes decoded, under S23-3.
+/// A character standing outside the form, or an escape
+/// standing malformed, leaves the prefix unread.
+fn decode_tag_prefix(prefix: &str) -> Option<String> {
+    let mut decoded = String::new();
+    let mut chars = prefix.chars();
+    while let Some(ch) = chars.next() {
+        if ch == '%' {
+            let hi = chars.next()?;
+            let lo = chars.next()?;
+            let value = u8::from_str_radix(&format!("{hi}{lo}"), 16).ok()?;
+            decoded.push(value as char);
+        } else if ch.is_ascii_alphanumeric()
+            || matches!(
+                ch,
+                '-' | ';'
+                    | '/'
+                    | '?'
+                    | ':'
+                    | '@'
+                    | '&'
+                    | '='
+                    | '+'
+                    | '$'
+                    | ','
+                    | '.'
+                    | '_'
+                    | '!'
+                    | '~'
+                    | '*'
+                    | '\''
+                    | '('
+                    | ')'
+                    | '['
+                    | ']'
+            )
+        {
+            decoded.push(ch);
+        } else {
+            return None;
+        }
+    }
+    if decoded.is_empty() {
+        None
+    } else {
+        Some(decoded)
+    }
+}
+
 /// Read a tag spelling whose first character is its mark.
 /// Returns the type it names and the text after it, the
 /// type standing as nothing for the bare mark, the
@@ -239,7 +401,7 @@ fn tag_for_name(name: &str) -> Option<Tag> {
 /// an unknown shorthand name, a local tag, a verbatim tag
 /// naming an unread type, and the unread registry names
 /// of S21-4 among them.
-fn read_tag(text: &str) -> Result<(Option<Tag>, &str), String> {
+fn read_tag<'a>(text: &'a str, handles: &TagHandles) -> Result<(Option<Tag>, &'a str), String> {
     let unread = || "a tag the subset does not read stands in the document".to_string();
     if let Some(inner) = text.strip_prefix("!<") {
         let close = inner.find('>').ok_or_else(unread)?;
@@ -250,27 +412,29 @@ fn read_tag(text: &str) -> Result<(Option<Tag>, &str), String> {
             .ok_or_else(unread)?;
         return Ok((Some(kind), &inner[close + 1..]));
     }
-    if let Some(body) = text.strip_prefix("!!") {
-        let mut end = 0;
-        for ch in body.chars() {
-            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
-                end += ch.len_utf8();
-            } else {
-                break;
-            }
+    // The spelling is the mark and the run of handle and
+    // name characters standing after it, a second mark
+    // opening the secondary handle or closing a named
+    // one, under S23-2.
+    let mut end = 1;
+    for ch in text[1..].chars() {
+        if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+            end += ch.len_utf8();
+        } else {
+            break;
         }
-        if end == 0 {
-            return Err(unread());
-        }
-        let kind = tag_for_name(&body[..end]).ok_or_else(unread)?;
-        return Ok((Some(kind), &body[end..]));
     }
-    let body = &text[1..];
-    match body.chars().next() {
-        None => Ok((None, body)),
-        Some(ch) if ch == ' ' || ch == '\t' || ch == '#' => Ok((None, body)),
-        Some(_) => Err(unread()),
+    let spelling = &text[..end];
+    if spelling == "!" {
+        let body = &text[1..];
+        return match body.chars().next() {
+            None => Ok((None, body)),
+            Some(ch) if ch == ' ' || ch == '\t' || ch == '#' => Ok((None, body)),
+            Some(_) => Err(unread()),
+        };
     }
+    let kind = tag_spelling_kind(spelling, handles)?;
+    Ok((kind, &text[end..]))
 }
 
 /// Read the properties standing at the head of a value's
@@ -278,7 +442,10 @@ fn read_tag(text: &str) -> Result<(Option<Tag>, &str), String> {
 /// once. Returns the anchor's name where one stands, the
 /// tag's type where one stands, and the text after the
 /// properties. The refusals are S21-5's and S20-5's own.
-fn parse_properties(text: &str) -> Result<(Option<&str>, Option<Tag>, &str), String> {
+fn parse_properties<'a>(
+    text: &'a str,
+    handles: &TagHandles,
+) -> Result<(Option<&'a str>, Option<Tag>, &'a str), String> {
     let mut anchor = None;
     let mut tag = None;
     let mut rest = text.trim_start();
@@ -293,7 +460,7 @@ fn parse_properties(text: &str) -> Result<(Option<&str>, Option<Tag>, &str), Str
             anchor = Some(name);
             rest = after.trim_start();
         } else if rest.starts_with('!') {
-            let (found, after) = read_tag(rest)?;
+            let (found, after) = read_tag(rest, handles)?;
             if let Some(found) = found {
                 if tag.is_some() {
                     return Err(
@@ -408,10 +575,10 @@ fn tag_kind_check(tag: Tag, value: Value) -> Result<Value, String> {
 /// standing in the same place is stripped the same way,
 /// the properties never opening the construct they stand
 /// before.
-fn route_text(text: &str) -> &str {
+fn route_text<'a>(text: &'a str, handles: &TagHandles) -> &'a str {
     let trimmed = text.trim_start();
     if trimmed.starts_with('&') || trimmed.starts_with('!') {
-        if let Ok((_, _, rest)) = parse_properties(trimmed) {
+        if let Ok((_, _, rest)) = parse_properties(trimmed, handles) {
             if !rest.is_empty() && !rest.starts_with('#') {
                 return rest;
             }
@@ -476,6 +643,8 @@ struct Parser {
     pending: Option<Pend>,
     anchors: AnchorTable,
     pending_tag: Option<Tag>,
+    handles: TagHandles,
+    version_directive_stood: bool,
 }
 
 impl Parser {
@@ -540,6 +709,8 @@ impl Parser {
             pending: None,
             anchors: AnchorTable::default(),
             pending_tag: None,
+            handles: TagHandles::default(),
+            version_directive_stood: false,
         })
     }
 
@@ -572,19 +743,113 @@ impl Parser {
         }
     }
 
+    /// Read one directive line into the standings it
+    /// declares, under S23-2 and S23-3. A reserved
+    /// directive is skipped whole, with whatever stands
+    /// after its name on its line. The wordings are
+    /// S23-5's.
+    fn read_directive(&mut self, text: &str) -> Result<(), String> {
+        let malformed = || {
+            "a malformed directive stands in the document, which the subset does not carry"
+                .to_string()
+        };
+        // A comment stands where a space stands before
+        // its mark. A tab standing outside a comment
+        // makes the line malformed, as the arbiter's
+        // scanner refuses a tab standing in a directive.
+        let head = match text.find(" #") {
+            Some(at) => &text[..at],
+            None => text,
+        };
+        if head.contains('\t') {
+            return Err(malformed());
+        }
+        let head = head.trim_end_matches(' ');
+        let body = &head[1..];
+        let name_end = body
+            .find(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '-' || ch == '_'))
+            .unwrap_or(body.len());
+        let name = &body[..name_end];
+        if name.is_empty() {
+            return Err(malformed());
+        }
+        let rest = &body[name_end..];
+        if !rest.is_empty() && !rest.starts_with(' ') {
+            return Err(malformed());
+        }
+        let args: Vec<&str> = rest.split(' ').filter(|part| !part.is_empty()).collect();
+        match name {
+            "YAML" => {
+                if self.version_directive_stood {
+                    return Err(
+                        "the version directive stands twice in the document, which the subset does not carry"
+                            .to_string(),
+                    );
+                }
+                if args.len() != 1 {
+                    return Err(malformed());
+                }
+                let mut parts = args[0].split('.');
+                let major = parts.next().unwrap_or("");
+                let minor = parts.next().unwrap_or("");
+                if parts.next().is_some()
+                    || major.is_empty()
+                    || minor.is_empty()
+                    || !major.bytes().all(|b| b.is_ascii_digit())
+                    || !minor.bytes().all(|b| b.is_ascii_digit())
+                {
+                    return Err(malformed());
+                }
+                if major.trim_start_matches('0') != "1" {
+                    return Err("a directive names a version the subset does not carry".to_string());
+                }
+                self.version_directive_stood = true;
+                Ok(())
+            }
+            "TAG" => {
+                if args.len() != 2 {
+                    return Err(malformed());
+                }
+                if !handle_is_well_formed(args[0]) {
+                    return Err(malformed());
+                }
+                let prefix = decode_tag_prefix(args[1]).ok_or_else(malformed)?;
+                self.handles.declare(args[0], prefix)
+            }
+            _ => Ok(()),
+        }
+    }
+
     fn parse_document(&mut self) -> Result<Value, String> {
-        // The leading region. A directive refuses, a start
-        // marker opens the document, and anything else is
-        // the document itself.
+        // The leading region. A directive block may
+        // stand first, each directive read as it stands,
+        // and a block that stood must be followed by the
+        // start marker. A start marker opens the
+        // document, and anything else is the document
+        // itself.
         let mut marker_rest: Option<Pend> = None;
+        let mut directives_stood = false;
+        while let Some(cur) = self.peek() {
+            if cur.indent != 0 || !cur.text.starts_with('%') {
+                break;
+            }
+            self.read_directive(&cur.text)?;
+            self.consume(&cur);
+            directives_stood = true;
+        }
+        if directives_stood {
+            match self.peek() {
+                Some(cur) if is_doc_start(cur.text.trim_end()) => {}
+                _ => {
+                    return Err(
+                        "a directive stands with no document start after it, which the subset does not carry"
+                            .to_string(),
+                    );
+                }
+            }
+        }
         if let Some(cur) = self.peek() {
             let text = cur.text.trim_end();
-            if cur.indent == 0 && text.starts_with('%') {
-                return Err(
-                    "a directive stands in the document, which the subset does not carry"
-                        .to_string(),
-                );
-            }
             if text == "..." {
                 self.consume(&cur);
                 return self.after_end_marker(Value::Null);
@@ -657,7 +922,7 @@ impl Parser {
         let indent = cur.indent;
         let trimmed = text.trim_start();
         if trimmed.starts_with('&') || trimmed.starts_with('!') {
-            if let Ok((anchor, tag, rest)) = parse_properties(trimmed) {
+            if let Ok((anchor, tag, rest)) = parse_properties(trimmed, &self.handles) {
                 if rest.is_empty() || rest.starts_with('#') {
                     // The properties stand alone on their
                     // line. The block that follows is their
@@ -676,8 +941,8 @@ impl Parser {
                         (Some(tag), None) => resolve_tagged_scalar(tag, "")?,
                         (Some(tag), Some(next)) => {
                             let next_text = next.text.trim_end().to_string();
-                            if is_seq_start(route_text(&next_text))
-                                || starts_mapping(route_text(&next_text))
+                            if is_seq_start(route_text(&next_text, &self.handles))
+                                || starts_mapping(route_text(&next_text, &self.handles))
                             {
                                 let value = self.parse_block(parent_indent, depth + 1)?;
                                 tag_kind_check(tag, value)?
@@ -700,10 +965,10 @@ impl Parser {
                 }
             }
         }
-        if is_seq_start(route_text(&text)) {
+        if is_seq_start(route_text(&text, &self.handles)) {
             return self.parse_sequence(cur.indent, depth);
         }
-        if starts_mapping(route_text(&text)) {
+        if starts_mapping(route_text(&text, &self.handles)) {
             return self.parse_mapping(cur.indent, depth);
         }
         self.parse_value_from(cur, indent, parent_indent, depth)
@@ -925,9 +1190,9 @@ impl Parser {
             };
             self.consume(&cur);
             self.pending = Some(rest_pend.clone());
-            let item = if is_seq_start(route_text(&rest)) {
+            let item = if is_seq_start(route_text(&rest, &self.handles)) {
                 self.parse_sequence(item_column, depth + 1)?
-            } else if starts_mapping(route_text(&rest)) {
+            } else if starts_mapping(route_text(&rest, &self.handles)) {
                 self.parse_mapping(item_column, depth + 1)?
             } else {
                 self.parse_value_from(rest_pend, indent, indent, depth)?
@@ -1180,10 +1445,9 @@ fn yaml_map_insert(map: &mut Vec<(Value, Value)>, key: Value, value: Value) {
 
 fn key_marker_refusal(text: &str) -> Option<&'static str> {
     match text.trim_start().as_bytes().first().copied() {
-        Some(b'@') | Some(b'`') => {
+        Some(b'@') | Some(b'`') | Some(b'%') => {
             Some("a scalar starts with a reserved character, which the subset does not carry")
         }
-        Some(b'%') => Some("a directive stands in the document, which the subset does not carry"),
         _ => None,
     }
 }
@@ -1202,7 +1466,7 @@ impl Parser {
             // spelling in either order, the anchor
             // registering the key it resolves and the tag
             // resolving the key under the type it names.
-            let (anchor, tag, after) = parse_properties(text)?;
+            let (anchor, tag, after) = parse_properties(text, &self.handles)?;
             if after.starts_with('*') {
                 return Err(if anchor.is_some() {
                     "an anchor stands on an alias, which the subset does not carry".to_string()
@@ -1387,7 +1651,7 @@ impl Parser {
                 }
             }
             Some(b'&') | Some(b'!') => {
-                let (anchor, tag, rest) = parse_properties(&lead)?;
+                let (anchor, tag, rest) = parse_properties(&lead, &self.handles)?;
                 if rest.starts_with('*') {
                     return Err(if anchor.is_some() {
                         "an anchor stands on an alias, which the subset does not carry".to_string()
@@ -1409,8 +1673,8 @@ impl Parser {
                     let following = match self.peek() {
                         Some(next) if next.indent > block_indent => {
                             let next_text = next.text.trim_end().to_string();
-                            if is_seq_start(route_text(&next_text))
-                                || starts_mapping(route_text(&next_text))
+                            if is_seq_start(route_text(&next_text, &self.handles))
+                                || starts_mapping(route_text(&next_text, &self.handles))
                             {
                                 Some(true)
                             } else {
@@ -1483,12 +1747,9 @@ impl Parser {
                     (_, value) => Ok(value),
                 }
             }
-            Some(b'@') | Some(b'`') => Err(
+            Some(b'@') | Some(b'`') | Some(b'%') => Err(
                 "a scalar starts with a reserved character, which the subset does not carry"
                     .to_string(),
-            ),
-            Some(b'%') => Err(
-                "a directive stands in the document, which the subset does not carry".to_string(),
             ),
             _ => {
                 let head = strip_comment(&lead);
@@ -2014,6 +2275,7 @@ struct FlowSource<'a> {
     prev: Option<char>,
     anchors: &'a mut AnchorTable,
     pending_tag: Option<Tag>,
+    handles: TagHandles,
 }
 
 impl<'a> FlowSource<'a> {
@@ -2022,6 +2284,7 @@ impl<'a> FlowSource<'a> {
         first: &Pend,
         lead: &str,
         anchors: &'a mut AnchorTable,
+        handles: TagHandles,
     ) -> FlowSource<'a> {
         let mut segs: Vec<(usize, String)> = vec![(first.raw, lead.to_string())];
         for (offset, line) in lines[(first.raw + 1)..].iter().enumerate() {
@@ -2057,6 +2320,7 @@ impl<'a> FlowSource<'a> {
             prev: None,
             anchors,
             pending_tag: None,
+            handles,
         }
     }
 
@@ -2084,27 +2348,26 @@ impl<'a> FlowSource<'a> {
                 .ok_or_else(unread)?;
             return Ok(Some(kind));
         }
-        if self.peek() == Some('!') {
-            self.bump();
-            let mut name = String::new();
-            while let Some(ch) = self.peek() {
-                if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
-                    name.push(ch);
-                    self.bump();
-                } else {
-                    break;
-                }
+        // The spelling is the mark and the run of handle
+        // and name characters standing after it, read as
+        // a line's spelling reads, under S23-3.
+        let mut spelling = String::from("!");
+        while let Some(ch) = self.peek() {
+            if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                spelling.push(ch);
+                self.bump();
+            } else {
+                break;
             }
-            if name.is_empty() {
-                return Err(unread());
-            }
-            return tag_for_name(&name).map(Some).ok_or_else(unread);
         }
-        match self.peek() {
-            None | Some(' ') | Some('\t') | Some('\n') | Some(',') | Some(']') | Some('}')
-            | Some(':') | Some('#') => Ok(None),
-            Some(_) => Err(unread()),
+        if spelling == "!" {
+            return match self.peek() {
+                None | Some(' ') | Some('\t') | Some('\n') | Some(',') | Some(']') | Some('}')
+                | Some(':') | Some('#') => Ok(None),
+                Some(_) => Err(unread()),
+            };
         }
+        tag_spelling_kind(&spelling, &self.handles)
     }
 
     /// Read the name of the anchor or alias spelling the
@@ -2323,12 +2586,9 @@ impl<'a> FlowSource<'a> {
             Some('|') | Some('>') => {
                 Err("a block scalar stands in flow, which the subset does not carry".to_string())
             }
-            Some('@') | Some('`') => Err(
+            Some('@') | Some('`') | Some('%') => Err(
                 "a scalar starts with a reserved character, which the subset does not carry"
                     .to_string(),
-            ),
-            Some('%') => Err(
-                "a directive stands in the document, which the subset does not carry".to_string(),
             ),
             Some(_) => {
                 let text = self.flow_plain()?;
@@ -2550,12 +2810,9 @@ impl<'a> FlowSource<'a> {
                 }
                 Ok((value, false))
             }
-            Some('@') | Some('`') => Err(
+            Some('@') | Some('`') | Some('%') => Err(
                 "a scalar starts with a reserved character, which the subset does not carry"
                     .to_string(),
-            ),
-            Some('%') => Err(
-                "a directive stands in the document, which the subset does not carry".to_string(),
             ),
             Some(_) => {
                 let text = self.flow_plain()?;
@@ -2898,7 +3155,13 @@ fn decode_escape_chars(chars: &[char], at: usize) -> Result<(char, usize), Strin
 
 impl Parser {
     fn parse_flow(&mut self, first: &Pend, lead: &str, depth: usize) -> Result<Value, String> {
-        let mut source = FlowSource::build(&self.lines, first, lead, &mut self.anchors);
+        let mut source = FlowSource::build(
+            &self.lines,
+            first,
+            lead,
+            &mut self.anchors,
+            self.handles.clone(),
+        );
         let value = source.node(depth)?;
         let (end_raw, remainder) = source.remainder();
         self.pos = end_raw + 1;
@@ -3466,7 +3729,6 @@ mod tests {
             "k: *alias\n",
             "base: {x: 1}\nk:\n  <<: base\n",
             "k: {j: |}\n",
-            "%YAML 1.1\n---\na: 1\n",
             "---\na: 1\n---\nb: 2\n",
             "k:\n\ttabbed: 1\n",
             "k: a: b\n",

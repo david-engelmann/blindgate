@@ -2817,7 +2817,7 @@
       "kind": "yaml",
       "source": "PORT4-2, directives are in the refused family the contract states",
       "input": "%YAML 1.1\n---\na: 1\n",
-      "provenance": "PyYAML accepts a directive; the port refuses it as the stated limit",
+      "provenance": "PyYAML accepts a directive; the port refused it as the stated limit the slice 23 build retired, and the case now asserts the recorded value",
       "expected_value": {
         "t": "map",
         "v": [
@@ -2832,8 +2832,7 @@
             }
           ]
         ]
-      },
-      "port_refuses": true
+      }
     },
     {
       "name": "yaml_refused_second_document",
