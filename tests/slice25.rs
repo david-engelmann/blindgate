@@ -50,8 +50,8 @@ fn test_a_verbatim_escaped_name_reads() {
 
 #[test]
 fn test_a_named_handle_suffix_escape_reads() {
-    let doc = parse_yaml("%TAG !e! tag:yaml.org,2002:\n--- !e!%73tr 42\n")
-        .expect("the document reads");
+    let doc =
+        parse_yaml("%TAG !e! tag:yaml.org,2002:\n--- !e!%73tr 42\n").expect("the document reads");
     assert_eq!(doc, text("42"));
 }
 
@@ -68,10 +68,7 @@ fn test_a_collection_tag_spelled_by_escape_reads() {
     let doc = parse_yaml("a: !!%73eq [1, 2]\n").expect("the document reads");
     assert_eq!(doc.get("a"), Some(&Value::List(vec![int("1"), int("2")])));
     let doc = parse_yaml("a: !!%6dap {b: 1}\n").expect("the document reads");
-    assert_eq!(
-        doc.get("a"),
-        Some(&map(vec![(text("b"), int("1"))]))
-    );
+    assert_eq!(doc.get("a"), Some(&map(vec![(text("b"), int("1"))])));
 }
 
 #[test]

@@ -319,7 +319,10 @@ fn tag_spelling_kind(spelling: &str, handles: &TagHandles) -> Result<Option<Tag>
         return Err(unread());
     }
     let decoded = decode_tag_name(suffix).ok_or_else(unread)?;
-    handles.resolve(handle, &decoded).map(Some).ok_or_else(unread)
+    handles
+        .resolve(handle, &decoded)
+        .map(Some)
+        .ok_or_else(unread)
 }
 
 /// Whether a tag directive's handle stands in one of
