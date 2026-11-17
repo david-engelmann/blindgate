@@ -1,0 +1,499 @@
+{
+ "cases": [
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!%73tr 42\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_str_suffix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!in%74 '42'\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_int_suffix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!%73%74%72 42\n",
+   "kind": "tag_escape",
+   "name": "a_wholly_escaped_suffix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!%69%6et 42\n",
+   "kind": "tag_escape",
+   "name": "lowercase_hex_escapes_read",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "bool",
+       "v": true
+      }
+     ]
+    ]
+   },
+   "input": "a: !!%62ool true\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_bool_suffix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "null"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!nu%6Cl ~\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_null_suffix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "float",
+       "v": "1.5"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!flo%61t 1.5\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_float_suffix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "list",
+       "v": [
+        {
+         "t": "int",
+         "v": "1"
+        },
+        {
+         "t": "int",
+         "v": "2"
+        }
+       ]
+      }
+     ]
+    ]
+   },
+   "input": "a: !!%73eq [1, 2]\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_seq_suffix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !<tag:yaml.org,2002:%73tr> 42\n",
+   "kind": "tag_escape",
+   "name": "a_verbatim_escaped_carried_name_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !<%74ag:yaml.org,2002:str> 42\n",
+   "kind": "tag_escape",
+   "name": "a_verbatim_escape_in_the_prefix_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "42"
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n--- !e!%73tr 42\n",
+   "kind": "tag_escape",
+   "name": "a_named_handle_suffix_escape_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "v"
+      }
+     ]
+    ]
+   },
+   "input": "? !!%73tr k\n: v\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_tag_on_an_explicit_key_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "int",
+       "v": "5"
+      }
+     ]
+    ]
+   },
+   "input": "{a: !!%69nt 5}\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_tag_in_flow_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "list",
+    "v": [
+     {
+      "t": "text",
+      "v": "42"
+     }
+    ]
+   },
+   "input": "- !!%73tr 42\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_tag_on_a_sequence_entry_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: &x !!%73tr 42\n",
+   "kind": "tag_escape",
+   "name": "an_escaped_tag_after_an_anchor_reads",
+   "source": "S25-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "100%25"
+      }
+     ]
+    ]
+   },
+   "input": "a: 100%25\n",
+   "kind": "tag_escape",
+   "name": "a_percent_in_a_plain_scalar_stays_literal",
+   "source": "S25-5"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "42"
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n--- !e!str 42\n",
+   "kind": "tag_escape",
+   "name": "a_declared_handle_spelling_still_reads",
+   "source": "S25-6"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "k"
+      },
+      {
+       "t": "text",
+       "v": "v"
+      }
+     ]
+    ]
+   },
+   "input": "{!!%73tr k: v}\n",
+   "kind": "tag_escape",
+   "name": "an_escape_in_a_flow_key_reads",
+   "source": "S25-3"
+  },
+  {
+   "input": "a: !!str%20x 42\n",
+   "kind": "tag_escape",
+   "name": "an_escape_decoding_outside_the_carried_set_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-3"
+  },
+  {
+   "input": "a: !!foo%20bar 1\n",
+   "kind": "tag_escape",
+   "name": "an_escape_decoding_to_a_space_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-3"
+  },
+  {
+   "input": "a: !!str%2520 1\n",
+   "kind": "tag_escape",
+   "name": "a_double_escape_decodes_once_and_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-5"
+  },
+  {
+   "input": "a: !!%2573tr 42\n",
+   "kind": "tag_escape",
+   "name": "a_percent_spelled_escape_decodes_once_and_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-5"
+  },
+  {
+   "input": "a: !foo%3Abar 1\n",
+   "kind": "tag_escape",
+   "name": "an_escape_in_a_local_tag_stays_refused",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-3"
+  },
+  {
+   "input": "a: !!str%3Ax 1\n",
+   "kind": "tag_escape",
+   "name": "an_escape_decoding_to_a_colon_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-3"
+  },
+  {
+   "input": "a: !!caf%C3%A9 1\n",
+   "kind": "tag_escape",
+   "name": "a_utf8_escape_decoding_outside_the_carried_set_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-2"
+  },
+  {
+   "input": "a: !<tag:example.com,2026:foo%20bar> 1\n",
+   "kind": "tag_escape",
+   "name": "a_verbatim_escape_naming_another_prefix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-3"
+  },
+  {
+   "input": "a: !!str%2 1\n",
+   "kind": "tag_escape",
+   "name": "a_truncated_escape_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-2"
+  },
+  {
+   "input": "a: !!str%zz 1\n",
+   "kind": "tag_escape",
+   "name": "a_non_hex_escape_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-2"
+  },
+  {
+   "input": "a: !!str% 1\n",
+   "kind": "tag_escape",
+   "name": "a_trailing_percent_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-2"
+  },
+  {
+   "input": "a: !!foo%FFbar 1\n",
+   "kind": "tag_escape",
+   "name": "an_escape_decoding_to_invalid_utf8_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-2"
+  },
+  {
+   "input": "a: !!foo%C3bar 1\n",
+   "kind": "tag_escape",
+   "name": "a_lone_utf8_lead_byte_escape_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-2"
+  },
+  {
+   "input": "a: !<tag:yaml.org,2002:str%2> 1\n",
+   "kind": "tag_escape",
+   "name": "a_malformed_escape_in_a_verbatim_name_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-2"
+  },
+  {
+   "input": "a: !%65!x 1\n",
+   "kind": "tag_escape",
+   "name": "an_escape_in_a_handle_place_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-5"
+  },
+  {
+   "input": "a: !!str%41 1\n",
+   "kind": "tag_escape",
+   "name": "an_escape_past_a_carried_name_refuses_whole",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-4"
+  },
+  {
+   "input": "a: !<tag:example.com,2026:foo bar> 1\n",
+   "kind": "tag_escape",
+   "name": "an_unescaped_space_in_a_verbatim_name_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-5"
+  }
+ ],
+ "generated_by": "tools/gen_slice25.py in this repo, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+}

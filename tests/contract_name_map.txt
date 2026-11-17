@@ -425,3 +425,17 @@ test_a_tag_before_a_block_sequence_on_the_value_line_refuses rust-test tests/sli
 test_an_anchor_before_a_further_explicit_entry_refuses rust-test tests/slice24.rs
 test_block_sequence_entries_at_the_entry_indentation_refuse rust-test tests/slice24.rs
 test_a_double_colon_on_the_value_line_refuses rust-test tests/slice24.rs
+test_an_escaped_suffix_reads_its_carried_type rust-test tests/slice25.rs
+test_a_wholly_escaped_suffix_reads rust-test tests/slice25.rs
+test_lowercase_hex_escapes_read rust-test tests/slice25.rs
+test_a_verbatim_escaped_name_reads rust-test tests/slice25.rs
+test_a_named_handle_suffix_escape_reads rust-test tests/slice25.rs
+test_an_escaped_tag_reads_on_a_key_and_in_flow rust-test tests/slice25.rs
+test_a_collection_tag_spelled_by_escape_reads rust-test tests/slice25.rs
+test_an_escape_decoding_outside_the_carried_set_refuses rust-test tests/slice25.rs
+test_a_double_escape_decodes_once_and_refuses rust-test tests/slice25.rs
+test_an_escaped_spelling_stands_whole rust-test tests/slice25.rs
+test_a_malformed_escape_refuses rust-test tests/slice25.rs
+test_an_escape_decoding_to_invalid_utf8_refuses rust-test tests/slice25.rs
+test_a_percent_in_a_plain_scalar_stays_literal rust-test tests/slice25.rs
+test_an_escape_in_a_handle_place_refuses rust-test tests/slice25.rs

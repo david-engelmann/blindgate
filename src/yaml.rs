@@ -318,7 +318,11 @@ fn tag_spelling_kind(spelling: &str, handles: &TagHandles) -> Result<Option<Tag>
     if suffix.is_empty() {
         return Err(unread());
     }
-    handles.resolve(handle, suffix).map(Some).ok_or_else(unread)
+    let decoded = decode_tag_name(suffix).ok_or_else(unread)?;
+    handles
+        .resolve(handle, &decoded)
+        .map(Some)
+        .ok_or_else(unread)
 }
 
 /// Whether a tag directive's handle stands in one of
@@ -393,6 +397,32 @@ fn decode_tag_prefix(prefix: &str) -> Option<String> {
     }
 }
 
+/// Decode the percent escapes standing in a tag's
+/// suffix or in a verbatim tag's name, under S25-2.
+/// An escape stands as a percent sign and two hex
+/// digits and decodes to the byte the pair names, and
+/// the name's bytes, the escape bytes and the plainly
+/// standing characters' bytes together, read as UTF-8
+/// text. An escape standing cut short or carrying a
+/// digit outside the hex digits, and bytes reading as
+/// no UTF-8 text, leave the name unread.
+fn decode_tag_name(name: &str) -> Option<String> {
+    let mut bytes: Vec<u8> = Vec::new();
+    let mut chars = name.chars();
+    while let Some(ch) = chars.next() {
+        if ch == '%' {
+            let hi = chars.next()?;
+            let lo = chars.next()?;
+            let value = u8::from_str_radix(&format!("{hi}{lo}"), 16).ok()?;
+            bytes.push(value);
+        } else {
+            let mut buf = [0u8; 4];
+            bytes.extend_from_slice(ch.encode_utf8(&mut buf).as_bytes());
+        }
+    }
+    String::from_utf8(bytes).ok()
+}
+
 /// Read a tag spelling whose first character is its mark.
 /// Returns the type it names and the text after it, the
 /// type standing as nothing for the bare mark, the
@@ -406,7 +436,8 @@ fn read_tag<'a>(text: &'a str, handles: &TagHandles) -> Result<(Option<Tag>, &'a
     if let Some(inner) = text.strip_prefix("!<") {
         let close = inner.find('>').ok_or_else(unread)?;
         let name = &inner[..close];
-        let kind = name
+        let decoded = decode_tag_name(name).ok_or_else(unread)?;
+        let kind = decoded
             .strip_prefix("tag:yaml.org,2002:")
             .and_then(tag_for_name)
             .ok_or_else(unread)?;
@@ -418,7 +449,7 @@ fn read_tag<'a>(text: &'a str, handles: &TagHandles) -> Result<(Option<Tag>, &'a
     // one, under S23-2.
     let mut end = 1;
     for ch in text[1..].chars() {
-        if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+        if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '%' {
             end += ch.len_utf8();
         } else {
             break;
@@ -2394,7 +2425,8 @@ impl<'a> FlowSource<'a> {
                     None => return Err(unread()),
                 }
             }
-            let kind = name
+            let decoded = decode_tag_name(&name).ok_or_else(unread)?;
+            let kind = decoded
                 .strip_prefix("tag:yaml.org,2002:")
                 .and_then(tag_for_name)
                 .ok_or_else(unread)?;
@@ -2405,7 +2437,7 @@ impl<'a> FlowSource<'a> {
         // a line's spelling reads, under S23-3.
         let mut spelling = String::from("!");
         while let Some(ch) = self.peek() {
-            if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+            if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '%' {
                 spelling.push(ch);
                 self.bump();
             } else {
