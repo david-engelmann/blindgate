@@ -383,6 +383,14 @@
    "source": "S25-5"
   },
   {
+   "input": "a: !!%2573tr 42\n",
+   "kind": "tag_escape",
+   "name": "a_percent_spelled_escape_decodes_once_and_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 25 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S25-5"
+  },
+  {
    "input": "a: !foo%3Abar 1\n",
    "kind": "tag_escape",
    "name": "an_escape_in_a_local_tag_stays_refused",

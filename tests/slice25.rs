@@ -85,8 +85,10 @@ fn test_an_escape_decoding_outside_the_carried_set_refuses() {
 
 #[test]
 fn test_a_double_escape_decodes_once_and_refuses() {
-    let err = parse_yaml("a: !!str%2520 1\n").expect_err("the document refuses");
-    assert_eq!(err, UNREAD);
+    for doc in ["a: !!str%2520 1\n", "a: !!%2573tr 42\n"] {
+        let err = parse_yaml(doc).expect_err("the document refuses");
+        assert_eq!(err, UNREAD, "document {doc:?}");
+    }
 }
 
 #[test]

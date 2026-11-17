@@ -36,6 +36,7 @@ CASES = [
     ("an_escape_decoding_outside_the_carried_set_refuses", "S25-3", "a: !!str%20x 42\n", "python_error"),
     ("an_escape_decoding_to_a_space_refuses", "S25-3", "a: !!foo%20bar 1\n", "python_error"),
     ("a_double_escape_decodes_once_and_refuses", "S25-5", "a: !!str%2520 1\n", "python_error"),
+    ("a_percent_spelled_escape_decodes_once_and_refuses", "S25-5", "a: !!%2573tr 42\n", "python_error"),
     ("an_escape_in_a_local_tag_stays_refused", "S25-3", "a: !foo%3Abar 1\n", "python_error"),
     ("an_escape_decoding_to_a_colon_refuses", "S25-3", "a: !!str%3Ax 1\n", "python_error"),
     ("a_utf8_escape_decoding_outside_the_carried_set_refuses", "S25-2", "a: !!caf%C3%A9 1\n", "python_error"),
