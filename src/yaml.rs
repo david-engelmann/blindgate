@@ -1153,9 +1153,6 @@ impl Parser {
         spaces: usize,
         depth: usize,
     ) -> Result<Option<Value>, String> {
-        if depth + 1 > YAML_DEPTH_BOUND {
-            return Err("the document nests deeper than the subset carries".to_string());
-        }
         let routed = route_text(content, &self.handles);
         let propertied = content.starts_with('&') || content.starts_with('!');
         let opens_sequence = is_seq_start(routed);
@@ -1165,6 +1162,9 @@ impl Parser {
         }
         if propertied && (opens_sequence || opens_entry) {
             return Ok(None);
+        }
+        if depth + 1 > YAML_DEPTH_BOUND {
+            return Err("the document nests deeper than the subset carries".to_string());
         }
         let column = line.indent + 1 + spaces;
         let pend = Pend {
