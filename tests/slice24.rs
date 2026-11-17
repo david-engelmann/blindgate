@@ -1,3 +1,5 @@
+/home/hatch/workspace/gate-truth-line/scratch/bg-r28/work-contract/tests/slice24.rs:
+
 //! The slice 24 pins the contract names: a value opening
 //! in compact form on an explicit entry's value line reads
 //! as S24-2 and S24-3 state, and the standings of S24-4
@@ -26,25 +28,43 @@ fn test_a_block_sequence_on_the_value_line_reads() {
     let empty = parse_yaml("? k\n: -\n").expect("the document reads");
     assert_eq!(empty.get("k"), Some(&Value::List(vec![Value::Null])));
     let nested = parse_yaml("? k\n: - - a\n").expect("the document reads");
-    assert_eq!(nested.get("k"), Some(&Value::List(vec![Value::List(vec![text("a")])])));
+    assert_eq!(
+        nested.get("k"),
+        Some(&Value::List(vec![Value::List(vec![text("a")])]))
+    );
     let sibling = parse_yaml("? k\n: - a\n  - b\nnext: 1\n").expect("the document reads");
-    assert_eq!(sibling.get("k"), Some(&Value::List(vec![text("a"), text("b")])));
+    assert_eq!(
+        sibling.get("k"),
+        Some(&Value::List(vec![text("a"), text("b")]))
+    );
     assert_eq!(sibling.get("next"), Some(&int("1")));
 }
 
 #[test]
 fn test_a_block_mapping_on_the_value_line_reads() {
     let doc = parse_yaml("? k\n: a: b\n  c: d\n").expect("the document reads");
-    assert_eq!(doc.get("k"), Some(&map(vec![(text("a"), text("b")), (text("c"), text("d"))])));
+    assert_eq!(
+        doc.get("k"),
+        Some(&map(vec![(text("a"), text("b")), (text("c"), text("d"))]))
+    );
     let sibling = parse_yaml("? k\n: a: b\nnext: 1\n").expect("the document reads");
     assert_eq!(sibling.get("k"), Some(&map(vec![(text("a"), text("b"))])));
     assert_eq!(sibling.get("next"), Some(&int("1")));
     let empty_value = parse_yaml("? k\n: a:\n").expect("the document reads");
-    assert_eq!(empty_value.get("k"), Some(&map(vec![(text("a"), Value::Null)])));
+    assert_eq!(
+        empty_value.get("k"),
+        Some(&map(vec![(text("a"), Value::Null)]))
+    );
     let quoted = parse_yaml("? k\n: 'q key': b\n").expect("the document reads");
-    assert_eq!(quoted.get("k"), Some(&map(vec![(text("q key"), text("b"))])));
+    assert_eq!(
+        quoted.get("k"),
+        Some(&map(vec![(text("q key"), text("b"))]))
+    );
     let deeper = parse_yaml("? k\n: a:\n    b: c\n").expect("the document reads");
-    assert_eq!(deeper.get("k"), Some(&map(vec![(text("a"), map(vec![(text("b"), text("c"))]))])));
+    assert_eq!(
+        deeper.get("k"),
+        Some(&map(vec![(text("a"), map(vec![(text("b"), text("c"))]))]))
+    );
 }
 
 #[test]
@@ -52,15 +72,24 @@ fn test_a_further_explicit_entry_on_the_value_line_reads() {
     let doc = parse_yaml("? k\n: ? n\n  : v\n").expect("the document reads");
     assert_eq!(doc.get("k"), Some(&map(vec![(text("n"), text("v"))])));
     let no_value = parse_yaml("? k\n: ? n\n").expect("the document reads");
-    assert_eq!(no_value.get("k"), Some(&map(vec![(text("n"), Value::Null)])));
+    assert_eq!(
+        no_value.get("k"),
+        Some(&map(vec![(text("n"), Value::Null)]))
+    );
     let empty_key = parse_yaml("? k\n: ?\n").expect("the document reads");
-    assert_eq!(empty_key.get("k"), Some(&map(vec![(Value::Null, Value::Null)])));
+    assert_eq!(
+        empty_key.get("k"),
+        Some(&map(vec![(Value::Null, Value::Null)]))
+    );
 }
 
 #[test]
 fn test_an_explicit_chain_across_value_lines_reads() {
     let doc = parse_yaml("? a\n: ? b\n  : ? c\n    : v\n").expect("the document reads");
-    assert_eq!(doc.get("a"), Some(&map(vec![(text("b"), map(vec![(text("c"), text("v"))]))])));
+    assert_eq!(
+        doc.get("a"),
+        Some(&map(vec![(text("b"), map(vec![(text("c"), text("v"))]))]))
+    );
 }
 
 #[test]
@@ -71,7 +100,13 @@ fn test_a_compact_value_reads_in_a_nested_mapping_and_a_sequence_entry() {
         Some(&Value::List(vec![text("a"), text("b")]))
     );
     let entry = parse_yaml("- ? k\n  : a: b\n").expect("the document reads");
-    assert_eq!(entry, Value::List(vec![map(vec![(text("k"), map(vec![(text("a"), text("b"))]))])]));
+    assert_eq!(
+        entry,
+        Value::List(vec![map(vec![(
+            text("k"),
+            map(vec![(text("a"), text("b"))])
+        )])])
+    );
     let entry_seq = parse_yaml("- ? k\n  : - a\n    - b\n- z\n").expect("the document reads");
     assert_eq!(
         entry_seq,
@@ -118,15 +153,15 @@ fn test_the_nested_entry_reads_a_block_value_on_its_own_value_line() {
         )]))
     );
     let mapping = parse_yaml("? k\n: ? n\n  : a: b\n").expect("the document reads");
-    assert_eq!(mapping.get("k"), Some(&map(vec![(text("n"), map(vec![(text("a"), text("b"))]))])));
+    assert_eq!(
+        mapping.get("k"),
+        Some(&map(vec![(text("n"), map(vec![(text("a"), text("b"))]))]))
+    );
 }
 
 #[test]
 fn test_a_collection_as_the_nested_explicit_key_refuses() {
-    for doc in [
-        "? k\n: ? [a, b]\n  : v\n",
-        "? k\n: ?\n    a: b\n  : v\n",
-    ] {
+    for doc in ["? k\n: ? [a, b]\n  : v\n", "? k\n: ?\n    a: b\n  : v\n"] {
         let err = parse_yaml(doc).expect_err("the document refuses");
         assert_eq!(
             err, "a collection stands as an explicit key, which the subset does not carry",
@@ -138,7 +173,10 @@ fn test_a_collection_as_the_nested_explicit_key_refuses() {
 #[test]
 fn test_a_one_line_nested_explicit_entry_refuses() {
     let err = parse_yaml("? k\n: ? n : v\n").expect_err("the document refuses");
-    assert_eq!(err, "a collection stands as an explicit key, which the subset does not carry");
+    assert_eq!(
+        err,
+        "a collection stands as an explicit key, which the subset does not carry"
+    );
 }
 
 #[test]
