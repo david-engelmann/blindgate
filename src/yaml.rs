@@ -1109,10 +1109,13 @@ impl Parser {
                             .to_string(),
                     );
                 }
+                let spaces = after.len() - after.trim_start_matches(' ').len();
                 let after = after.trim_start_matches(' ').to_string();
                 self.consume(&next);
                 if strip_comment(&after).trim().is_empty() {
                     self.nested_value(indent, depth)?
+                } else if let Some(value) = self.compact_value(&next, &after, spaces, depth)? {
+                    value
                 } else {
                     let rest_pend = Pend {
                         indent: next.indent,
@@ -1126,6 +1129,55 @@ impl Parser {
             _ => Value::Null,
         };
         Ok((key, value, merge_key))
+    }
+
+    /// A value opening in compact form on an explicit
+    /// entry's value line, under slice 24. The line's
+    /// content, the text standing behind the value
+    /// indicator, opens a block sequence, a block mapping,
+    /// or a further explicit entry at the column the
+    /// opening's first mark establishes, and the block
+    /// reading that owns the form reads it there. A
+    /// property standing before a block sequence opening
+    /// or a further explicit entry is not admitted here,
+    /// under S24-4, and the standing value reading refuses
+    /// it in its own words. Properties before a block
+    /// mapping opening stand on its first key, as they
+    /// stand on the first key of any mapping line. Returns
+    /// None where the content opens none of the three
+    /// forms, leaving the standing reading to judge it.
+    fn compact_value(
+        &mut self,
+        line: &Pend,
+        content: &str,
+        spaces: usize,
+        depth: usize,
+    ) -> Result<Option<Value>, String> {
+        if depth + 1 > YAML_DEPTH_BOUND {
+            return Err("the document nests deeper than the subset carries".to_string());
+        }
+        let routed = route_text(content, &self.handles);
+        let propertied = content.starts_with('&') || content.starts_with('!');
+        let opens_sequence = is_seq_start(routed);
+        let opens_entry = is_explicit_entry(routed);
+        if !opens_sequence && !opens_entry && !starts_mapping(routed) {
+            return Ok(None);
+        }
+        if propertied && (opens_sequence || opens_entry) {
+            return Ok(None);
+        }
+        let column = line.indent + 1 + spaces;
+        let pend = Pend {
+            indent: column,
+            text: content.to_string(),
+            raw: line.raw,
+        };
+        self.pending = Some(pend);
+        if opens_sequence {
+            Ok(Some(self.parse_sequence(column, depth + 1)?))
+        } else {
+            Ok(Some(self.parse_mapping(column, depth + 1)?))
+        }
     }
 
     fn parse_sequence(&mut self, indent: usize, depth: usize) -> Result<Value, String> {
