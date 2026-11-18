@@ -449,7 +449,32 @@ fn read_tag<'a>(text: &'a str, handles: &TagHandles) -> Result<(Option<Tag>, &'a
     // one, under S23-2.
     let mut end = 1;
     for ch in text[1..].chars() {
-        if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '%' {
+        if ch == '!'
+            || ch.is_ascii_alphanumeric()
+            || ch == '%'
+            || matches!(
+                ch,
+                '-' | '_'
+                    | ';'
+                    | '/'
+                    | '?'
+                    | ':'
+                    | '@'
+                    | '&'
+                    | '='
+                    | '+'
+                    | '$'
+                    | ','
+                    | '.'
+                    | '~'
+                    | '*'
+                    | '\''
+                    | '('
+                    | ')'
+                    | '['
+                    | ']'
+            )
+        {
             end += ch.len_utf8();
         } else {
             break;
@@ -2437,7 +2462,32 @@ impl<'a> FlowSource<'a> {
         // a line's spelling reads, under S23-3.
         let mut spelling = String::from("!");
         while let Some(ch) = self.peek() {
-            if ch == '!' || ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '%' {
+            if ch == '!'
+                || ch.is_ascii_alphanumeric()
+                || ch == '%'
+                || matches!(
+                    ch,
+                    '-' | '_'
+                        | ';'
+                        | '/'
+                        | '?'
+                        | ':'
+                        | '@'
+                        | '&'
+                        | '='
+                        | '+'
+                        | '$'
+                        | ','
+                        | '.'
+                        | '~'
+                        | '*'
+                        | '\''
+                        | '('
+                        | ')'
+                        | '['
+                        | ']'
+                )
+            {
                 spelling.push(ch);
                 self.bump();
             } else {
