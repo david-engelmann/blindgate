@@ -112,3 +112,15 @@ fn test_a_hyphen_underscore_suffix_still_refuses_as_today() {
         assert_eq!(err, UNREAD, "document {doc:?}");
     }
 }
+
+#[test]
+fn test_a_quotation_mark_still_ends_a_spelling() {
+    let err = parse_yaml("a: !!str\"x 42\n").expect_err("the document refuses");
+    assert_eq!(err, "a quoted scalar is not closed");
+}
+
+#[test]
+fn test_the_bare_mark_still_reads_as_no_tag() {
+    let doc = parse_yaml("a: ! 42\n").expect("the document reads");
+    assert_eq!(doc.get("a"), Some(&int("42")));
+}

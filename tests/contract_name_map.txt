@@ -454,3 +454,5 @@ test_a_dotted_tag_on_a_key_refuses rust-test tests/slice26.rs
 test_a_plain_character_and_its_escape_refuse_alike rust-test tests/slice26.rs
 test_a_carried_spelling_still_reads rust-test tests/slice26.rs
 test_a_hyphen_underscore_suffix_still_refuses_as_today rust-test tests/slice26.rs
+test_a_quotation_mark_still_ends_a_spelling rust-test tests/slice26.rs
+test_the_bare_mark_still_reads_as_no_tag rust-test tests/slice26.rs
