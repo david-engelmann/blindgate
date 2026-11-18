@@ -1,0 +1,288 @@
+{
+ "cases": [
+  {
+   "input": "a: !!str;x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_semicolon_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str/x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_slash_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str?x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_question_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str:x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_colon_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str@x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_at_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str&x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_ampersand_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str=x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_equals_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str+x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_plus_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str$x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_dollar_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str,x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_comma_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str.foo 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_dotted_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-3"
+  },
+  {
+   "input": "a: !!str~x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_tilde_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str*x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_asterisk_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str'x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_apostrophe_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str(x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_open_paren_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str)x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_close_paren_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str[x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_open_bracket_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str]x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_close_bracket_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "a: !!str-x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_hyphen_suffix_refuses_as_today",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-3"
+  },
+  {
+   "input": "a: !!str_x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_underscore_suffix_refuses_as_today",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-3"
+  },
+  {
+   "input": "[!!str, 42]\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_trailing_comma_suffix_refuses_in_flow",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "[!!str]x 42]\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_closing_bracket_suffix_refuses_in_flow",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "{!!str: 42}\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_colon_suffix_on_a_flow_key_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-2"
+  },
+  {
+   "input": "%TAG !e! tag:yaml.org,2002:\n--- !e!str.x 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_named_handle_dotted_suffix_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-3"
+  },
+  {
+   "input": "? !!str.x k\n: v\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_dotted_tag_on_a_key_refuses",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-3"
+  },
+  {
+   "input": "a: !!str%2Efoo 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_escaped_dot_suffix_refuses_alike",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-4"
+  },
+  {
+   "input": "a: !!str%3Ax 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "an_escaped_colon_suffix_refuses_alike",
+   "provenance": "PyYAML refuses the document and the port refuses it in its own words under the slice 26 standings",
+   "python_error": "PyYAML refuses the document",
+   "source": "S26-4"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "a: !!str 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_carried_spelling_reads",
+   "source": "S26-3"
+  },
+  {
+   "expected_value": {
+    "t": "map",
+    "v": [
+     [
+      {
+       "t": "text",
+       "v": "a"
+      },
+      {
+       "t": "text",
+       "v": "42"
+      }
+     ]
+    ]
+   },
+   "input": "{a: !!str 42}\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_carried_spelling_reads_in_flow",
+   "source": "S26-3"
+  },
+  {
+   "expected_value": {
+    "t": "text",
+    "v": "42"
+   },
+   "input": "%TAG !e! tag:yaml.org,2002:\n--- !e!str 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_named_handle_spelling_reads",
+   "source": "S26-3"
+  },
+  {
+   "expected_value": {
+    "t": "list",
+    "v": [
+     {
+      "t": "text",
+      "v": "42"
+     }
+    ]
+   },
+   "input": "- !!str 42\n",
+   "kind": "tag_suffix_chars",
+   "name": "a_carried_spelling_reads_on_a_sequence_entry",
+   "source": "S26-3"
+  }
+ ],
+ "generated_by": "tools/gen_slice26.py in this repo, run against PyYAML 6.0.1; regenerate by running it again, never by editing recordings by hand"
+}
