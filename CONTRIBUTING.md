@@ -12,7 +12,7 @@ Blindgate is developed under the contract-first discipline documented in `AGENTS
 
 ## Local Verification
 
-Run the full local gate on your branch and verify zero formatting or lint warnings before opening a pull request.
+Run the full local gate on the exact final head of your branch (re-running after any change made during review) and verify zero formatting or lint regressions before merging.
 
 ```sh
 cargo test --locked

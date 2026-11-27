@@ -20,7 +20,7 @@ For releases cut from `v0.16.0` onward on Linux (`x86_64`, `aarch64`) and macOS 
 curl -fsSL https://raw.githubusercontent.com/david-engelmann/blindgate/main/install.sh | sh
 ```
 
-Pin a specific release tag carrying release archives by setting `BLINDGATE_VERSION` (for example `BLINDGATE_VERSION=v0.16.0`).
+Pin a specific release tag carrying release archives by setting `BLINDGATE_VERSION` (for example `BLINDGATE_VERSION=v0.16.0`). Because `install.sh` does not edit shell profile files, ensure `$HOME/.local/bin` (or your custom `$BLINDGATE_INSTALL_DIR`) stands on `PATH` in your shell (`export PATH="$HOME/.local/bin:$PATH"`).
 
 ## Platform Support and Capturing `strace` Logs
 
@@ -109,7 +109,7 @@ let evidence_json = render_evidence(&results);
 
 ## Self-Contained GitHub Actions Workflow Example
 
-Save the workflow below at `.github/workflows/blindgate-audit.yml`. It installs Python and `strace`, writes a matching single-job surface configuration, captures the `pytest` trace, and verifies that the check is `proven`.
+Save the workflow below at `.github/workflows/blindgate-audit.yml` in a repository with an existing `pytest` suite covering `src/**` and `tests/**`. It installs Python, `strace`, and your project's test dependencies, writes a matching single-job surface configuration, captures the `pytest` trace, and verifies that the check is `proven`.
 
 ```yaml
 name: blindgate-audit
