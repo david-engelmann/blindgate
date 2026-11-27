@@ -29,7 +29,19 @@ reads in surface
 
 ## Install
 
-The tool is the Rust binary alone, built with cargo. From a checkout of this repo, the build runs as written from the repo root and leaves the binary at target/debug/blindgate.
+Build and install from source with Cargo (Rust 1.87 or newer).
+
+```sh
+cargo install --git https://github.com/david-engelmann/blindgate --locked
+```
+
+For releases tagged from `v0.16.0` onward, prebuilt archives for Linux and macOS can also be installed with the checksum-verifying installer script.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/david-engelmann/blindgate/main/install.sh | sh
+```
+
+From a checkout of this repo, `cargo build` leaves the debug binary at `target/debug/blindgate` and `cargo build --release --locked` leaves the release binary at `target/release/blindgate`.
 
 ```
 cargo build
@@ -90,6 +102,16 @@ reads in surface
 ```
 
 A check can carry its own trace in the config, and a command line override can replace the trace for a whole job. A check with no trace of its own falls back to the shared trace. In place of a handed over trace, the tool can run a command under strace itself and judge the capture, on a machine that has strace installed, by giving the run flag and the command in place of the trace flag. A json flag on any of these runs renders the same report as JSON, and the JSON form of the example report stands in examples/report.json.
+
+## Recording Traces in CI
+
+Live capture (`--run`) requires Linux `strace`, whereas offline trace inspection (`--trace` and `--trace-for`) runs on both Linux and macOS. When capturing a trace file inside a Linux CI job for offline analysis, pass `-f` and the full descriptor and process syscall set so child processes and relative `openat` descriptors resolve accurately.
+
+```sh
+strace -f -e trace=open,openat,openat2,chdir,fchdir,close,close_range,dup,dup2,dup3,fcntl,clone,fork,vfork,clone3,execve,execveat -o trace.log -- pytest -q
+```
+
+Read [docs/GUIDE.md](docs/GUIDE.md) for the complete operator manual, `blindgate.yml` schema, surface matching rules, `blindgate-evidence/1` library API, and a GitHub Actions workflow.
 
 ## Status
 

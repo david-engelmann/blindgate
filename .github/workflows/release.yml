@@ -1,0 +1,156 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check manifest version against tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os, pathlib, tomllib
+          ver = tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"]
+          if os.environ.get("REF_TYPE") == "tag" and os.environ.get("REF_NAME") != f"v{ver}":
+              raise SystemExit(f"Tag {os.environ['REF_NAME']} does not match Cargo.toml v{ver}")
+          PY
+      - name: Build the Rust port
+        run: cargo build --locked
+      - name: Run the Rust port tests
+        run: cargo test --locked
+      - name: Check the formatting
+        run: cargo fmt --check
+      - name: Run the linter
+        run: cargo clippy --offline --all-targets
+      - name: Verify crate packaging
+        run: cargo package --locked
+
+  binaries:
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install target
+        shell: bash
+        run: rustup target add ${{ matrix.target }}
+      - name: Build release binary and package archive
+        env:
+          TARGET_TRIPLE: ${{ matrix.target }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          cargo build --release --locked --bin blindgate --target "$TARGET_TRIPLE"
+          python - <<'PY'
+          import hashlib, os, pathlib, tarfile, tomllib
+          ver = tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"]
+          tag = os.environ["REF_NAME"] if os.environ.get("REF_TYPE") == "tag" else f"v{ver}"
+          target = os.environ["TARGET_TRIPLE"]
+          bin_path = pathlib.Path("target") / target / "release" / "blindgate"
+          out_dir = pathlib.Path("release-staging")
+          out_dir.mkdir(parents=True, exist_ok=True)
+          stem = f"blindgate-{tag}-{target}"
+          def clean_tarinfo(ti):
+              ti.uid = 0
+              ti.gid = 0
+              ti.uname = ""
+              ti.gname = ""
+              return ti
+          archive_path = out_dir / f"{stem}.tar.gz"
+          with tarfile.open(archive_path, "w:gz") as tf:
+              tf.add(bin_path, arcname="blindgate", filter=clean_tarinfo)
+              tf.add("LICENSE", arcname="LICENSE", filter=clean_tarinfo)
+              tf.add("README.md", arcname="README.md", filter=clean_tarinfo)
+          digest = hashlib.sha256(archive_path.read_bytes()).hexdigest()
+          (out_dir / f"{archive_path.name}.sha256").write_text(f"{digest}  {archive_path.name}\n", encoding="utf-8")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.target }}
+          path: release-staging/*
+
+  github-release:
+    needs: [verify, binaries]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Build combined SHA256SUMS
+        run: |
+          cd release-assets
+          cat *.sha256 | sort -k2 > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+
+  publish-crates:
+    needs: [verify, binaries]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Publish blindgate crate when token and version match
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "CARGO_REGISTRY_TOKEN is not set, skipping crates.io publish"
+            exit 0
+          fi
+          VER="$(python -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"])')"
+          if [ "v$VER" != "$REF_NAME" ]; then
+            echo "Tag $REF_NAME differs from Cargo.toml v$VER, skipping crates.io publish"
+            exit 0
+          fi
+          cargo publish --locked
