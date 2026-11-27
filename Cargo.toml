@@ -1,9 +1,17 @@
 [package]
 name = "blindgate"
-version = "0.1.0"
+version = "0.15.0"
 edition = "2021"
+rust-version = "1.87"
 description = "It traces what a gate actually opened while it ran and diffs that against the surface the gate claims to certify."
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/david-engelmann/blindgate"
+homepage = "https://github.com/david-engelmann/blindgate"
+documentation = "https://docs.rs/blindgate"
+keywords = ["ci", "strace", "verification", "testing", "workflow"]
+categories = ["command-line-utilities", "development-tools::testing"]
+exclude = ["tests/**", "tools/**", "CONTRACT.md", "AGENTS.md", ".github/**", "deny.toml", "install.sh"]
 
 [lib]
 name = "blindgate"
