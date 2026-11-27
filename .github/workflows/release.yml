@@ -29,7 +29,6 @@ jobs:
       contents: read
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
-      checkout_ref: ${{ steps.meta.outputs.checkout_ref }}
     steps:
       - id: meta
         env:
@@ -47,6 +46,8 @@ jobs:
             TAG="$REL_TAG"
           elif [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$REF_TYPE" = "tag" ]; then
+            TAG="$REF_NAME"
           fi
           if [ -n "$TAG" ]; then
             case "$TAG" in
@@ -64,10 +65,8 @@ jobs:
                 ;;
             esac
             echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-            echo "checkout_ref=refs/tags/$TAG" >> "$GITHUB_OUTPUT"
           else
             echo "tag=" >> "$GITHUB_OUTPUT"
-            echo "checkout_ref=$REF_NAME" >> "$GITHUB_OUTPUT"
           fi
 
   verify:
@@ -78,8 +77,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.resolve.outputs.checkout_ref }}
           persist-credentials: false
+      - name: Verify src tree matches target release tag on workflow_dispatch
+        if: github.event_name == 'workflow_dispatch' && needs.resolve.outputs.tag != ''
+        env:
+          EFFECTIVE_TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -eu
+          git fetch --no-tags origin "refs/tags/$EFFECTIVE_TAG:refs/tags/$EFFECTIVE_TAG"
+          git diff --exit-code "refs/tags/$EFFECTIVE_TAG" HEAD -- src/
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -140,7 +146,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.resolve.outputs.checkout_ref }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -229,10 +234,32 @@ jobs:
         with:
           path: release-assets
           merge-multiple: true
-      - name: Build combined SHA256SUMS
+      - name: Build combined SHA256SUMS and provenance metadata
+        env:
+          EFFECTIVE_TAG: ${{ needs.resolve.outputs.tag }}
+          WORKFLOW_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
+          mkdir -p release-meta
+          printf '%s\n' "$EFFECTIVE_TAG" > release-meta/tag.txt
+          python3 - <<'PY'
+          import json, os, pathlib
+          meta = {
+              "tag": os.environ["EFFECTIVE_TAG"],
+              "build_commit": os.environ["WORKFLOW_SHA"],
+              "trigger_event": os.environ["EVENT_NAME"],
+          }
+          pathlib.Path("release-assets/BUILD_PROVENANCE.json").write_text(
+              json.dumps(meta, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
           cd release-assets
           cat *.sha256 | sort -k2 > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-release-tag
+          path: release-meta/tag.txt
       - name: Generate SLSA build provenance attestations
         uses: actions/attest-build-provenance@v2
         with:
@@ -277,7 +304,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.resolve.outputs.checkout_ref }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -294,6 +320,25 @@ jobs:
           VER="$(python -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"])')"
           if [ "v$VER" != "$EFFECTIVE_TAG" ]; then
             echo "Tag $EFFECTIVE_TAG differs from committed Cargo.toml v$VER, skipping crates.io publish"
+            exit 0
+          fi
+          if python - "$VER" <<'PY'
+          import sys, urllib.error, urllib.request
+          ver = sys.argv[1]
+          req = urllib.request.Request(
+              f"https://crates.io/api/v1/crates/blindgate/{ver}",
+              headers={"User-Agent": "blindgate-release-ci/1.0 (https://github.com/david-engelmann/blindgate)"},
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=15) as resp:
+                  sys.exit(0 if resp.status == 200 else 1)
+          except urllib.error.HTTPError as exc:
+              if exc.code == 404:
+                  sys.exit(1)
+              raise
+          PY
+          then
+            echo "blindgate v$VER is already published on crates.io, skipping"
             exit 0
           fi
           cargo publish --locked

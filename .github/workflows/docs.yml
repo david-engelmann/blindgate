@@ -46,13 +46,22 @@ jobs:
               text = html_file.read_text(encoding="utf-8")
               if "raw.githubusercontent.com/david-engelmann/blindgate/main/media/" in text:
                   missing.append(f"{html_file}: corrupted raw.githubusercontent.com/.../main/media/ URL")
-              for m in re.finditer(r'(?:href|src|srcset)="([^"#?,\s]+)"', text):
-                  ref = m.group(1)
-                  if ref.startswith(("http://", "https://", "mailto:", "javascript:", "data:")):
-                      continue
-                  target = (html_file.parent / ref).resolve()
-                  if not target.exists():
-                      missing.append(f"{html_file}: missing {ref}")
+              for m in re.finditer(r'(href|src|srcset)="([^"]+)"', text):
+                  attr, raw_val = m.group(1), m.group(2)
+                  candidates = (
+                      [c.strip().split()[0] for c in raw_val.split(",") if c.strip()]
+                      if attr == "srcset"
+                      else [raw_val.strip()]
+                  )
+                  for cand in candidates:
+                      if cand.startswith(("http://", "https://", "mailto:", "javascript:", "data:", "#")):
+                          continue
+                      clean_ref = cand.split("#", 1)[0].split("?", 1)[0]
+                      if not clean_ref:
+                          continue
+                      target = (html_file.parent / clean_ref).resolve()
+                      if not target.exists():
+                          missing.append(f"{html_file}: missing {clean_ref} (from {attr}={raw_val})")
           if missing:
               print("\n".join(missing[:30]), file=sys.stderr)
               sys.exit(1)

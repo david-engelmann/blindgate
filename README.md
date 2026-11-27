@@ -48,27 +48,27 @@ Blindgate captures what a CI job actually opened at the filesystem and process l
 
 ## Install
 
-Install a prebuilt binary on Linux or macOS (`x86_64` and `aarch64`) with the checksum-verifying installer script.
+Install from source with Cargo (Rust 1.87 or newer) or via `cargo-binstall` and the checksum-verifying installer script on Linux and macOS (`x86_64` and `aarch64`) for releases carrying prebuilt archives (`v0.15.0` once release archives are attached and `v0.16.0` onward).
+
+```sh
+cargo install --git https://github.com/david-engelmann/blindgate --locked
+```
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/david-engelmann/blindgate/main/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-```
-
-Or install via `cargo-binstall` or from source with Cargo (Rust 1.87 or newer).
-
-```sh
 cargo binstall --git https://github.com/david-engelmann/blindgate blindgate
-cargo install --git https://github.com/david-engelmann/blindgate --locked
 ```
 
 From a checkout of this repo, `cargo build --release --locked` leaves the release binary at `target/release/blindgate`.
 
 ## Quickstart
 
-The example run judges `examples/trace.log` against the two checks declared in `examples/blindgate.yml`, scoped canonically to `examples/`.
+Clone this repository to run `blindgate` over the synthetic `examples/` inputs (`examples/trace.log` against the two checks declared in `examples/blindgate.yml`, scoped canonically to `examples/`).
 
 ```sh
+git clone https://github.com/david-engelmann/blindgate.git
+cd blindgate
 blindgate --workflow examples/workflow.yml --config examples/blindgate.yml --trace examples/trace.log --root examples
 ```
 
@@ -151,7 +151,7 @@ Measured with the `--release` binary on synthetic multi-process `strace` logs.
 | [finaltree](https://github.com/david-engelmann/finaltree) | What tree did CI actually evaluate? | Commit and tree lineage across merge queues |
 | [blindgate](https://github.com/david-engelmann/blindgate) | What files did the gate actually read? | Linux `strace` descriptor and path reconstruction |
 | [ostensible](https://github.com/david-engelmann/ostensible) | Can the test actually fail? | Static tautology scan and 4-family `pytest` mutants |
-| [canaryfield](https://github.com/david-engelmann/canaryfield) | Does the harness catch planted defects? | 200 seeded Python defect classes across real gates |
+| [canaryfield](https://github.com/david-engelmann/canaryfield) | Does the harness catch planted defects? | 200+ seeded Python defect classes across real gates |
 | [greenharvest](https://github.com/david-engelmann/greenharvest) | Which tests earn their CI runtime? | Marginal defect-catch value per second of execution |
 
 ## Documentation

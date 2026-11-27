@@ -2,7 +2,7 @@
 
 ## Does Blindgate require Linux?
 
-Only `--run` (live `strace` capture) requires Linux `strace` on `PATH`. Offline trace analysis (`--trace` and `--trace-for`) is 100% pure Rust and runs natively on both Linux (`x86_64`, `aarch64`) and macOS (`aarch64`, `x86_64`).
+Only `--run` (live `strace` capture) requires Linux `strace` on `PATH`. Offline trace analysis (`--trace` and `--trace-for`) is 100% pure Rust and runs natively on both Linux (`x86_64`, `aarch64`) and macOS (`aarch64`, `x86_64`). Because traced paths are resolved canonically against `--root` on the analysis machine, analyze offline traces against a matching `--root` directory layout (see the canonical containment rules in [GUIDE.md](GUIDE.md)) so traced reads do not resolve outside `--root` and report `empty read set`.
 
 ## Why does `Cargo.toml` specify `rust-version = "1.87"`?
 

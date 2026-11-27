@@ -12,4 +12,5 @@ create-missing = false
 [output.html]
 default-theme = "coal"
 preferred-dark-theme = "ayu"
+site-url = "/blindgate/"
 git-repository-url = "https://github.com/david-engelmann/blindgate"
