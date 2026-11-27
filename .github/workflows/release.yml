@@ -4,47 +4,120 @@ on:
   push:
     tags:
       - "v*"
+  release:
+    types:
+      - published
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Optional existing v* tag to build from and attach release archives onto"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      checkout_ref: ${{ steps.meta.outputs.checkout_ref }}
+    steps:
+      - id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          REL_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -eu
+          TAG=""
+          if [ "$EVENT_NAME" = "push" ] && [ "$REF_TYPE" = "tag" ]; then
+            TAG="$REF_NAME"
+          elif [ "$EVENT_NAME" = "release" ] && [ -n "$REL_TAG" ]; then
+            TAG="$REL_TAG"
+          elif [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          fi
+          if [ -n "$TAG" ]; then
+            case "$TAG" in
+              v[0-9]*)
+                case "$TAG" in
+                  *[!A-Za-z0-9._+-]*)
+                    echo "Invalid release tag: $TAG" >&2
+                    exit 1
+                    ;;
+                esac
+                ;;
+              *)
+                echo "Invalid release tag: $TAG" >&2
+                exit 1
+                ;;
+            esac
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "checkout_ref=refs/tags/$TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            echo "checkout_ref=$REF_NAME" >> "$GITHUB_OUTPUT"
+          fi
+
   verify:
+    needs: resolve
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.resolve.outputs.checkout_ref }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Check manifest version against tag
+      - name: Install strace for live capture tests
+        run: sudo apt-get update && sudo apt-get install -y strace
+      - name: Check Cargo manifest presence and version alignment
         env:
-          REF_TYPE: ${{ github.ref_type }}
-          REF_NAME: ${{ github.ref_name }}
+          EFFECTIVE_TAG: ${{ needs.resolve.outputs.tag }}
         run: |
           python - <<'PY'
           import os, pathlib, tomllib
-          ver = tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"]
-          if os.environ.get("REF_TYPE") == "tag" and os.environ.get("REF_NAME") != f"v{ver}":
-              raise SystemExit(f"Tag {os.environ['REF_NAME']} does not match Cargo.toml v{ver}")
+          manifest = pathlib.Path("Cargo.toml")
+          if not manifest.is_file():
+              raise SystemExit("Cargo.toml is not present on the checked-out revision")
+          ver = tomllib.loads(manifest.read_text(encoding="utf-8"))["package"]["version"]
+          tag = os.environ.get("EFFECTIVE_TAG", "").strip()
+          if tag and tag != f"v{ver}":
+              print(f"::warning::Tag {tag} differs from committed Cargo.toml v{ver}, binary build will stamp {tag[1:]} and crates.io publish will be skipped")
           PY
-      - name: Build the Rust port
-        run: cargo build --locked
-      - name: Run the Rust port tests
+      - name: Run the Rust test suite
         run: cargo test --locked
-      - name: Check the formatting
+      - name: Check formatting
         run: cargo fmt --check
-      - name: Run the linter
+      - name: Run linter
         run: cargo clippy --offline --all-targets
-      - name: Verify crate packaging
-        run: cargo package --locked
+      - name: Verify crate packaging when manifest carries full crates.io metadata and excludes
+        run: |
+          python - <<'PY'
+          import pathlib, subprocess, sys, tomllib
+          pkg = tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8")).get("package", {})
+          if pkg.get("description") and pkg.get("license") and pkg.get("repository") and pkg.get("exclude"):
+              r = subprocess.run(["cargo", "package", "--locked"])
+              sys.exit(r.returncode)
+          print("Skipping cargo package check on historical pre-exclude tag")
+          PY
 
   binaries:
-    needs: verify
+    needs: [resolve, verify]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -54,15 +127,20 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            archive: tar.gz
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
+            archive: tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
+            archive: tar.gz
           - os: macos-latest
             target: x86_64-apple-darwin
+            archive: tar.gz
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.resolve.outputs.checkout_ref }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -73,17 +151,42 @@ jobs:
       - name: Build release binary and package archive
         env:
           TARGET_TRIPLE: ${{ matrix.target }}
-          REF_TYPE: ${{ github.ref_type }}
-          REF_NAME: ${{ github.ref_name }}
+          ARCHIVE_KIND: ${{ matrix.archive }}
+          EFFECTIVE_TAG: ${{ needs.resolve.outputs.tag }}
         shell: bash
         run: |
+          python - <<'PY'
+          import os, pathlib, re, tomllib
+          tag = os.environ.get("EFFECTIVE_TAG", "").strip()
+          cargo_path = pathlib.Path("Cargo.toml")
+          raw = cargo_path.read_text(encoding="utf-8")
+          ver = tomllib.loads(raw)["package"]["version"]
+          if tag and tag.startswith("v") and f"v{ver}" != tag:
+              clean_ver = tag[1:]
+              updated = re.sub(r'(?m)^version\s*=\s*"[^"]+"', f'version = "{clean_ver}"', raw, count=1)
+              tomllib.loads(updated)
+              cargo_path.write_text(updated, encoding="utf-8")
+              lock_path = pathlib.Path("Cargo.lock")
+              if lock_path.is_file():
+                  lock_raw = lock_path.read_text(encoding="utf-8")
+                  lock_upd = re.sub(
+                      r'(name\s*=\s*"blindgate"\s*\nversion\s*=\s*)"[^"]+"',
+                      rf'\g<1>"{clean_ver}"',
+                      lock_raw,
+                      count=1,
+                  )
+                  tomllib.loads(lock_upd)
+                  lock_path.write_text(lock_upd, encoding="utf-8")
+          PY
           cargo build --release --locked --bin blindgate --target "$TARGET_TRIPLE"
           python - <<'PY'
-          import hashlib, os, pathlib, tarfile, tomllib
+          import hashlib, os, pathlib, tarfile, tomllib, zipfile
           ver = tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"]
-          tag = os.environ["REF_NAME"] if os.environ.get("REF_TYPE") == "tag" else f"v{ver}"
+          tag = os.environ.get("EFFECTIVE_TAG", "").strip() or f"v{ver}"
           target = os.environ["TARGET_TRIPLE"]
-          bin_path = pathlib.Path("target") / target / "release" / "blindgate"
+          kind = os.environ["ARCHIVE_KIND"]
+          exe = "blindgate.exe" if "windows" in target else "blindgate"
+          bin_path = pathlib.Path("target") / target / "release" / exe
           out_dir = pathlib.Path("release-staging")
           out_dir.mkdir(parents=True, exist_ok=True)
           stem = f"blindgate-{tag}-{target}"
@@ -93,11 +196,18 @@ jobs:
               ti.uname = ""
               ti.gname = ""
               return ti
-          archive_path = out_dir / f"{stem}.tar.gz"
-          with tarfile.open(archive_path, "w:gz") as tf:
-              tf.add(bin_path, arcname="blindgate", filter=clean_tarinfo)
-              tf.add("LICENSE", arcname="LICENSE", filter=clean_tarinfo)
-              tf.add("README.md", arcname="README.md", filter=clean_tarinfo)
+          if kind == "zip":
+              archive_path = out_dir / f"{stem}.zip"
+              with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                  zf.write(bin_path, arcname=exe)
+                  zf.write("LICENSE", arcname="LICENSE")
+                  zf.write("README.md", arcname="README.md")
+          else:
+              archive_path = out_dir / f"{stem}.tar.gz"
+              with tarfile.open(archive_path, "w:gz") as tf:
+                  tf.add(bin_path, arcname=exe, filter=clean_tarinfo)
+                  tf.add("LICENSE", arcname="LICENSE", filter=clean_tarinfo)
+                  tf.add("README.md", arcname="README.md", filter=clean_tarinfo)
           digest = hashlib.sha256(archive_path.read_bytes()).hexdigest()
           (out_dir / f"{archive_path.name}.sha256").write_text(f"{digest}  {archive_path.name}\n", encoding="utf-8")
           PY
@@ -107,11 +217,13 @@ jobs:
           path: release-staging/*
 
   github-release:
-    needs: [verify, binaries]
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [resolve, verify, binaries]
+    if: needs.resolve.outputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -121,36 +233,67 @@ jobs:
         run: |
           cd release-assets
           cat *.sha256 | sort -k2 > SHA256SUMS
+      - name: Generate SLSA build provenance attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            release-assets/*.tar.gz
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.resolve.outputs.tag }}
           files: release-assets/*
           generate_release_notes: true
 
+  smoke-install:
+    needs: [resolve, github-release]
+    if: needs.resolve.outputs.tag != ''
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - name: Verify published release archive installs cleanly via install.sh
+        env:
+          PUBLISHED_TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -eu
+          TMP_SH="$(mktemp)"
+          trap 'rm -f "$TMP_SH"' EXIT INT TERM
+          curl -fsSL "https://raw.githubusercontent.com/david-engelmann/blindgate/main/install.sh" -o "$TMP_SH"
+          BLINDGATE_VERSION="$PUBLISHED_TAG" sh "$TMP_SH"
+          "$HOME/.local/bin/blindgate" --help >/dev/null
+
   publish-crates:
-    needs: [verify, binaries]
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [resolve, verify, binaries]
+    if: needs.resolve.outputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.resolve.outputs.checkout_ref }}
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Publish blindgate crate when token and version match
+      - name: Publish blindgate crate when token and committed manifest version match
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          REF_NAME: ${{ github.ref_name }}
+          EFFECTIVE_TAG: ${{ needs.resolve.outputs.tag }}
         run: |
           if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
             echo "CARGO_REGISTRY_TOKEN is not set, skipping crates.io publish"
             exit 0
           fi
           VER="$(python -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["package"]["version"])')"
-          if [ "v$VER" != "$REF_NAME" ]; then
-            echo "Tag $REF_NAME differs from Cargo.toml v$VER, skipping crates.io publish"
+          if [ "v$VER" != "$EFFECTIVE_TAG" ]; then
+            echo "Tag $EFFECTIVE_TAG differs from committed Cargo.toml v$VER, skipping crates.io publish"
             exit 0
           fi
           cargo publish --locked

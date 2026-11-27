@@ -1,0 +1,4 @@
+build/
+src/*.md
+!src/SUMMARY.md
+src/media/

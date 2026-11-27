@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 310" width="960" height="310" role="img" aria-label="Gate Truth verification suite architecture">
+  <title>The Gate Truth verification arc showing where blindgate sits among its siblings</title>
+  <rect width="960" height="310" rx="20" fill="#181715" stroke="#35322d" stroke-width="1.5"/>
+  <text x="26" y="38" fill="#38bdf8" font-family="'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace" font-size="11.5" font-weight="700" letter-spacing="1.2">THE GATE TRUTH SUITE  /  SIX ORTHOGONAL QUESTIONS</text>
+  <text x="26" y="66" fill="#f5f2eb" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" font-weight="750">A green merge button is an assumption until every layer of the gate is proven.</text>
+  
+  <rect x="24" y="88" width="143" height="196" rx="12" fill="#211f1c" stroke="#35322d" stroke-width="1.3"/>
+  <text x="36" y="114" fill="#a8a29e" font-family="'SFMono-Regular', ui-monospace, Menlo, monospace" font-size="10.5" font-weight="700">01</text>
+  <text x="36" y="144" fill="#f5f2eb" font-family="'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace" font-size="14" font-weight="750">deadgate</text>
+  <text x="36" y="168" fill="#f5f2eb" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700">Did it run?</text>
+  <line x1="36" y1="180" x2="155" y2="180" stroke="#35322d" stroke-width="1"/>
+  <text x="36" y="202" fill="#a8a29e" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5"><tspan x="36" dy="0">Reconciles required</tspan><tspan x="36" dy="16">checks, workflows,</tspan><tspan x="36" dy="16">and run history</tspan></text>
+  <rect x="177" y="88" width="143" height="196" rx="12" fill="#211f1c" stroke="#35322d" stroke-width="1.3"/>
+  <text x="189" y="114" fill="#a8a29e" font-family="'SFMono-Regular', ui-monospace, Menlo, monospace" font-size="10.5" font-weight="700">02</text>
+  <text x="189" y="144" fill="#f5f2eb" font-family="'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace" font-size="14" font-weight="750">finaltree</text>
+  <text x="189" y="168" fill="#f5f2eb" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700">What did it run on?</text>
+  <line x1="189" y1="180" x2="308" y2="180" stroke="#35322d" stroke-width="1"/>
+  <text x="189" y="202" fill="#a8a29e" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5"><tspan x="189" dy="0">Verifies the exact</tspan><tspan x="189" dy="16">tree CI evaluated</tspan><tspan x="189" dy="16">vs merged</tspan></text>
+  <rect x="330" y="88" width="143" height="196" rx="12" fill="#102433" stroke="#38bdf8" stroke-width="2.4"/>
+  <rect x="342" y="100" width="66" height="20" rx="10" fill="#38bdf8"/><text x="375" y="113.5" text-anchor="middle" fill="#181715" font-family="'SFMono-Regular', ui-monospace, Menlo, monospace" font-size="9.5" font-weight="800">THIS REPO</text>
+  <text x="342" y="144" fill="#f5f2eb" font-family="'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace" font-size="14" font-weight="750">blindgate</text>
+  <text x="342" y="168" fill="#38bdf8" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700">What did it read?</text>
+  <line x1="342" y1="180" x2="461" y2="180" stroke="#35322d" stroke-width="1"/>
+  <text x="342" y="202" fill="#a8a29e" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5"><tspan x="342" dy="0">Diffs strace file</tspan><tspan x="342" dy="16">reads against</tspan><tspan x="342" dy="16">claimed surfaces</tspan></text>
+  <rect x="483" y="88" width="143" height="196" rx="12" fill="#211f1c" stroke="#35322d" stroke-width="1.3"/>
+  <text x="495" y="114" fill="#a8a29e" font-family="'SFMono-Regular', ui-monospace, Menlo, monospace" font-size="10.5" font-weight="700">04</text>
+  <text x="495" y="144" fill="#f5f2eb" font-family="'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace" font-size="14" font-weight="750">ostensible</text>
+  <text x="495" y="168" fill="#f5f2eb" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700">Can the test fail?</text>
+  <line x1="495" y1="180" x2="614" y2="180" stroke="#35322d" stroke-width="1"/>
+  <text x="495" y="202" fill="#a8a29e" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5"><tspan x="495" dy="0">Scans mock</tspan><tspan x="495" dy="16">tautologies and</tspan><tspan x="495" dy="16">runs 4-family</tspan><tspan x="495" dy="16">mutants</tspan></text>
+  <rect x="636" y="88" width="143" height="196" rx="12" fill="#211f1c" stroke="#35322d" stroke-width="1.3"/>
+  <text x="648" y="114" fill="#a8a29e" font-family="'SFMono-Regular', ui-monospace, Menlo, monospace" font-size="10.5" font-weight="700">05</text>
+  <text x="648" y="144" fill="#f5f2eb" font-family="'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace" font-size="14" font-weight="750">canaryfield</text>
+  <text x="648" y="168" fill="#f5f2eb" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700">Does CI catch bugs?</text>
+  <line x1="648" y1="180" x2="767" y2="180" stroke="#35322d" stroke-width="1"/>
+  <text x="648" y="202" fill="#a8a29e" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5"><tspan x="648" dy="0">Plants 200 defect</tspan><tspan x="648" dy="16">classes to score</tspan><tspan x="648" dy="16">gate catch rates</tspan></text>
+  <rect x="789" y="88" width="143" height="196" rx="12" fill="#211f1c" stroke="#35322d" stroke-width="1.3"/>
+  <text x="801" y="114" fill="#a8a29e" font-family="'SFMono-Regular', ui-monospace, Menlo, monospace" font-size="10.5" font-weight="700">06</text>
+  <text x="801" y="144" fill="#f5f2eb" font-family="'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace" font-size="14" font-weight="750">greenharvest</text>
+  <text x="801" y="168" fill="#f5f2eb" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700">Does it earn runtime?</text>
+  <line x1="801" y1="180" x2="920" y2="180" stroke="#35322d" stroke-width="1"/>
+  <text x="801" y="202" fill="#a8a29e" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5"><tspan x="801" dy="0">Weighs marginal</tspan><tspan x="801" dy="16">catch value per</tspan><tspan x="801" dy="16">second of CI time</tspan></text>
+</svg>

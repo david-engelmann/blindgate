@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use blindgate in research or engineering benchmarks, please cite this repository."
+title: "blindgate"
+abstract: "It traces what a gate actually opened while it ran and diffs that against the surface the gate claims to certify."
+authors:
+  - family-names: "Engelmann"
+    given-names: "David"
+version: "0.15.0"
+date-released: "2026-11-18"
+license: "MIT"
+repository-code: "https://github.com/david-engelmann/blindgate"
+url: "https://david-engelmann.github.io/blindgate/"

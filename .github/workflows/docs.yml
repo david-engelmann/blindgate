@@ -1,0 +1,88 @@
+name: docs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: mdbook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: "0.4.40"
+      - name: Stage handbook sources
+        run: sh book/sync-docs.sh
+      - name: Build mdBook site
+        run: mdbook build book
+      - name: Verify local asset, srcset, and page links
+        run: |
+          python - <<'PY'
+          import pathlib, re, sys
+          build = pathlib.Path("book/build")
+          missing = []
+          for html_file in sorted(build.rglob("*.html")):
+              if html_file.name in ("print.html", "404.html"):
+                  continue
+              text = html_file.read_text(encoding="utf-8")
+              if "raw.githubusercontent.com/david-engelmann/blindgate/main/media/" in text:
+                  missing.append(f"{html_file}: corrupted raw.githubusercontent.com/.../main/media/ URL")
+              for m in re.finditer(r'(?:href|src|srcset)="([^"#?,\s]+)"', text):
+                  ref = m.group(1)
+                  if ref.startswith(("http://", "https://", "mailto:", "javascript:", "data:")):
+                      continue
+                  target = (html_file.parent / ref).resolve()
+                  if not target.exists():
+                      missing.append(f"{html_file}: missing {ref}")
+          if missing:
+              print("\n".join(missing[:30]), file=sys.stderr)
+              sys.exit(1)
+          print("All internal mdBook links, srcset sources, and media assets verified.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mdbook-site
+          path: book/build
+
+  deploy:
+    name: GitHub Pages
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mdbook-site
+          path: book/build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: book/build
+      - id: deployment
+        uses: actions/deploy-pages@v4

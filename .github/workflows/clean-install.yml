@@ -1,0 +1,45 @@
+name: clean-install
+
+on:
+  workflow_run:
+    workflows:
+      - "Release"
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to verify (or latest)"
+        required: false
+        default: "latest"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clean-install-${{ inputs.version || github.event.workflow_run.head_branch || 'latest' }}
+  cancel-in-progress: false
+
+jobs:
+  install:
+    name: install (${{ matrix.os }})
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - name: Install prebuilt release via install.sh and smoke-check binary
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -eu
+          TMP_SH="$(mktemp)"
+          trap 'rm -f "$TMP_SH"' EXIT INT TERM
+          curl -fsSL "https://raw.githubusercontent.com/david-engelmann/blindgate/main/install.sh" -o "$TMP_SH"
+          BLINDGATE_VERSION="${REQUESTED_VERSION:-latest}" sh "$TMP_SH"
+          "$HOME/.local/bin/blindgate" --help >/dev/null

@@ -7,11 +7,24 @@ description = "It traces what a gate actually opened while it ran and diffs that
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/david-engelmann/blindgate"
-homepage = "https://github.com/david-engelmann/blindgate"
+homepage = "https://david-engelmann.github.io/blindgate/"
 documentation = "https://docs.rs/blindgate"
 keywords = ["ci", "strace", "verification", "testing", "workflow"]
 categories = ["command-line-utilities", "development-tools::testing"]
-exclude = ["tests/**", "tools/**", "CONTRACT.md", "AGENTS.md", ".github/**", "deny.toml", "install.sh"]
+exclude = [
+    "tests/**",
+    "tools/**",
+    "book/**",
+    "docs/media/**",
+    "CONTRACT.md",
+    "AGENTS.md",
+    "CITATION.cff",
+    ".editorconfig",
+    ".gitattributes",
+    ".github/**",
+    "deny.toml",
+    "install.sh",
+]
 
 [lib]
 name = "blindgate"
@@ -20,3 +33,8 @@ path = "src/lib.rs"
 [[bin]]
 name = "blindgate"
 path = "src/main.rs"
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }.{ archive-format }"
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
