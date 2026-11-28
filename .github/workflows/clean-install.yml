@@ -1,0 +1,63 @@
+name: clean-install
+
+on:
+  workflow_run:
+    workflows:
+      - "Release"
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to verify (or latest)"
+        required: false
+        default: "latest"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clean-install-${{ inputs.version || github.event.workflow_run.head_branch || 'latest' }}
+  cancel-in-progress: false
+
+jobs:
+  install:
+    name: install (${{ matrix.os }})
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - name: Resolve target release tag and smoke-check install.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          UPSTREAM_RUN_ID: ${{ github.event.workflow_run.id }}
+          UPSTREAM_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -eu
+          TARGET_VER="${REQUESTED_VERSION:-}"
+          if [ "$EVENT_NAME" = "workflow_run" ] && [ -n "${UPSTREAM_RUN_ID:-}" ]; then
+            ART_DIR="$(mktemp -d)"
+            if gh run download "$UPSTREAM_RUN_ID" -n published-release-tag -D "$ART_DIR" 2>/dev/null && [ -s "$ART_DIR/tag.txt" ]; then
+              TARGET_VER="$(tr -d '[:space:]' < "$ART_DIR/tag.txt")"
+            elif case "${UPSTREAM_BRANCH:-}" in v[0-9]*) true ;; *) false ;; esac; then
+              TARGET_VER="$UPSTREAM_BRANCH"
+            fi
+            rm -rf "$ART_DIR"
+          fi
+          TARGET_VER="${TARGET_VER:-latest}"
+          TMP_SH="$(mktemp)"
+          trap 'rm -f "$TMP_SH"' EXIT INT TERM
+          curl -fsSL "https://raw.githubusercontent.com/david-engelmann/blindgate/main/install.sh" -o "$TMP_SH"
+          BLINDGATE_VERSION="$TARGET_VER" sh "$TMP_SH"
+          "$HOME/.local/bin/blindgate" --help >/dev/null

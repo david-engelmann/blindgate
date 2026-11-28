@@ -1,0 +1,16 @@
+[book]
+title = "blindgate Documentation"
+authors = ["David Engelmann"]
+description = "It traces what a gate actually opened while it ran and diffs that against the surface the gate claims to certify."
+language = "en"
+src = "src"
+
+[build]
+build-dir = "build"
+create-missing = false
+
+[output.html]
+default-theme = "coal"
+preferred-dark-theme = "ayu"
+site-url = "/blindgate/"
+git-repository-url = "https://github.com/david-engelmann/blindgate"

@@ -1,0 +1,19 @@
+name: Feature or contract proposal
+description: Propose a falsifiable capability within blindgate's Gate Truth boundary
+title: "[proposal] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Verification gap or operator workflow
+      description: Describe the concrete problem within blindgate's scope boundary
+    validations:
+      required: true
+  - type: textarea
+    id: obligation
+    attributes:
+      label: Proposed falsifiable behaviour
+      description: State what input should produce what output or refusal
+    validations:
+      required: true

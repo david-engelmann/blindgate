@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability Report
+    url: https://github.com/david-engelmann/blindgate/security/advisories/new
+    about: Report suspected security vulnerabilities privately with synthetic inputs only.
+  - name: Operator Documentation
+    url: https://david-engelmann.github.io/blindgate/
+    about: Read the published operator guide, wire formats, and FAQ before opening an issue.

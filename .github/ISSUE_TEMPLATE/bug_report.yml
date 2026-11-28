@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a reproducible defect using synthetic inputs only
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Include **synthetic reproduction inputs only**. Never paste real host paths, private repository payloads, or production traces.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit SHA
+      placeholder: "v0.x.0 or commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system and architecture
+      placeholder: "Ubuntu 24.04 x86_64 / macOS 15 arm64"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal synthetic reproduction
+      description: Commands and synthetic fixture files demonstrating the issue
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual output
+    validations:
+      required: true

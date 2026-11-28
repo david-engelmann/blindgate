@@ -54,7 +54,7 @@ Options
 
 Exit codes
 
-- `0` Report rendered (or `--help` printed). Inspect check `verdict` values (`proven`, `unproven`, `empty`) in CI to fail builds when a gate misses its claimed surface.
+- `0` Report rendered (or `--help` printed). Inspect check `verdict` values (`proven`, `unproven`, `empty read set`) in CI to fail builds when a gate misses its claimed surface.
 - `2` Argument refusal, missing or malformed config/workflow/trace file, unknown workflow job, or missing `strace` under `--run`.
 
 ## Configuration File (`blindgate.yml`)
@@ -89,7 +89,7 @@ checks:
 - **Directory prefixes** A surface entry without glob characters has trailing slashes stripped and matches either the exact relative path or any path beneath `<prefix>/`.
 - **Canonical containment and `outside_reads`** Successful read-bearing opens (`O_RDONLY` or `O_RDWR`, excluding `O_PATH` and `O_DIRECTORY` metadata-only opens and failed syscalls) are resolved canonically against `--root`. Paths whose written form already lies outside `--root` (such as `/etc/hostname` or `/usr/lib/...`) are dropped unnamed. Paths that resolve inside `--root` enter `read_set`, while paths whose written form (after lexical dot-segment settlement) or inside-opened directory descriptor started inside `--root` and escaped outside `--root` through canonical symlink resolution enter `outside_reads` and never satisfy a claimed surface.
 - **Verdicts**
-  - `empty` `read_set` is empty (the run opened zero files inside `--root`).
+  - `empty read set` `read_set` is empty (the run opened zero files inside `--root`).
   - `unproven` `read_set` is non-empty, and zero read files matched `surface`.
   - `proven` At least one file in `read_set` matched `surface`.
 
@@ -152,7 +152,7 @@ jobs:
           doc = json.loads(pathlib.Path("/tmp/blindgate.json").read_text())
           bad = [c["name"] for c in doc["checks"] if c["verdict"] != "proven"]
           if bad:
-              print("Unproven or empty checks", bad)
+              print("Unproven or empty-read-set checks", bad)
               sys.exit(1)
           PY
 ```
